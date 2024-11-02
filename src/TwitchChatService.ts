@@ -112,24 +112,6 @@ export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, cou
         }
 
     }
-    count.value = count.value + 1;
-                users.value = updateValue(
-                  users.value,
-                  tags["display-name"],
-                  true
-                );
-                users.value = updateChances(
-                  users.value,
-                  tags["display-name"],
-                  1
-                );
-                users.value = updateClaimedHere(
-                  users.value,
-                  tags["display-name"],
-                  true
-                );
-
-    console.log(`${wheelUsers}`);
     // Here you can add code to handle the message, e.g., display it in your app
   });
 

@@ -87,7 +87,7 @@ const template: Electron.MenuItemConstructorOptions[] = [
         accelerator: "CmdOrCtrl+Shift+R",
         click: (_, focusedWindow) => {
           if (focusedWindow) {
-            focusedWindow.reload();
+            (focusedWindow as Electron.BrowserWindow).reload();
           }
         },
       },
@@ -106,7 +106,7 @@ const template: Electron.MenuItemConstructorOptions[] = [
         accelerator: "CmdOrCtrl+Shift+I",
         click: (_, focusedWindow) => {
           if (focusedWindow) {
-            focusedWindow.webContents.toggleDevTools();
+            (focusedWindow as Electron.BrowserWindow).webContents.toggleDevTools();
           }
         },
       },

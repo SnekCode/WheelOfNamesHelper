@@ -5,51 +5,8 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-
-    "baseUrl": "./",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ],
-      "~/*": [
-        "./*"
-      ],
-      "Components/*": [
-        "src/Components/*"
-      ],
-      "Interfaces/": [
-        "src/Data/Interfaces/",
-        "src/Data/Interfaces/*"
-      ],
-      "Utilities/*": [
-        "src/Utilities/*"
-      ],
-      "Objects/*": [
-        "src/Data/Objects/*"
-      ],
-      "Styles/*": [
-        "src/Styles/*"
-      ],
-      "Providers/*": [
-        "src/Providers/*"
-      ],
-      "Shared/*": [
-        "Shared/*"
-      ],
-      "Electron/*": [
-        "electron/*"
-      ],
-      "Hooks/*": [
-        "src/Hooks/*"
-      ],
-      "Pages/*": [
-        "src/Pages/*"
-      ],
-      "assets/*": [
-        "src/assets/*"
-      ],
-    }
+    "noEmit": false,
 
   },
-  "include": ["vite.config.ts", "package.json", "electron", "Shared", "src"],
+  "include": ["vite.config.ts", "package.json"],
 }

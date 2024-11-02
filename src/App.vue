@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
-import { getDeviceCode, pollForToken } from './twitchService';
-import { connectToTwitchChat, wheelUsers, WheelUsers, resetAllClaimedHere } from './twitchChatService';
+import { getDeviceCode, pollForToken } from './TwitchService';
+import { connectToTwitchChat, wheelUsers, WheelUsers, resetAllClaimedHere } from './TwitchChatService';
 import Updater from './components/Updater.vue';
 
 const channel = ref('snekcode'); // Add a ref for the channel
 const count = ref(0); // Add a ref for the count
-const users = ref(wheelUsers); // Add a ref for the users
+const users = ref<WheelUsers>(wheelUsers); // Add a ref for the users
 const filterText = ref(''); // Add a ref for the filter text
 console.log(Object.keys(users));
 
@@ -21,24 +21,25 @@ const copyToClipboard = () => {
   });
 };
 
-const filteredUsers = computed(() => {
+const filteredUsers = computed<WheelUsers>(() => {
   const filter = filterText.value.toLowerCase();
   return Object.keys(users.value)
     .filter(name => name.toLowerCase().includes(filter))
     .sort((a, b) => users.value[b].chances - users.value[a].chances)
-    .reduce((result, name) => {
+    .reduce((result: WheelUsers, name: string) => {
       result[name] = users.value[name];
       return result;
     }, {});
 });
 
-const incrementChances = (user: string) => {
-  user.chances += 1;
+const incrementChances = (user: WheelUsers[keyof WheelUsers]) => {
+  user.chances = (user.chances || 0) + 1;
   // user.claimedHere = true;
 };
 
-const decrementChances = (user: string) => {
-  user.chances -= 1;
+const decrementChances = (user: WheelUsers[keyof WheelUsers]) => {
+  // floor to prevent negative values
+  user.chances = Math.max((user.chances || 0) - 1, 0);
   // user.claimedHere = true;
 };
 
@@ -68,7 +69,7 @@ connectToTwitchChat(channel.value, users, count );
   <!-- map over the wheelUsers object to display in a grid pattern with buttons to remove from the object -->
   <div class="grid">
     <div v-for="(user, name) in filteredUsers" :key="name">
-      <div class="userList" v-if="user.chances > 0 || filterText"
+      <div class="userList" v-if="user && user.chances > 0 || filterText"
         :class = "{'new': !user.claimedHere, 'here': user.claimedHere }"
         >
         <button class="subbtn" @click="decrementChances(user)"> - </button>

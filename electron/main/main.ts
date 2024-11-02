@@ -151,7 +151,7 @@ async function createWindow() {
   }
   win.setMenu(menu);
   win.on("moved", () => {
-    store.set("windowBounds", win.getNormalBounds());
+    store.set("windowBounds", win!.getNormalBounds());
   });
 }
 

@@ -25,7 +25,13 @@ if (import.meta.env.DEV) {
   console.log("DEV MODE: Simulating update available in 5 seconds");
   setTimeout(() => {
   console.log("DEV MODE: Simulating update available");
-  autoUpdater.emit("update-available", {version: "dev version"});
+  autoUpdater.emit("update-available", {
+    version: "dev version",
+    files: [],
+    path: "",
+    sha512: "",
+    releaseDate: new Date().toISOString()
+  });
 }, 1000);
 }
 
@@ -37,28 +43,28 @@ if (process.env.VITE_UPDATER) {
 
 autoUpdater.on("update-available", (info) => {
   channelLog("update-available", "receiving", info.version);
-  win.webContents.send(EChannels.updateAvailable, true);
-  win.webContents.send(EChannels.updateInfo, info.version);
+  win!.webContents.send(EChannels.updateAvailable, true);
+  win!.webContents.send(EChannels.updateInfo, info.version);
 });
 
 autoUpdater.on("update-not-available", (args) => {
   channelLog("update-not-available", "receiving", args);
-  win.webContents.send(EChannels.updateAvailable, false);
+  win!.webContents.send(EChannels.updateAvailable, false);
 });
 
 autoUpdater.on("update-downloaded", (args) => {
   channelLog("update-downloaded", "receiving", args);
-  win.webContents.send(EChannels.updateDownloaded, true);
+  win!.webContents.send(EChannels.updateDownloaded, true);
 });
 
 autoUpdater.on("error", (info) => {
   channelLog("update-error", "receiving", info);
-  win.webContents.send(EChannels.updateError, info);
+  win!.webContents.send(EChannels.updateError, info);
 });
 
 autoUpdater.on("download-progress", (progress) => {
   channelLog("download-progress", "receiving", progress);
-  win.webContents.send(EChannels.updateDownloadProgress, progress);
+  win!.webContents.send(EChannels.updateDownloadProgress, progress);
 });
 
 ipcMain.on(EChannels.update, (_, installNow: boolean) => {
