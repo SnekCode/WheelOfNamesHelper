@@ -2,10 +2,7 @@
 import { ref, reactive, computed } from 'vue';
 import { getDeviceCode, pollForToken } from './twitchService';
 import { connectToTwitchChat, wheelUsers, WheelUsers, resetAllClaimedHere } from './twitchChatService';
-import { fetchLivePage } from "./YouTube/service"
-
-console.log(fetchLivePage(""));
-
+import Updater from './components/Updater.vue';
 
 const channel = ref('snekcode'); // Add a ref for the channel
 const count = ref(0); // Add a ref for the count
@@ -52,6 +49,8 @@ connectToTwitchChat(channel.value, users, count );
 </script>
 
 <template>
+  <!-- Update component -->
+   <Updater />
   <!-- button top right of screen with red background for reset -->
   <button @click="resetAllClaimedHere(users)" class="reset" >New Stream</button>
   <div>Wheel Requests: {{ count }}</div>
@@ -65,7 +64,7 @@ connectToTwitchChat(channel.value, users, count );
   </div>
   <br />
   <br />
-  <!-- <input v-model="channel" placeholder="Enter the channel to join" /> -->
+  <input v-model="channel" placeholder="Enter the channel to join" />
   <!-- map over the wheelUsers object to display in a grid pattern with buttons to remove from the object -->
   <div class="grid">
     <div v-for="(user, name) in filteredUsers" :key="name">
@@ -73,7 +72,7 @@ connectToTwitchChat(channel.value, users, count );
         :class = "{'new': !user.claimedHere, 'here': user.claimedHere }"
         >
         <button class="subbtn" @click="decrementChances(user)"> - </button>
-        <div @click="user.chances = 0">
+        <div class="name" @click="user.chances = 0">
           {{ name }}
           <div>{{ user.chances }}</div>
         </div>
@@ -143,6 +142,13 @@ connectToTwitchChat(channel.value, users, count );
   border-radius: 0.5em;
   background-color: #65a0c7;
   color: black;
+}
+
+.name {
+    width: 10rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .new {

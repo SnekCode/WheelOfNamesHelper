@@ -11,52 +11,8 @@ export type WheelUsers = {
 };
 
 export const wheelUsers: WheelUsers = {
-    'snekcode': {
-        value: true,
-        chances: 1,
-        claimedHere: false,
-    },
-    'useadsfasdfr1': {
-        value: true,
-        chances: 2,
-        claimedHere: true,
-    },
-    'user2': {
-        value: false,
-        chances: 3,
-        claimedHere: false,
-    },
-    'user3': {
-        value: true,
-        chances: 1,
-        claimedHere: true,
-    },
-'newUser1': {
-    value: true,
-    chances: 2,
-    claimedHere: false,
-},
-'newUser2': {
-    value: false,
-    chances: 1,
-    claimedHere: true,
-},
-'newUser3': {
-    value: true,
-    chances: 3,
-    claimedHere: false,
-},
-'newUser4': {
-    value: false,
-    chances: 2,
-    claimedHere: true,
-},
-'newUser5': {
-    value: true,
-    chances: 1,
-    claimedHere: false,
-},
-}
+
+};
 
 // update value only spread rest of object
 const updateValue = (users: WheelUsers, key: string, value: boolean) => {
@@ -154,7 +110,24 @@ export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, cou
             );
             count.value = count.value + 1;
         }
+
     }
+    count.value = count.value + 1;
+                users.value = updateValue(
+                  users.value,
+                  tags["display-name"],
+                  true
+                );
+                users.value = updateChances(
+                  users.value,
+                  tags["display-name"],
+                  1
+                );
+                users.value = updateClaimedHere(
+                  users.value,
+                  tags["display-name"],
+                  true
+                );
 
     console.log(`${wheelUsers}`);
     // Here you can add code to handle the message, e.g., display it in your app

@@ -23,7 +23,7 @@ release
 *.njsproj
 *.sln
 *.sw?
-
+*.py
 # lockfile
 package-lock.json
 pnpm-lock.yaml

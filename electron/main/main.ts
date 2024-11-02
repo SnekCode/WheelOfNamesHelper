@@ -3,9 +3,41 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
+import pkg from "~/package.json";
+
+import log from "electron-log/main";
+import { createMenu } from "./menu";
+
+// channelId UCvqRdlKsE5Q8mf8YXbdIJLw
+// live id jWjrdz-lLdU
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// logging
+log.initialize({ preload: true });
+// get a formated date and time as a string for the log file name DD/MM/YYYY HH:MM:SS
+const date = new Date()
+  .toLocaleString()
+  .replace(/\//g, "-")
+  .replace(/:/g, "-")
+  .replace(/,/g, "");
+const pathToLog = path.join(
+  process.env.APPDATA ?? __dirname,
+  `${pkg.name}/logs/${date}.log`
+);
+log.transports.file.resolvePathFn = () => pathToLog;
+console.log = log.log;
+
+console.log(pathToLog);
+
+// handle update
+import "../updater/updater";
+
+// load main ipc actions
+import { store } from "./store";
+
+
 
 // The built directory structure
 //
@@ -38,11 +70,35 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0)
 }
 
-let win: BrowserWindow | null = null
+export let win: BrowserWindow | null = null
+const menu = createMenu();
 const preload = path.join(__dirname, '../preload/index.mjs')
 const indexHtml = path.join(RENDERER_DIST, 'index.html')
 
+
 async function createWindow() {
+
+  let windowConfig = {
+    width: 800,
+    height: 600,
+  }
+
+  const bounds = store.get('windowBounds')
+  if (bounds) {
+    windowConfig = {
+      ...windowConfig,
+      ...bounds,
+    }
+  }
+
+  const windowSettings = store.get('windowSettings')
+  if (windowSettings) {
+    windowConfig = {
+      ...windowConfig,
+      ...windowSettings,
+    }
+  }
+
   win = new BrowserWindow({
     title: 'Main window',
     icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
@@ -55,7 +111,10 @@ async function createWindow() {
       // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
       // contextIsolation: false,
     },
-  })
+    ...windowConfig,
+  });
+
+
 
   if (VITE_DEV_SERVER_URL) { // #298
     win.loadURL(VITE_DEV_SERVER_URL)
@@ -76,6 +135,24 @@ async function createWindow() {
     return { action: 'deny' }
   })
   // win.webContents.on('will-navigate', (event, url) => { }) #344
+
+    if (import.meta.env.DEV) {
+      win.webContents.openDevTools({ mode: "detach" });
+    }
+  
+
+  if (VITE_DEV_SERVER_URL) {
+    console.log("loadURL", VITE_DEV_SERVER_URL);
+
+    win.loadURL(VITE_DEV_SERVER_URL);
+  } else {
+    // win.loadFile('dist/index.html')
+    win.loadFile(indexHtml);
+  }
+  win.setMenu(menu);
+  win.on("moved", () => {
+    store.set("windowBounds", win.getNormalBounds());
+  });
 }
 
 app.whenReady().then(createWindow)
@@ -130,21 +207,21 @@ ipcMain.handle('open-win', (_, arg) => {
 
 // explore the readonly google api for youtube chat messages
 
-fetch(
-  "https://www.googleapis.com/youtube/v3/liveBroadcasts?id=XtDb-CrYCJA&part=snippet"
-)
-  .then((res) => {
-    console.log(
-      res
-        .text()
-        .then((data) => {
-          console.log(data);
-        })
-        .catch((err) => {
-          console.log(err);
-        })
-    );
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+// fetch(
+//   "https://www.googleapis.com/youtube/v3/liveBroadcasts?id=XtDb-CrYCJA&part=snippet"
+// )
+//   .then((res) => {
+//     console.log(
+//       res
+//         .text()
+//         .then((data) => {
+//           console.log(data);
+//         })
+//         .catch((err) => {
+//           console.log(err);
+//         })
+//     );
+//   })
+//   .catch((err) => {
+//     console.log(err);
+//   });

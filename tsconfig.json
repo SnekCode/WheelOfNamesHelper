@@ -1,20 +1,74 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "strict": true,
     "jsx": "preserve",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "esModuleInterop": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ES2020",
+      "ESNext",
+      "DOM"
+    ],
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    // aliases
+    "baseUrl": "./",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "~/*": [
+        "./*"
+      ],
+      "Components/*": [
+        "src/Components/*"
+      ],
+      "Interfaces/": [
+        "src/Data/Interfaces/",
+        "src/Data/Interfaces/*"
+      ],
+      "Utilities/*": [
+        "src/Utilities/*"
+      ],
+      "Objects/*": [
+        "src/Data/Objects/*"
+      ],
+      "Styles/*": [
+        "src/Styles/*"
+      ],
+      "Providers/*": [
+        "src/Providers/*"
+      ],
+      "Shared/*": [
+        "Shared/*"
+      ],
+      "Electron/*": [
+        "electron/*"
+      ],
+      "Hooks/*": [
+        "src/Hooks/*"
+      ],
+      "Pages/*": [
+        "src/Pages/*"
+      ],
+      "assets/*": [
+        "src/assets/*"
+      ],
+    }
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "electron",
+    "Shared"
+  ],
   "references": [
-    { "path": "./tsconfig.node.json" }
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }
