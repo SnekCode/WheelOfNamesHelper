@@ -29,7 +29,7 @@
     "@types/node": "^22.8.6",
     "@types/tmi.js": "^1.8.6",
     "@vitejs/plugin-vue": "^5.0.4",
-    "electron": "^29.1.1",
+    "electron": "^33.0.2",
     "electron-builder": "^24.13.3",
     "typescript": "^5.4.2",
     "vite": "^5.1.5",
