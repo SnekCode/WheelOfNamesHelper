@@ -1,9 +1,9 @@
 // @see https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "YourAppID",
+  "appId": "io.github.wheelofnameshelper",
   "asar": true,
-  "productName": "YourAppName",
+  "productName": "WheelOfNamesHelper",
   "directories": {
     "output": "release/${version}"
   },
@@ -18,6 +18,13 @@
     "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
   },
   "win": {
+    "publish": {
+      "provider": "github",
+      "owner": "SnekCode",
+      "repo": "WheelOfNamesHelper",
+      "releaseType": "release",
+      "publishAutoUpdate": true
+    },
     "target": [
       {
         "target": "nsis",

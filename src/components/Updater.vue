@@ -14,8 +14,8 @@ import {version} from '../../package.json'
 const { ipcRenderer } = window
 
 
-const updateAvailable = ref(true)
-const newVersion = ref('')
+const updateAvailable = ref(false)
+const newVersion = ref('unknown')
 
 ipcRenderer.on(EChannels.updateAvailable, (_, bool) => {
   updateAvailable.value = bool

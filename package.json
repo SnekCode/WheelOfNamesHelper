@@ -1,9 +1,10 @@
 {
   "name": "wheel-of-names-helper",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "main": "dist-electron/main/main.js",
   "description": "Wheel of names tool for Twitch streamers",
   "author": "SnekCode",
+  "repository": "https://github.com/SnekCode/WheelOfNamesHelper",
   "license": "MIT",
   "private": false,
   "keywords": [
@@ -22,7 +23,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build && electron-builder --publish never",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "publish": "vue-tsc --noEmit && vite build && electron-builder --publish always"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
@@ -40,6 +42,7 @@
   },
   "dependencies": {
     "axios": "^1.7.7",
+    "electron-forge": "^5.2.4",
     "electron-log": "^5.2.0",
     "electron-store": "^10.0.0",
     "electron-updater": "^6.3.9",
