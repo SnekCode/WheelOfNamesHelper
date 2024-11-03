@@ -1,14 +1,7 @@
 // src/twitchChatService.ts
 import tmi from 'tmi.js';
 import { Ref } from "vue";
-
-export type WheelUsers = {
-  [key: string]: {
-    value: boolean;
-    chances: number;
-    claimedHere: boolean;
-  };
-};
+import { WheelUsers } from '~/Shared/types';
 
 export const wheelUsers: WheelUsers = {
 
@@ -56,8 +49,15 @@ export const resetAllClaimedHere = (users: WheelUsers) => {
     for (const key in newUsers) {
         newUsers[key].claimedHere = false;
     }
+    updateWheelUsersStore(newUsers);
     return newUsers;
 };
+
+  const { store } = window;
+  export const updateWheelUsersStore = async (users: WheelUsers) => {
+    await store.setStore("wheelUsers", JSON.stringify(users));
+  };
+
 
 
 export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, count : Ref<number>) {
@@ -65,6 +65,8 @@ export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, cou
     options: { debug: true },
     channels: [channel],
   });
+
+
 
   client.connect().catch(console.error);
 
@@ -74,7 +76,7 @@ export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, cou
     if (message === "!wheel" && tags["display-name"]) {
       // Here you can add code to handle the command, e.g., spin the wheel
       console.log(`Adding ${tags["display-name"]} to the wheel`);
-      if (!wheelUsers[tags["display-name"]]) {
+      if (!users.value[tags["display-name"]]) {
         users.value = updateValue(users.value, tags["display-name"], true);
         users.value = updateChances(users.value, tags["display-name"], 1);
         users.value = updateClaimedHere(
@@ -84,19 +86,23 @@ export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, cou
         );
       }else{
           users.value = updateValue(users.value, tags["display-name"], true);
+
       }
         count.value = count.value + 1;
+        updateWheelUsersStore(users.value);
     }
     // let users remove themselves from the wheel
     if (message === "!remove" && tags["display-name"]) {
       console.log(`Removing ${tags["display-name"]} from the wheel`);
       users.value = updateValue(users.value, tags["display-name"], false);
       count.value = count.value - 1;
+      updateWheelUsersStore(users.value);
     }
 
     if (message === "!here" && tags["display-name"]) {
         console.log(`Claiming ${tags["display-name"]} from the wheel`);
-        if (!wheelUsers[tags["display-name"]].claimedHere) {
+        
+        if (!users.value[tags["display-name"]].claimedHere) {
             users.value = updateClaimedHere(
               users.value,
               tags["display-name"],
@@ -106,9 +112,11 @@ export function connectToTwitchChat(channel: string, users: Ref<WheelUsers>, cou
             users.value = updateChances(
               users.value,
               tags["display-name"],
-              wheelUsers[tags["display-name"]].chances * 2
+              users.value[tags["display-name"]].chances * 2
             );
             count.value = count.value + 1;
+            updateWheelUsersStore(users.value);
+
         }
 
     }

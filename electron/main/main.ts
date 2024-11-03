@@ -101,7 +101,7 @@ async function createWindow() {
 
   win = new BrowserWindow({
     title: 'Main window',
-    icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
+    icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
     webPreferences: {
       preload,
       // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
@@ -149,7 +149,7 @@ async function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(indexHtml);
   }
-  win.setMenu(menu);
+  win.setMenu(menu!);
   win.on("moved", () => {
     store.set("windowBounds", win!.getNormalBounds());
   });

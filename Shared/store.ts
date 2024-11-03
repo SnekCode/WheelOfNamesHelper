@@ -1,8 +1,10 @@
-import { WheelUsers } from "@/TwitchChatService";
+import { WheelUsers } from "./types";
+
 
 export interface IStore {
-    data: string;
-    test: string;
+    data: WheelUsers;
+    twitchChannelName: string;
+    wheelOfNamesApiKey: string;
 }
 
 export type IStoreKeys = keyof IStore;

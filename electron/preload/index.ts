@@ -1,27 +1,55 @@
 import { ipcRenderer, contextBridge } from 'electron'
+import { EChannels } from '~/Shared/channels';
+import { IStore, IStoreKeys } from '~/Shared/store'
 
 // --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
+contextBridge.exposeInMainWorld("ipcRenderer", {
   on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+    console.log('on', args);
+    
+    const [channel, listener] = args;
+    return ipcRenderer.on(channel, (event, ...args) =>
+      listener(event, ...args)
+    );
   },
   off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
+    console.log('off', args);
+    
+    const [channel, ...omit] = args;
+    return ipcRenderer.off(channel, ...omit);
   },
   send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
+    console.log('send', args);
+    
+    const [channel, ...omit] = args;
+    return ipcRenderer.send(channel, ...omit);
   },
   invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
+    console.log('invoke', args);
+    
+    const [channel, ...omit] = args;
+    return ipcRenderer.invoke(channel, ...omit);
   },
 
-  // You can expose other APTs you need here.
-  // ...
-})
+});
+
+contextBridge.exposeInMainWorld("store", {
+  getStore<K extends IStoreKeys>(name: K) {
+    return ipcRenderer.invoke('getStore', name) as Promise<IStore[K]>
+  },
+  setStore<K extends IStoreKeys>(name: K, data: IStore[K]) {
+    return ipcRenderer.invoke('setStore', name, data)
+  },
+  addWheelUser(name: string, user: IStore['data'][0]) {
+    return ipcRenderer.invoke('addWheelUser', name, user)
+  },
+  removeWheelUser(name: string) {
+    return ipcRenderer.invoke('removeWheelUser', name)
+  },
+  on<K extends IStoreKeys>(listener: (event: Electron.IpcRendererEvent, name: K, data: IStore[K]) => void) {
+    return ipcRenderer.on(EChannels.storeUpdate, listener)
+  }
+});
 
 // --------- Preload scripts loading ---------
 function domReady(condition: DocumentReadyState[] = ['complete', 'interactive']) {

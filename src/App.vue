@@ -1,14 +1,54 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-import { getDeviceCode, pollForToken } from './TwitchService';
-import { connectToTwitchChat, wheelUsers, WheelUsers, resetAllClaimedHere } from './TwitchChatService';
+import { ref, computed } from 'vue';
+import { connectToTwitchChat, wheelUsers, resetAllClaimedHere, updateWheelUsersStore } from './TwitchChatService';
 import Updater from './components/Updater.vue';
+import tmi from 'tmi.js';
+import { WheelUsers } from '~/Shared/types';
 
-const channel = ref('snekcode'); // Add a ref for the channel
+const { store, ipcRenderer } = window
+
+const channel = ref(''); // Add a ref for the channel
+const twitchClient = ref<tmi.Client | void>(); // Add a ref for the twitch client
 const count = ref(0); // Add a ref for the count
 const users = ref<WheelUsers>(wheelUsers); // Add a ref for the users
 const filterText = ref(''); // Add a ref for the filter text
 console.log(Object.keys(users));
+
+// get the channel name from the store
+ipcRenderer.invoke('getStore', "twitchChannelName").then((channelName) => {
+  console.log('channelName', channelName);
+  channel.value = channelName;
+  twitchClient.value = connectToTwitchChat(channel.value, users, count );
+});
+// get saved wheelusers from the store
+ipcRenderer.invoke('getStore', 'wheelUsers').then((data) => {
+  console.log('wheelUsers', data);
+  users.value = JSON.parse(data) || {};
+});
+
+// ipcRenderer.on(EChannels.storeUpdate, (event, channelName) => {
+//   console.log('updateChannel', channelName, event);
+//   channel.value = channelName;
+//   twitchClient.value?.disconnect();
+//   twitchClient.value = connectToTwitchChat(channel.value, users, count );
+// });
+
+// listen for app close event
+ipcRenderer.on('app-close', () => {
+  console.log('app-close');
+  twitchClient.value?.disconnect();
+  // save the wheelusers to the store
+  store.send('saveStore', 'wheelUsers', JSON.stringify(users.value));
+});
+
+store.on((_: any, name: string, data: string) => {
+  console.log('store.on', name, data);
+  if (name === 'twitchChannelName') {
+    channel.value = data;
+    twitchClient.value?.disconnect();
+    twitchClient.value = connectToTwitchChat(channel.value, users, count );
+  }
+});
 
 const copyToClipboard = () => {
   const userList = Object.keys(users.value)
@@ -32,30 +72,46 @@ const filteredUsers = computed<WheelUsers>(() => {
     }, {});
 });
 
+const resetWheelRequests = () => {
+  count.value = 0;
+};
+
 const incrementChances = (user: WheelUsers[keyof WheelUsers]) => {
   user.chances = (user.chances || 0) + 1;
   // user.claimedHere = true;
+  updateWheelUsersStore(users.value);
 };
 
 const decrementChances = (user: WheelUsers[keyof WheelUsers]) => {
   // floor to prevent negative values
   user.chances = Math.max((user.chances || 0) - 1, 0);
+  updateWheelUsersStore(users.value);
+
   // user.claimedHere = true;
 };
 
-connectToTwitchChat(channel.value, users, count );
 // UC2wKfjlioOCLP4xQMOWNcgg
 // connectToYouTubeChat("UC2wKfjlioOCLP4xQMOWNcgg", users, count );
 
 </script>
 
 <template>
+  <!-- watermark style text at the top left of the channel value -->
+  <div class="channel-name" v-if="channel">
+    <div>{{ channel }}</div>
+  </div>
+  <div class="channel-name" v-else>
+    <div>(Set channel in App menu dropdown)</div>
+  </div>
   <!-- Update component -->
    <Updater />
   <!-- button top right of screen with red background for reset -->
-  <button @click="resetAllClaimedHere(users)" class="reset" >New Stream</button>
+   <div class="container">
+  <button @click="resetAllClaimedHere(users)" class="resetClaimed" >New Stream</button>
+
   <div>Wheel Requests: {{ count }}</div>
-  <button @click="copyToClipboard">Copy to Clipboard</button>
+    <button @click="resetWheelRequests" class="resetCount">Reset Count</button>
+  <button class="copyButton" @click="copyToClipboard">Copy to Clipboard</button>
   <br />
   <br />
 
@@ -65,27 +121,28 @@ connectToTwitchChat(channel.value, users, count );
   </div>
   <br />
   <br />
-  <input v-model="channel" placeholder="Enter the channel to join" />
+  <!-- <input v-on:blur="updateChannel" v-model="channel" placeholder="Enter the channel to join" /> -->
   <!-- map over the wheelUsers object to display in a grid pattern with buttons to remove from the object -->
   <div class="grid">
     <div v-for="(user, name) in filteredUsers" :key="name">
       <div class="userList" v-if="user && user.chances > 0 || filterText"
         :class = "{'new': !user.claimedHere, 'here': user.claimedHere }"
         >
-        <button class="subbtn" @click="decrementChances(user)"> - </button>
+        <button class="subbtn" @click="decrementChances(user)"> ➖ </button>
         <div class="name" @click="user.chances = 0">
           {{ name }}
           <div>{{ user.chances }}</div>
         </div>
-        <button class="addbtn" @click="incrementChances(user)"> + </button>
+        <button class="addbtn" @click="incrementChances(user)"> ➕ </button>
       </div>
     </div>
+  </div>
   </div>
 </template>
 
 <style>
 /* class="flex-center" style="position: absolute; top: 0; right: 0; background-color: red; color: white; border: none; cursor: pointer; padding: 5px 12px; margin: 10px; font-size: 14px;" */
-.reset {
+.resetClaimed {
   position: absolute;
   top: 0;
   right: 0;
@@ -96,6 +153,49 @@ connectToTwitchChat(channel.value, users, count );
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
+  user-select: none; /* Prevent text selection */
+}
+
+.resetCount {
+  /* position: absolute;
+  top: 0;
+  right: 100; */
+  background-color: blue;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 5px 12px;
+  margin: 10px;
+  font-size: 14px;
+  user-select: none; /* Prevent text selection */
+}
+
+.copyButton {
+  background-color: #4caf4fee;
+  color: rgb(255, 255, 255);
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 5px 12px;
+  margin: 10px;
+  font-size: 14px;
+  user-select: none; /* Prevent text selection */
+}
+
+.container {
+  margin-top: 0;
+  user-select: none; /* Prevent text selection */
+}
+
+.channel-name {
+  position: absolute;
+  top: 0px;
+  left: 0;
+  color: white;
+  margin: 5px;
+  font-size: 16px;
+  opacity: 0.5;
+  user-select: none; /* Prevent text selection */
 }
 
 .grid {
@@ -164,22 +264,32 @@ connectToTwitchChat(channel.value, users, count );
 
 .addbtn {
   background-color: #4caf4fee;
-  color: rgb(0, 0, 0);
+  color: rgb(255, 255, 255);
   border: none;
   cursor: pointer;
-  padding: 3px 9px;
+  padding: 10px;
   margin-right: 10px;
-  font-size: 20px;
+  font-size: 12px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .subbtn {
   background-color: #bd332ae8;
-  color: rgb(0, 0, 0);
+  color: rgb(253, 0, 0);
   border: none;
   cursor: pointer;
-  padding: 3px 9px;
+  padding: 10px;
   margin-left: 10px;
-  font-size: 20px;
+  font-size: 12px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo.electron:hover {

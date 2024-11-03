@@ -1,136 +1,134 @@
-// create an electron menu
-import { Menu, app, shell } from "electron";
+import { BrowserWindow, Menu, app, shell, dialog, ipcMain } from "electron";
 import path from "node:path";
-import { store } from "./store";
+import { setStore, store } from "./store";
 import fs from "fs";
-
-// process.env.DIST = path.join(__dirname, "../dist");
+import prompt from "electron-prompt";
+import { EChannels } from "~/Shared/channels";
+import { win } from "./main";
 
 const appData = process.env.LOCALAPPDATA ?? "";
 
-// menu options
+// Function to show input dialog and get user input
+async function showInputDialog(
+  window: BrowserWindow,
+  title: string,
+  label: string
+): Promise<string | null> {
+  const result = await prompt({
+    title,
+    label,
+    inputAttrs: {
+      type: "text",
+    },
+    type: "input",
+    resizable: true,
+    alwaysOnTop: true,
+  });
 
-// Menu Bar
-// ├─ App
-// │  ├─ Close
-// ├─ Help
-// │  ├─ Check for Updates
-// │  ├─ conditional apply update
-// │  ├─ About
-// ├─ Developer
-// │  ├─ Toggle Dev Tools
-// │  ├─ Toggle Server Side Dev Tools
-// │  ├─ Open User Data Directory
-// │  ├─ Open Log File
-// │  ├─ Open Config File
-// │  ├─ Open App Data Directory
+  return result;
+}
 
-const template: Electron.MenuItemConstructorOptions[] = [
-  // {
-    // label: "App",
-    // submenu: [
-    //   {
-    //     label: "Open Demo Folder",
-    //     click: () => {
-    //       const loadedGame: EGameNames = store.get("loadedGame") as EGameNames;
-    //       const demoPath = path.join(appData, "TheIsle", "Saved", "Demos");
-    //       fs.existsSync(demoPath) || fs.mkdirSync(demoPath);
-    //       console.log(loadedGame, demoPath);
+// Function to create the menu template
+function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
+  return [
+    {
+      label: "App",
+      submenu: [
+        {
+          label: "Set Twitch Channel Name",
+          sublabel: `Current: ${store.get("twitchChannelName")}`,
+          click: async (_, focusedWindow) => {
+            if (focusedWindow) {
+              const input = await showInputDialog(
+                focusedWindow as BrowserWindow,
+                "Set Twitch Channel Name",
+                "Enter the Twitch channel name:"
+              );
+              if (input) {
+                setStore("twitchChannelName", input);
+                // ipcRenderer.send('setStore', 'twitchChannelName', input);
+                // Rebuild the menu to update the sublabel
+                const menu = Menu.buildFromTemplate(createMenuTemplate());
+                Menu.setApplicationMenu(menu);
+                // (focusedWindow as BrowserWindow)?.reload();
+              }
+            }
+          },
+        },
+      ],
+    },
+    {
+      label: "Help",
+      submenu: [
+        {
+          label: "Check for Updates",
+          sublabel: "coming soon...",
+          click: () => null,
+        },
+        {
+          label: "About",
+          sublabel: "coming soon...",
+          click: () => null,
+        },
+      ],
+    },
+    {
+      label: "Developer",
+      submenu: [
+        {
+          label: "Force Reload",
+          accelerator: "CmdOrCtrl+Shift+R",
+          click: (_, focusedWindow) => {
+            if (focusedWindow) {
+              (focusedWindow as Electron.BrowserWindow).reload();
+            }
+          },
+        },
+        {
+          label: (store.get("windowSettings") as { alwaysOnTop: boolean })?.alwaysOnTop ?? false
+            ? "✔ Force Window On Top"
+            : "Force Window On Top",
+          click: (_, focusedWindow) => {
+            if (focusedWindow) {
+              const alwaysOnTop = !focusedWindow.isAlwaysOnTop();
+              focusedWindow.setAlwaysOnTop(alwaysOnTop);
+              store.set("windowSettings", { alwaysOnTop });
+              const menu = Menu.buildFromTemplate(createMenuTemplate());
+              Menu.setApplicationMenu(menu);
+            }
+          },
+        },
+        {
+          label: "Toggle Dev Tools",
+          accelerator: "CmdOrCtrl+Shift+I",
+          click: (_, focusedWindow) => {
+            if (focusedWindow) {
+              (
+                focusedWindow as Electron.BrowserWindow
+              ).webContents.toggleDevTools();
+            }
+          },
+        },
+        {
+          label: "Open Log File",
+          click: () => {
+            const logPath = app.getPath("logs");
+            shell.openPath(path.join(logPath, "main.log"));
+          },
+        },
+        {
+          label: "Open Config File",
+          click: () => {
+            shell.openPath(store.path);
+          },
+        },
+      ],
+    },
+  ];
+}
 
-    //       shell.openPath(demoPath);
-    //     },
-    //   },
-    //   {
-    //     label: "Open App Data Directory",
-    //     click: () => {
-    //       shell.openPath(path.join(appData, "TheIsle"));
-    //     },
-    //   },
-    //   {
-    //     label: "Close",
-    //     accelerator: "CmdOrCtrl+W",
-    //     role: "close",
-    //   },
-    // ],
-  // },
-  // {
-  //   label: "Settings",
-  //   submenu: [
-  //     {
-  //       label: "Change Game Paths",
-  //       click: (_, focusedWindow) => {
-  //         store.set("state", "init");
-  //         focusedWindow?.reload();
-  //       },
-  //     },
-  //   ],
-  // },
-  {
-    label: "Help",
-    submenu: [
-      {
-        label: "Check for Updates",
-        click: () => null,
-      },
-      {
-        label: "About",
-        click: () => null,
-      },
-    ],
-  },
-  {
-    label: "Developer",
-    submenu: [
-      //force reload
-      {
-        label: "Force Reload",
-        accelerator: "CmdOrCtrl+Shift+R",
-        click: (_, focusedWindow) => {
-          if (focusedWindow) {
-            (focusedWindow as Electron.BrowserWindow).reload();
-          }
-        },
-      },
-      {
-        label: "Force Window On Top",
-        click: (_, focusedWindow) => {
-          if (focusedWindow) {
-            const alwaysOnTop = !focusedWindow.isAlwaysOnTop();
-            focusedWindow.setAlwaysOnTop(alwaysOnTop);
-            store.set("windowSettings", { alwaysOnTop });
-          }
-        },
-      },
-      {
-        label: "Toggle Dev Tools",
-        accelerator: "CmdOrCtrl+Shift+I",
-        click: (_, focusedWindow) => {
-          if (focusedWindow) {
-            (focusedWindow as Electron.BrowserWindow).webContents.toggleDevTools();
-          }
-        },
-      },
-      {
-        label: "Open Log File",
-        click: () => {
-          // get log file path
-          // open in file explorer
-          const logPath = app.getPath("logs");
-          shell.openPath(path.join(logPath, "main.log"));
-        },
-      },
-      {
-        label: "Open Config File",
-        click: () => {
-          //store config path
-          //open in file explorer
-          shell.openPath(store.path);
-        },
-      },
-    ],
-  },
-];
-
+// Function to create the menu
 export function createMenu() {
-  return Menu.buildFromTemplate(template);
+  const menu = Menu.buildFromTemplate(createMenuTemplate());
+  Menu.setApplicationMenu(menu);
 }
