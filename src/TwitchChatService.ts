@@ -1,11 +1,20 @@
 // src/twitchChatService.ts
 import tmi from 'tmi.js';
 import { Ref } from "vue";
-import { WheelUsers } from '~/Shared/types';
+import { WheelUsers, WheelUser } from '~/Shared/types';
 
 export const wheelUsers: WheelUsers = {
 
 };
+
+// export addUser that wraps updateValue and updateChances
+export const addUser = (users: WheelUsers, key: string, user: WheelUser) => {
+    const newUsers = { ...users };
+    newUsers[key] = user;
+    updateWheelUsersStore(newUsers);
+    return newUsers;
+}
+
 
 // update value only spread rest of object
 const updateValue = (users: WheelUsers, key: string, value: boolean) => {

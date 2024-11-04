@@ -1,79 +1,79 @@
-# electron-vite-vue
+<p align="center">
+    <h1 align="center">Streamer Wheel Of Names Helper</h1>
+</p>
+<p align="center">
+    <a href="https://vitejs.dev/">
+    <img src="https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white" />
+    </a>
+    <a href="https://vuejs.org">
+      <img src="https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=2361DAFB"
+    </a>
+    <a href="https://www.electronjs.org/">
+      <img src="https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=Electron&logoColor=white">
+    </a>
+    <a href="https://www.typescriptlang.org/">
+      <img src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white">
+    </a>
+    <a href="https://github.com/SnekCode/WheelOfNamesHelper/releases">
+      <img src="https://img.shields.io/github/v/release/SnekCode/WheelOfNamesHelper?style=for-the-badge&logo=github">
+    </a>
+</p>
 
-🥳 Really simple `Electron` + `Vue` + `Vite` boilerplate.
+## About
 
-<!-- [![awesome-vite](https://awesome.re/mentioned-badge.svg)](https://github.com/vitejs/awesome-vite) -->
-<!-- [![Netlify Status](https://api.netlify.com/api/v1/badges/ae3863e3-1aec-4eb1-8f9f-1890af56929d/deploy-status)](https://app.netlify.com/sites/electron-vite/deploys) -->
-<!-- [![GitHub license](https://img.shields.io/github/license/caoxiemeihao/electron-vite-vue)](https://github.com/electron-vite/electron-vite-vue/blob/main/LICENSE) -->
-<!-- [![GitHub stars](https://img.shields.io/github/stars/caoxiemeihao/electron-vite-vue?color=fa6470)](https://github.com/electron-vite/electron-vite-vue) -->
-<!-- [![GitHub forks](https://img.shields.io/github/forks/caoxiemeihao/electron-vite-vue)](https://github.com/electron-vite/electron-vite-vue) -->
-[![GitHub Build](https://github.com/electron-vite/electron-vite-vue/actions/workflows/build.yml/badge.svg)](https://github.com/electron-vite/electron-vite-vue/actions/workflows/build.yml)
-[![GitHub Discord](https://img.shields.io/badge/chat-discord-blue?logo=discord)](https://discord.gg/sRqjYpEAUK)
+This application is designed to enhance the interaction between Twitch streamers and their viewers by providing a dynamic and engaging way to manage viewer participation through a wheel of names. The application offers a variety of features to streamline the process of adding, managing, and tracking viewer entries.
 
-## Features
+### Current Features
+* **Twitch Channel Agnostic**: Easily change the targeted Twitch channel name via the menu bar under "App".
+* **Wheel Request Counter**: Keep track of the number of wheel requests.
+* **Wheel Counter Reset Button**: Reset the current count without affecting the overall state.
+* **Copy to Clipboard Button**: Copy the list of viewers and their chances, formatted for the Wheel Of Names application.
+* **New Stream Button**: Clear the slate to allow viewers to use the `!here` command to double their chances.
+* **Double Down Feature**: Viewers can use the `!here` command to double their chances for new streams.
+* **Filter User Search Bar**: Search for viewers even if they have 0 chances.
+* **Viewer Grid Layout**: Display viewers with chances in a grid layout.
+* **Increment and Decrement Buttons**: Fine control over each viewer's chances with increment and decrement buttons.
+* **Remove All Chances**: Clicking on a viewer's name will remove all their chances.
+* **Stateful**: The list of viewers and their chances is maintained even when the application closes.
+* **Manual Viewer Addition**: Manually add viewer names and chances.
 
-📦 Out of the box  
-🎯 Based on the official [template-vue-ts](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-vue-ts), less invasive  
-🌱 Extensible, really simple directory structure  
-💪 Support using Node.js API in Electron-Renderer  
-🔩 Support C/C++ native addons  
-🖥 It's easy to implement multiple windows  
+### Future Goals
+* **YouTube Live Chat Service**: Extend functionality to include YouTube Live Chat.
+* **WheelOfNames API Integration**: Integrate with the WheelOfNames application API for enhanced functionality.
 
-## Quick Setup
+### Current Chat Commands
+* **`!wheel`**: Adds the user's display name to the list with 1 chance.
+* **`!here`**: Allows viewers to "Double Down" and double their chances, intended for new streams.
+* **`!remove`**: Allows viewers to remove all their chances.
 
-```sh
-# clone the project
-git clone https://github.com/electron-vite/electron-vite-vue.git
+### Technologies Used
+* **Vite**: Fast and modern build tool for web projects.
+* **Vue.js**: Progressive JavaScript framework for building user interfaces.
+* **Electron**: Framework for building cross-platform desktop applications with web technologies.
+* **TypeScript**: Typed superset of JavaScript that compiles to plain JavaScript.
 
-# enter the project directory
-cd electron-vite-vue
+### Getting Started
+To get started with Streamer Wheel Of Names Helper, download the latest release from the [GitHub releases page](https://github.com/SnekCode/WheelOfNamesHelper/releases) and follow the installation instructions provided.
 
-# install dependency
+
+## Development
+
+The application is built using:
+
+* [Electron](https://www.electronjs.org/)
+* [Vue](https://vuejs.org/)
+* [Vite](https://vitejs.dev/)
+* [TypeScript](https://www.typescriptlang.org/)
+
+To build the application from source, you will need to have Node.js and npm installed on your computer. Once you have installed Node.js and npm, you can download the source code for the application from the [GitHub repository](https://github.com/SnekCode/WheelOfNamesHelper) and run the following commands:
+
+```
 npm install
-
-# develop
 npm run dev
 ```
 
-## Debug
+This will start the application in development mode and allow you to make changes to the code.
 
-![electron-vite-react-debug.gif](https://github.com/electron-vite/electron-vite-react/blob/main/electron-vite-react-debug.gif?raw=true)
+## License
 
-## Directory
-
-```diff
-+ ├─┬ electron
-+ │ ├─┬ main
-+ │ │ └── index.ts    entry of Electron-Main
-+ │ └─┬ preload
-+ │   └── index.ts    entry of Preload-Scripts
-  ├─┬ src
-  │ └── main.ts       entry of Electron-Renderer
-  ├── index.html
-  ├── package.json
-  └── vite.config.ts
-```
-
-<!--
-## Be aware
-
-🚨 By default, this template integrates Node.js in the Renderer process. If you don't need it, you just remove the option below. [Because it will modify the default config of Vite](https://github.com/electron-vite/vite-plugin-electron-renderer#config-presets-opinionated).
-
-```diff
-# vite.config.ts
-
-export default {
-  plugins: [
--   // Use Node.js API in the Renderer-process
--   renderer({
--     nodeIntegration: true,
--   }),
-  ],
-}
-```
--->
-
-## FAQ
-
-- [C/C++ addons, Node.js modules - Pre-Bundling](https://github.com/electron-vite/vite-plugin-electron-renderer#dependency-pre-bundling)
-- [dependencies vs devDependencies](https://github.com/electron-vite/vite-plugin-electron-renderer#dependencies-vs-devdependencies)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

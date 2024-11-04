@@ -150,10 +150,11 @@ async function createWindow() {
     win.loadFile(indexHtml);
   }
   win.setMenu(menu!);
-  win.on("moved", () => {
-    store.set("windowBounds", win!.getNormalBounds());
-  });
 }
+
+app.on("browser-window-blur", () => {
+  store.set("windowBounds", win?.getNormalBounds());
+})
 
 app.whenReady().then(createWindow)
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { connectToTwitchChat, wheelUsers, resetAllClaimedHere, updateWheelUsersStore } from './TwitchChatService';
+import { connectToTwitchChat, wheelUsers, resetAllClaimedHere, updateWheelUsersStore, addUser as addUserFn } from './TwitchChatService';
 import Updater from './components/Updater.vue';
 import tmi from 'tmi.js';
-import { WheelUsers } from '~/Shared/types';
+import { WheelUser, WheelUsers } from '~/Shared/types';
 
 const { store, ipcRenderer } = window
 
@@ -12,6 +12,31 @@ const twitchClient = ref<tmi.Client | void>(); // Add a ref for the twitch clien
 const count = ref(0); // Add a ref for the count
 const users = ref<WheelUsers>(wheelUsers); // Add a ref for the users
 const filterText = ref(''); // Add a ref for the filter text
+
+const newUser = ref(''); // Add a ref for the new user
+const newChances = ref('1'); // Add a ref for the new chances
+
+const addUser = () => {
+  if (newUser.value && newChances.value) {
+
+    // build the user object
+    const user: WheelUser = {
+      value: parseInt(newChances.value) > 0,
+      chances: parseInt(newChances.value),
+      claimedHere: true,
+    };
+    
+    // pull function from TwitchChatService
+    users.value = addUserFn(users.value, newUser.value, user);
+
+    newUser.value = '';
+    newChances.value = '1';
+    updateWheelUsersStore(users.value);
+  }
+};
+
+
+
 console.log(Object.keys(users));
 
 // get the channel name from the store
@@ -115,6 +140,20 @@ const decrementChances = (user: WheelUsers[keyof WheelUsers]) => {
   <br />
   <br />
 
+  <!-- Add Button with two input fields one for name and the other for chances the add button will add the name and chances to the wheelofname users -->
+  <input style="margin: 15px;" v-model="newUser" placeholder="Enter the name" />
+  <input style="margin: 15px;" v-model="newChances" placeholder="Enter the chances" @input="newChances = newChances.replace(/\D/g, '')" />
+  <button 
+    :class="{
+      'addViewer': newUser && newChances,
+      'disabled': !newUser || !newChances
+    }" 
+    style="margin: 15px;" 
+    @click="addUser"
+  >
+    Add Viewer
+  </button>
+
   <div style="display: flex; align-items: center;">
     <input class="search" v-model="filterText" placeholder="Filter users by name" />
     <button class="clear" @click="filterText = ''">✖</button>
@@ -176,6 +215,28 @@ const decrementChances = (user: WheelUsers[keyof WheelUsers]) => {
   color: white;
   border: none;
   cursor: pointer;
+  padding: 5px 12px;
+  margin: 10px;
+  font-size: 14px;
+  user-select: none; /* Prevent text selection */
+}
+
+.addViewer {
+  background-color: #4caf4fee;
+  color: rgb(255, 255, 255);
+  border: none;
+  cursor: pointer;
+  padding: 5px 12px;
+  margin: 10px;
+  font-size: 14px;
+  user-select: none; /* Prevent text selection */
+}
+
+.disabled {
+  background-color: #ccc;
+  color: #666;
+  opacity: 0.5;
+  cursor: not-allowed;
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
