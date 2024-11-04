@@ -101,7 +101,7 @@ async function createWindow() {
 
   win = new BrowserWindow({
     title: 'Main window',
-    icon: path.join(process.env.VITE_PUBLIC!, 'favicon.ico'),
+    icon: path.join(process.env.VITE_PUBLIC!, 'logo.png'),
     webPreferences: {
       preload,
       // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production

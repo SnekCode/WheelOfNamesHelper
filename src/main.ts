@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import packageJson from "../package.json";
 
 import './style.css'
 
@@ -15,3 +16,6 @@ createApp(App)
   .$nextTick(() => {
     postMessage({ payload: 'removeLoading' }, '*')
   })
+
+  // Update the window title
+document.title = `Wheel Of Names Helper - v${packageJson.version}`;
