@@ -38,6 +38,7 @@ import "../updater/updater";
 
 // load main ipc actions
 import { store } from "./store";
+import { StoreKeys } from '~/Shared/store'
 
 
 // The built directory structure
@@ -161,6 +162,7 @@ app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
   win = null
+  if(import.meta.env.DEV) store.delete(StoreKeys.data);
   if (process.platform !== 'darwin') app.quit()
 })
 

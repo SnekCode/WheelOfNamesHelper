@@ -11,8 +11,6 @@ autoUpdater.autoDownload = false;
 
 if (!import.meta.env.DEV) {
   setTimeout(() => {
-    autoUpdater.forceDevUpdateConfig = true;
-    autoUpdater.channel = "alpha";
     autoUpdater.checkForUpdates();
   }, 5000);
 
@@ -23,6 +21,11 @@ if (!import.meta.env.DEV) {
 }
 
 if (import.meta.env.DEV) {
+  autoUpdater.forceDevUpdateConfig = true;
+  autoUpdater.channel = "alpha";
+  autoUpdater.allowPrerelease = true;
+  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdates();
   console.log("DEV MODE: Simulating update available in 5 seconds");
 }
 

@@ -11,4 +11,6 @@ interface Window {
   ipcRenderer: import("electron").IpcRenderer;
   store: IWinStore;
   electronAPI: IElectronAPI;
+  contextData: IContextDataAPI;
+  data: IDataAPI;
 }

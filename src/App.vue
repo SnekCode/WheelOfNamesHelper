@@ -1,49 +1,27 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { connectToTwitchChat, wheelUsers, resetAllClaimedHere, updateWheelUsersStore, addUser as addUserFn } from './TwitchChatService';
+import { connectToTwitchChat} from './TwitchChatService';
 import Updater from './components/Updater.vue';
 import tmi from 'tmi.js';
-import { WheelUser, WheelUsers } from '~/Shared/types';
-import { createOrUpdateSharedWheel } from './WheelOFNamesService';
-import { log } from 'node:console';
+import { Entry } from '~/Shared/types';
 
-const { store, ipcRenderer } = window
+const { store, ipcRenderer, contextData } = window
 
 const channel = ref(''); // Add a ref for the channel
 const twitchClient = ref<tmi.Client | void>(); // Add a ref for the twitch client
 const count = ref(0); // Add a ref for the count
-const users = ref<WheelUsers>(wheelUsers); // Add a ref for the users
+const users = ref<Entry[]>([]); // Add a ref for the users
 const filterText = ref(''); // Add a ref for the filter text
 
 const newUser = ref(''); // Add a ref for the new user
 const newChances = ref('1'); // Add a ref for the new chances
-// try{
-//   createOrUpdateSharedWheel("Test Wheel")
-
-// }catch(e){
-//   console.log(e)
-// }
 
 const addUser = () => {
   if (newUser.value && newChances.value) {
-
-    // build the user object
-    const user: WheelUser = {
-      value: parseInt(newChances.value) > 0,
-      chances: parseInt(newChances.value),
-      claimedHere: true,
-    };
-    
-    // pull function from TwitchChatService
-    users.value = addUserFn(users.value, newUser.value, user);
-
-    newUser.value = '';
-    newChances.value = '1';
-    updateWheelUsersStore(users.value);
+    contextData.addWheelUser({ text: newUser.value, weight: parseInt(newChances.value), enabled: true, claimedHere: false } as Entry);
+    // contextData.forceUpdate();
   }
 };
-
-
 
 console.log(Object.keys(users));
 
@@ -51,27 +29,26 @@ console.log(Object.keys(users));
 ipcRenderer.invoke('getStore', "twitchChannelName").then((channelName) => {
   console.log('channelName', channelName);
   channel.value = channelName;
-  twitchClient.value = connectToTwitchChat(channel.value, users, count );
+  twitchClient.value = connectToTwitchChat(channel.value, count );
 });
 // get saved wheelusers from the store
-ipcRenderer.invoke('getStore', 'wheelUsers').then((data) => {
-  console.log('wheelUsers', data);
-  users.value = JSON.parse(data) || {};
+ipcRenderer.invoke('getStore', 'entries').then((data) => {
+  console.log('entries', data);
+  users.value = data
 });
 
-// ipcRenderer.on(EChannels.storeUpdate, (event, channelName) => {
-//   console.log('updateChannel', channelName, event);
-//   channel.value = channelName;
-//   twitchClient.value?.disconnect();
-//   twitchClient.value = connectToTwitchChat(channel.value, users, count );
-// });
 
 // listen for app close event
 ipcRenderer.on('app-close', () => {
-  console.log('app-close');
   twitchClient.value?.disconnect();
-  // save the wheelusers to the store
-  store.send('saveStore', 'wheelUsers', JSON.stringify(users.value));
+});
+
+// listen for storeUpdates
+ipcRenderer.on('storeUpdate', (event, storeName, data) => {
+  console.log('storeUpdate', name, data);
+  if (storeName === 'entries') {
+    users.value = data
+  }
 });
 
 store.on((_: any, name: string, data: string) => {
@@ -79,81 +56,45 @@ store.on((_: any, name: string, data: string) => {
   if (name === 'twitchChannelName') {
     channel.value = data;
     twitchClient.value?.disconnect();
-    twitchClient.value = connectToTwitchChat(channel.value, users, count );
+    twitchClient.value = connectToTwitchChat(channel.value, count );
   }
 });
 
-const copyToClipboard = () => {
-  const userList = Object.keys(users.value)
-    .flatMap(name => Array(users.value[name].chances).fill(name))
-    .join('\n');
-  navigator.clipboard.writeText(userList).then(() => {
-    console.log('Copied to clipboard', userList);
-  }).catch(err => {
-    console.error('Failed to copy: ', err);
-  });
-};
-
-const filteredUsers = computed<WheelUsers>(() => {
+const filteredUsers = computed<Entry[]>(() => {
   const filter = filterText.value.toLowerCase();
-  return Object.keys(users.value)
-    .filter(name => name.toLowerCase().includes(filter))
-    .sort((a, b) => users.value[b].chances - users.value[a].chances)
-    .reduce((result: WheelUsers, name: string) => {
-      result[name] = users.value[name];
-      return result;
-    }, {});
+  const filters = users.value
+    .filter(user => user.text.toLowerCase().includes(filter))
+    .sort((a, b) => b.weight - a.weight);
+    console.log('filters', filters);
+    
+    return  filters
 });
 
 const resetWheelRequests = () => {
   count.value = 0;
 };
 
-const incrementChances = (user: WheelUsers[keyof WheelUsers]) => {
-  user.chances = (user.chances || 0) + 1;
-  // user.claimedHere = true;
-  updateWheelUsersStore(users.value);
+const incrementChances = (user: Entry) => {
+  user.weight = (user.weight || 0) + 1;
+  // TODO update entry
 };
 
-const decrementChances = (user: WheelUsers[keyof WheelUsers]) => {
-  // floor to prevent negative values
-  user.chances = Math.max((user.chances || 0) - 1, 0);
-  updateWheelUsersStore(users.value);
-
-  // user.claimedHere = true;
+const decrementChances = (user: Entry) => {
+  user.weight = Math.max((user.weight || 0) - 1, 0);
+  // TODO update entry
 };
 
-const openWheelWindow = () => {
+const openWheelWindow = async () => {
   window.electronAPI.openWheelWindow()
-};
-
-const updateLocalStorage = async () => {
-  const data = JSON.parse(await window.electronAPI.getLocalStorage('LastWheelConfig'));
-  window.electronAPI.setLocalStorage('LastWheelConfig', JSON.stringify({ ...data, entries: [
-        {
-          text: "stringjhfadkshfk",
-          image: "",
-          weight: 2,
-          enabled: true,
-        },
-        {
-          text: "test",
-          image: "",
-          weight: 2,
-          enabled: true,
-        },
-]}))
+  window.electronAPI.setDefaults()
 
 };
-
-// UC2wKfjlioOCLP4xQMOWNcgg
-// connectToYouTubeChat("UC2wKfjlioOCLP4xQMOWNcgg", users, count );
 
 </script>
 
+
 <template>
   <button @click="openWheelWindow">Open Wheel</button>
-  <button @click="updateLocalStorage">Update Local Storage</button>
   <!-- watermark style text at the top left of the channel value -->
   <div class="channel-name" v-if="channel">
     <div>{{ channel }}</div>
@@ -165,11 +106,10 @@ const updateLocalStorage = async () => {
    <Updater />
   <!-- button top right of screen with red background for reset -->
    <div class="container">
-  <button @click="resetAllClaimedHere(users)" class="resetClaimed" >New Stream</button>
+  <button @click="" class="resetClaimed" >New Stream ==INOP</button>
 
   <div>Wheel Requests: {{ count }}</div>
     <button @click="resetWheelRequests" class="resetCount">Reset Count</button>
-  <button class="copyButton" @click="copyToClipboard">Copy to Clipboard</button>
   <br />
   <br />
 
@@ -196,14 +136,14 @@ const updateLocalStorage = async () => {
   <!-- <input v-on:blur="updateChannel" v-model="channel" placeholder="Enter the channel to join" /> -->
   <!-- map over the wheelUsers object to display in a grid pattern with buttons to remove from the object -->
   <div class="grid">
-    <div v-for="(user, name) in filteredUsers" :key="name">
-      <div class="userList" v-if="user && user.chances > 0 || filterText"
+    <div v-for="(user) in filteredUsers" :key="user.text">
+      <div class="userList" v-if="user && user.weight > 0 || filterText"
         :class = "{'new': !user.claimedHere, 'here': user.claimedHere }"
         >
         <button class="subbtn" @click="decrementChances(user)"> ➖ </button>
-        <div class="name" @click="user.chances = 0">
-          {{ name }}
-          <div>{{ user.chances }}</div>
+        <div class="name" @click="contextData.removeWheelUser(user.text)">
+          {{ user.text }}
+          <div>{{ user.weight }}</div>
         </div>
         <button class="addbtn" @click="incrementChances(user)"> ➕ </button>
       </div>

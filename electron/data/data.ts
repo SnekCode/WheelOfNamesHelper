@@ -5,7 +5,6 @@
 //
 
 import { ipcMain, IpcMainInvokeEvent } from "electron";
-import Store from "electron-store";
 import { IStore, IStoreKeys, StoreKeys } from "~/Shared/store";
 import { win as mainWindow } from "../main/main";
 import { wheelWindow} from "../main/wheelOfNames"
@@ -19,6 +18,17 @@ let pause = false;
 let addQueue: Entry[] = [];
 let removeQue: string[] = [];
 
+// TODO claimed here IPC channel logic
+
+
+const forceUpdate = () => {
+  wheelWindow?.webContents.send(EChannels.setDefaults);
+  wheelWindow?.webContents.send(EChannels.reload);
+}
+
+ipcMain.handle("forceUpdate", forceUpdate);
+
+
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
@@ -29,13 +39,22 @@ export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
 };
 
 const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
-    if (pause) {
-        addQueue.push(entry);
-        return;
-    }
-    const data = store.get(StoreKeys.data);
-    data.entries.push(entry);
-    setStore(StoreKeys.data, data);
+  console.log("addWheelUser", entry);
+
+  if (pause) {
+    addQueue.push(entry);
+    return;
+  }
+
+  let data = store.get(StoreKeys.data);
+  if (data.some((existingEntry) => existingEntry.text === entry.text)) {
+    console.log("Duplicate entry detected:", entry.text);
+    return;
+  }
+
+  data.push(entry);
+  setStore(StoreKeys.data, data);
+  forceUpdate();
 };
 
 const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
@@ -43,9 +62,10 @@ const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
         removeQue.push(name);
         return;
     }
-    const data = store.get(StoreKeys.data);
-    data.entries = data.entries.filter((entry) => entry.text !== name);
+    let data = store.get(StoreKeys.data);
+    data = data.filter((entry) => entry.text !== name);
     setStore(StoreKeys.data, data);
+    forceUpdate()
 };
 
 ipcMain.handle("addWheelUser", handleAddWheelUser);
@@ -66,8 +86,11 @@ ipcMain.handle(
 );
 
 ipcMain.handle("setPause", async (_: IpcMainInvokeEvent, value: boolean) => {
+  saveConfig();
+  
   pause = value;
   if (!pause) {
+    
     await syncWithWheel();
     // create dummy ipc event to trigger the queue
     const event: IpcMainInvokeEvent = {} as IpcMainInvokeEvent;
@@ -79,18 +102,25 @@ ipcMain.handle("setPause", async (_: IpcMainInvokeEvent, value: boolean) => {
         const name = removeQue.pop();
       if (name) handleRemoveWheelUser(event, name);
     }
-    broadcastUpdate(StoreKeys.data, store.get(StoreKeys.data));
+    // broadcastUpdate(StoreKeys.data, store.get(StoreKeys.data));
   }
 });
 
-const syncWithWheel = async () => {
-  const wheelData = await wheelWindow?.webContents.executeJavaScript(
-    `localStorage.getItem('LastWheelConfig')`
+const saveConfig = async () => {
+  const lastconfig = JSON.parse(
+    await wheelWindow?.webContents.executeJavaScript(
+      `localStorage.getItem('LastWheelConfig')`
+    )
   );
-  const parsedWheelData = JSON.parse(wheelData || "{}");
-  const currentData = store.get(StoreKeys.data);
-  const newData = { ...parsedWheelData, ...currentData };
-  setStore(StoreKeys.data, newData);
+  setStore(StoreKeys.lastconfig, lastconfig);
+}
+
+const syncWithWheel = async () => {
+  const lastconfig = JSON.parse(await wheelWindow?.webContents.executeJavaScript(
+    `localStorage.getItem('LastWheelConfig')`
+  ));
+  
+  setStore(StoreKeys.data, lastconfig.entries);
 };
 
 ipcMain.handle("syncWithWheel", syncWithWheel);

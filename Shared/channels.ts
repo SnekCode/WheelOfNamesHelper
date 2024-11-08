@@ -1,6 +1,8 @@
 import { ProgressInfo } from "electron-updater";
 
 export enum EChannels {
+  setDefaults = "setDefaults",
+  reload = "reload",
   hideMessage = "hideMessage",
   showMessage = "showMessage",
   updateAvailable = "updateAvailable",

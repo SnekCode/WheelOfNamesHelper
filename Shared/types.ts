@@ -9,6 +9,16 @@ export type WheelUser = {
     claimedHere: boolean;
   };
 
+    export interface Entry {
+      text: string;
+      image?: string;
+      color?: string;
+      weight: number;
+      id?: string;
+      enabled?: boolean;
+      claimedHere: boolean;
+    }
+
 // New state types
   export interface WheelConfig {
     displayWinnerDialog?: boolean;
@@ -47,15 +57,6 @@ export type WheelUser = {
     drawOutlines?: boolean;
     launchConfetti?: boolean;
     drawShadow?: boolean;
-  }
-
-  export interface Entry {
-    text: string;
-    image: string;
-    color?: string;
-    weight: number;
-    id?: string;
-    enabled: boolean;
   }
 
   export interface ColorSetting {

@@ -42,15 +42,12 @@ export function createWheelWindow() {
       style.innerHTML = \`${customCSS}\`;
       document.head.appendChild(style);
     `);
-    });
 
-//   wheelWindow.webContents.on("dom-ready", () => {
-    // setInterval(() => {
-    //   wheelWindow?.webContents.executeJavaScript(`
-    //                 document.querySelector("#q-app > div.q-layout.q-layout--standard > div > div.q-px-md.q-pt-md.row > div:nth-child(1) > div.root > div.ad-declaration").remove();
-    //                 `);
-    // }, 500);
-//   });
+    // preloaded event listeners
+    setTimeout(() => {
+      wheelWindow?.webContents.send("initListeners");
+    }, 500);
+    });
 
   wheelWindow.on("closed", () => {
     wheelWindow = null;
@@ -79,8 +76,8 @@ export function createWheelWindow() {
       }
     );
   });
-}
 
+}
 
 
 
@@ -94,6 +91,12 @@ ipcMain.handle("open-wheel-window", () => {
     wheelWindow.focus();
   }
 });
+
+ipcMain.handle("setDefaults", () => {
+  console.log("setDefaults");
+  
+  wheelWindow?.webContents.send("setDefaults");
+})
 
 ipcMain.handle("set-local-storage", (event, key, value) => {
     if (wheelWindow) {

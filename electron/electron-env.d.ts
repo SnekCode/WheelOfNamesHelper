@@ -27,8 +27,6 @@ declare namespace NodeJS {
 export interface IWinStore {
   getStore: <K extends IStoreKeys>(name: K) => IStore[K];
   setStore: <K extends IStoreKeys>(name: K, data: IStore[K]) => void;
-  addWheelUser: (name: string, user: WheelUser) => void;
-  removeWheelUser: (name: string) => void;
   on: <K extends IStoreKeys>(
     listener: (event: Electron.IpcRendererEvent, name: IStore[K], data) => void
   ) => void;
@@ -38,6 +36,18 @@ export interface IElectronAPI {
   openWheelWindow: () => void;
   setLocalStorage: (key: string, value: any) => void;
   getLocalStorage: (key: string) => any;
+
+}
+
+export interface IContextDataAPI {
+  setDefaults: () => void;
+  addWheelUser: (user: WheelUser) => void;
+  removeWheelUser: (name: string) => void;
+  forceUpdate: () => void;
+}
+
+export interface IDataAPI {
+  setPause: (bool:boolean) => void;
 }
 
 // Used in Renderer process, expose in `preload.ts`
@@ -45,4 +55,6 @@ interface Window {
   ipcRenderer: import("electron").IpcRenderer;
   store: IWinStore;
   electronAPI: IElectronAPI;
+  contextData: IContextDataAPI
+  data: IDataAPI
 }

@@ -1,16 +1,18 @@
-import { WheelConfig, WheelUsers } from "./types";
+import { Entry, WheelConfig } from "./types";
 
 
 // enums for key names
 export enum StoreKeys {
-    data = "LastWheelConfig",
+    data = "entries",
+    lastconfig = "lastconfig",
     twitchChannelName = "twitchChannelName",
     wheelOfNamesApiKey = "wheelOfNamesApiKey",
     wheelOfNamesPath = "wheelOfNamesPath",
 }
 
 export interface IStore {
-  LastWheelConfig: WheelConfig;
+  entries: Entry[];
+  lastconfig: WheelConfig;
   twitchChannelName: string;
   wheelOfNamesApiKey: string;
   wheelOfNamesPath: string;

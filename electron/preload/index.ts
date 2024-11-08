@@ -3,6 +3,11 @@ import { EChannels } from '~/Shared/channels';
 import { IStore, IStoreKeys, StoreKeys } from '~/Shared/store'
 import { Entry } from '~/Shared/types';
 
+import "./data";
+
+console.log('preload loaded');
+
+
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld("ipcRenderer", {
   on(...args: Parameters<typeof ipcRenderer.on>) {
@@ -40,16 +45,24 @@ contextBridge.exposeInMainWorld("store", {
   setStore<K extends IStoreKeys>(name: K, data: IStore[K]) {
     return ipcRenderer.invoke('setStore', name, data)
   },
-  // TODO
-  addWheelUser(name: string, user: Entry) {
-    return ipcRenderer.invoke('addWheelUser', name, user)
-  },
-  removeWheelUser(name: string) {
-    return ipcRenderer.invoke('removeWheelUser', name)
-  },
   on<K extends IStoreKeys>(listener: (event: Electron.IpcRendererEvent, name: K, data: IStore[K]) => void) {
     return ipcRenderer.on(EChannels.storeUpdate, listener)
   }
+});
+
+contextBridge.exposeInMainWorld("contextData", {
+  addWheelUser(user: Entry) {
+    return ipcRenderer.invoke("addWheelUser", user);
+  },
+  removeWheelUser(name: string) {
+    return ipcRenderer.invoke("removeWheelUser", name);
+  },
+  syncWithWheel() {
+    return ipcRenderer.invoke("syncWithWheel");
+  },
+  forceUpdate() {
+    return ipcRenderer.invoke("forceUpdate");
+  },
 });
 
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -57,6 +70,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setLocalStorage: (key: string, value: string) =>
     ipcRenderer.invoke("set-local-storage", key, value),
   getLocalStorage: (key: string) => ipcRenderer.invoke("get-local-storage", key),
+  setDefaults: () => ipcRenderer.invoke("setDefaults"),
 });
 
 // --------- Preload scripts loading ---------
