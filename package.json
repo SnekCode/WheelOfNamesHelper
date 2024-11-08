@@ -1,6 +1,6 @@
 {
   "name": "wheel-of-names-helper",
-  "version": "0.2.1",
+  "version": "100.0.0",
   "main": "dist-electron/main/main.js",
   "description": "Wheel of names tool for Twitch streamers",
   "author": "SnekCode",
@@ -51,5 +51,8 @@
     "tmi.js": "^1.8.5",
     "vite-tsconfig-paths": "^5.0.1",
     "youtube-chat": "^2.2.0"
+  },
+  "build": {
+    "generateUpdatesFilesForAllChannels": true
   }
 }
