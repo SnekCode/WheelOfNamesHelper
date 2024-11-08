@@ -20,7 +20,7 @@ jobs:
           node-version: 20
 
       - name: Build/release Electron app
-        uses: x6pnda/action-electron-compiler@v1.0.1
+        uses: Yan-Jobs/action-electron-builder@v1.7.0
         with:
           # GitHub token, automatically provided to the action
           # (No need to define this secret in the repo settings)
