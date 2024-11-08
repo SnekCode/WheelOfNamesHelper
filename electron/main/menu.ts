@@ -1,10 +1,9 @@
-import { BrowserWindow, Menu, app, shell, dialog, ipcMain } from "electron";
+import { BrowserWindow, Menu, app, shell } from "electron";
 import path from "node:path";
-import { setStore, store } from "./store";
-import fs from "fs";
+import { store } from "./store";
+import { setStore } from "../data/data";
 import prompt from "electron-prompt";
-import { EChannels } from "~/Shared/channels";
-import { win } from "./main";
+import { StoreKeys } from "~/Shared/store";
 
 const appData = process.env.LOCALAPPDATA ?? "";
 
@@ -12,7 +11,8 @@ const appData = process.env.LOCALAPPDATA ?? "";
 async function showInputDialog(
   window: BrowserWindow,
   title: string,
-  label: string
+  label: string,
+  html = false
 ): Promise<string | null> {
   const result = await prompt({
     title,
@@ -23,6 +23,7 @@ async function showInputDialog(
     type: "input",
     resizable: true,
     alwaysOnTop: true,
+    useHtmlLabel: html
   });
 
   return result;
@@ -36,7 +37,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
       submenu: [
         {
           label: "Set Twitch Channel Name",
-          sublabel: `Current: ${store.get("twitchChannelName")}`,
+          sublabel: `Current: ${store.get("twitchChannelName") ?? "Not set"} `,
           click: async (_, focusedWindow) => {
             if (focusedWindow) {
               const input = await showInputDialog(
@@ -47,6 +48,34 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
               if (input) {
                 setStore("twitchChannelName", input);
                 // ipcRenderer.send('setStore', 'twitchChannelName', input);
+                // Rebuild the menu to update the sublabel
+                const menu = Menu.buildFromTemplate(createMenuTemplate());
+                Menu.setApplicationMenu(menu);
+                // (focusedWindow as BrowserWindow)?.reload();
+              }
+            }
+          },
+        },
+        // get api key with dialog
+        // dialog box has input to save the key and a label with a link to https://wheelofnames.com/api-doc
+        {
+          label: "Set Wheel of Names API Key",
+          sublabel: `Current ${
+            store.get(StoreKeys.wheelOfNamesApiKey)
+              ? "xxxx-MASKED-xxxx"
+              : "Not Set"
+          }`,
+          click: async (_, focusedWindow) => {
+            if (focusedWindow) {
+                const input = await showInputDialog(
+                  focusedWindow as BrowserWindow,
+                  "Set Wheel of Names API Key",
+                  "Get Key --> <a href='https://wheelofnames.com/api-doc' target='blank'>https://wheelofnames.com/api-doc</a> <div style='color:blue;' onClick='navigator.clipboard.writeText(\"https://wheelofnames.com/api-doc\")'>Copy Url</div>",
+                  true
+                );
+              if (input) {
+                setStore(StoreKeys.wheelOfNamesApiKey, input);
+                // ipcRenderer.send('setStore', 'wheelOfNamesAPIKey', input);
                 // Rebuild the menu to update the sublabel
                 const menu = Menu.buildFromTemplate(createMenuTemplate());
                 Menu.setApplicationMenu(menu);
@@ -85,9 +114,11 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
           },
         },
         {
-          label: (store.get("windowSettings") as { alwaysOnTop: boolean })?.alwaysOnTop ?? false
-            ? "✔ Force Window On Top"
-            : "Force Window On Top",
+          label:
+            (store.get("windowSettings") as { alwaysOnTop: boolean })
+              ?.alwaysOnTop ?? false
+              ? "✔ Force Window On Top"
+              : "Force Window On Top",
           click: (_, focusedWindow) => {
             if (focusedWindow) {
               const alwaysOnTop = !focusedWindow.isAlwaysOnTop();

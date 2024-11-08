@@ -1,36 +1,36 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import { EChannels } from '~/Shared/channels';
-import { IStore, IStoreKeys } from '~/Shared/store'
+import { IStore, IStoreKeys, StoreKeys } from '~/Shared/store'
+import { Entry } from '~/Shared/types';
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld("ipcRenderer", {
   on(...args: Parameters<typeof ipcRenderer.on>) {
-    console.log('on', args);
-    
+    console.log("on", args);
+
     const [channel, listener] = args;
     return ipcRenderer.on(channel, (event, ...args) =>
       listener(event, ...args)
     );
   },
   off(...args: Parameters<typeof ipcRenderer.off>) {
-    console.log('off', args);
-    
+    console.log("off", args);
+
     const [channel, ...omit] = args;
     return ipcRenderer.off(channel, ...omit);
   },
   send(...args: Parameters<typeof ipcRenderer.send>) {
-    console.log('send', args);
-    
+    console.log("send", args);
+
     const [channel, ...omit] = args;
     return ipcRenderer.send(channel, ...omit);
   },
   invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    console.log('invoke', args);
-    
+    console.log("invoke", args);
+
     const [channel, ...omit] = args;
     return ipcRenderer.invoke(channel, ...omit);
   },
-
 });
 
 contextBridge.exposeInMainWorld("store", {
@@ -40,7 +40,8 @@ contextBridge.exposeInMainWorld("store", {
   setStore<K extends IStoreKeys>(name: K, data: IStore[K]) {
     return ipcRenderer.invoke('setStore', name, data)
   },
-  addWheelUser(name: string, user: IStore['data'][0]) {
+  // TODO
+  addWheelUser(name: string, user: Entry) {
     return ipcRenderer.invoke('addWheelUser', name, user)
   },
   removeWheelUser(name: string) {
@@ -49,6 +50,13 @@ contextBridge.exposeInMainWorld("store", {
   on<K extends IStoreKeys>(listener: (event: Electron.IpcRendererEvent, name: K, data: IStore[K]) => void) {
     return ipcRenderer.on(EChannels.storeUpdate, listener)
   }
+});
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  openWheelWindow: () => ipcRenderer.invoke("open-wheel-window"),
+  setLocalStorage: (key: string, value: string) =>
+    ipcRenderer.invoke("set-local-storage", key, value),
+  getLocalStorage: (key: string) => ipcRenderer.invoke("get-local-storage", key),
 });
 
 // --------- Preload scripts loading ---------
@@ -113,7 +121,11 @@ function useLoading() {
   background: #282c34;
   z-index: 9;
 }
-    `
+  .ad-declaration{
+    display: none !important;
+    color: red;
+    }
+    `;
   const oStyle = document.createElement('style')
   const oDiv = document.createElement('div')
 

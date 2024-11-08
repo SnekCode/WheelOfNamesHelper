@@ -8,11 +8,13 @@ import pkg from "~/package.json";
 import log from "electron-log/main";
 import { createMenu } from "./menu";
 
+const require = createRequire(import.meta.url);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+import "./wheelOfNames"
+
 // channelId UCvqRdlKsE5Q8mf8YXbdIJLw
 // live id jWjrdz-lLdU
-
-const require = createRequire(import.meta.url)
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // logging
 log.initialize({ preload: true });
@@ -36,7 +38,6 @@ import "../updater/updater";
 
 // load main ipc actions
 import { store } from "./store";
-
 
 
 // The built directory structure
@@ -196,6 +197,8 @@ ipcMain.handle('open-win', (_, arg) => {
     childWindow.loadFile(indexHtml, { hash: arg })
   }
 })
+
+
 
 // this gets the live id
 // fetch("https://www.youtube.com/@TypicalGamer/live").then((res) => {

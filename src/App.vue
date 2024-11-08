@@ -4,6 +4,8 @@ import { connectToTwitchChat, wheelUsers, resetAllClaimedHere, updateWheelUsersS
 import Updater from './components/Updater.vue';
 import tmi from 'tmi.js';
 import { WheelUser, WheelUsers } from '~/Shared/types';
+import { createOrUpdateSharedWheel } from './WheelOFNamesService';
+import { log } from 'node:console';
 
 const { store, ipcRenderer } = window
 
@@ -15,6 +17,12 @@ const filterText = ref(''); // Add a ref for the filter text
 
 const newUser = ref(''); // Add a ref for the new user
 const newChances = ref('1'); // Add a ref for the new chances
+// try{
+//   createOrUpdateSharedWheel("Test Wheel")
+
+// }catch(e){
+//   console.log(e)
+// }
 
 const addUser = () => {
   if (newUser.value && newChances.value) {
@@ -115,12 +123,37 @@ const decrementChances = (user: WheelUsers[keyof WheelUsers]) => {
   // user.claimedHere = true;
 };
 
+const openWheelWindow = () => {
+  window.electronAPI.openWheelWindow()
+};
+
+const updateLocalStorage = async () => {
+  const data = JSON.parse(await window.electronAPI.getLocalStorage('LastWheelConfig'));
+  window.electronAPI.setLocalStorage('LastWheelConfig', JSON.stringify({ ...data, entries: [
+        {
+          text: "stringjhfadkshfk",
+          image: "",
+          weight: 2,
+          enabled: true,
+        },
+        {
+          text: "test",
+          image: "",
+          weight: 2,
+          enabled: true,
+        },
+]}))
+
+};
+
 // UC2wKfjlioOCLP4xQMOWNcgg
 // connectToYouTubeChat("UC2wKfjlioOCLP4xQMOWNcgg", users, count );
 
 </script>
 
 <template>
+  <button @click="openWheelWindow">Open Wheel</button>
+  <button @click="updateLocalStorage">Update Local Storage</button>
   <!-- watermark style text at the top left of the channel value -->
   <div class="channel-name" v-if="channel">
     <div>{{ channel }}</div>

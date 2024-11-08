@@ -1,10 +1,19 @@
-import { WheelUsers } from "./types";
+import { WheelConfig, WheelUsers } from "./types";
 
+
+// enums for key names
+export enum StoreKeys {
+    data = "LastWheelConfig",
+    twitchChannelName = "twitchChannelName",
+    wheelOfNamesApiKey = "wheelOfNamesApiKey",
+    wheelOfNamesPath = "wheelOfNamesPath",
+}
 
 export interface IStore {
-    data: WheelUsers;
-    twitchChannelName: string;
-    wheelOfNamesApiKey: string;
+  LastWheelConfig: WheelConfig;
+  twitchChannelName: string;
+  wheelOfNamesApiKey: string;
+  wheelOfNamesPath: string;
 }
 
 export type IStoreKeys = keyof IStore;
