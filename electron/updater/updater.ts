@@ -8,7 +8,6 @@ const { autoUpdater } = updater;
 
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
-autoUpdater.forceDevUpdateConfig = true;
 
 if (!import.meta.env.DEV) {
   setTimeout(() => {
@@ -22,17 +21,12 @@ if (!import.meta.env.DEV) {
 }
 
 if (import.meta.env.DEV) {
+  autoUpdater.forceDevUpdateConfig = true;
+  autoUpdater.channel = "alpha";
+  autoUpdater.allowPrerelease = true;
+  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdates();
   console.log("DEV MODE: Simulating update available in 5 seconds");
-  setTimeout(() => {
-  console.log("DEV MODE: Simulating update available");
-  autoUpdater.emit("update-available", {
-    version: "dev version",
-    files: [],
-    path: "",
-    sha512: "",
-    releaseDate: new Date().toISOString()
-  });
-}, 1000);
 }
 
 if (process.env.VITE_UPDATER) {
@@ -68,15 +62,18 @@ autoUpdater.on("download-progress", (progress) => {
 });
 
 ipcMain.on(EChannels.update, (_, installNow: boolean) => {
-  autoUpdater.downloadUpdate().then(() => {
-    if (installNow) {
-      console.log("installing update now");
-      autoUpdater.quitAndInstall(true, true);
-    } else {
-      console.log("installing update on quit");
-      autoUpdater.autoInstallOnAppQuit = true;
-    }
-  }).catch((err) => {
-    console.error("No Update Available");
-  });
+  autoUpdater
+    .downloadUpdate()
+    .then(() => {
+      if (installNow) {
+        console.log("installing update now");
+        autoUpdater.quitAndInstall(true, true);
+      } else {
+        console.log("installing update on quit");
+        autoUpdater.autoInstallOnAppQuit = true;
+      }
+    })
+    .catch((err) => {
+      console.error("No Update Available");
+    });
 });

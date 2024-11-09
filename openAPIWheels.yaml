@@ -1,0 +1,1067 @@
+openapi: 3.1.0
+x-stoplight:
+  id: aqbgvmfot9ua7
+info:
+  title: wheelofnames-v1
+  version: '1'
+  contact:
+    email: admin@wheelofnames.com
+    url: 'https://wheelofnames.com'
+    name: Administrator
+  termsOfService: 'https://wheelofnames.com/faq/terms'
+  license:
+    name: MIT
+    url: 'https://opensource.org/license/mit/'
+  description: API for managing wheels that can be used on wheelofnames.com.
+servers:
+  - url: 'https://wheelofnames.com/api/v1'
+    description: Production server
+tags:
+  - name: apiKeys
+    description: Everything about API keys
+  - name: gallery
+    description: Everything about the gallery
+  - name: test
+    description: Everything about tests
+  - name: users
+    description: Everything about users
+  - name: wheels
+    description: Everything about wheels
+paths:
+  /wheels/private:
+    get:
+      summary: Get the private wheels saved by a user
+      tags:
+        - wheels
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      wheels:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Wheel'
+                      moreWheelsAvailable:
+                        type: boolean
+                        x-stoplight:
+                          id: apyxyg26666p2
+                        description: If more wheels are available in the user's account.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-api-wheels-private
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+        - schema:
+            type: integer
+          in: query
+          name: lastCreated
+          description: Used for paging results. Setting this parameter returns the next 30 wheels that have been created after `lastCreated`.
+      description: |-
+        Get all the private (saved) wheels created by a user. These will include wheels created with this API key and wheels created by the user manually on the website.
+
+        This endpoint returns a maximum of 30 wheels. Start by calling this endpoint without any query parameter. If there are more than 30 wheels in the user's account, `moreWheelsAvailable` will be `true`. You should then send the `created` timestamp of the last wheel as the `lastCreated` query parameter, to get the next 30 wheels. Keep doing this until `moreWheelsAvailable` is `false`.
+      x-stoplight:
+        id: hax8clueqhqfx
+    parameters: []
+    put:
+      summary: 'Create or update a saved, private wheel'
+      operationId: put-api-wheels-private
+      responses:
+        '200':
+          description: The wheel was successfully saved in the user's account.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    x-stoplight:
+                      id: yoa5735wl0c2y
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                        x-stoplight:
+                          id: xahtntp7n6wqr
+                        description: 'Path to the new wheel, like "abc-123".'
+            application/xml:
+              schema:
+                type: object
+                properties: {}
+        '400':
+          description: The body didn't contain good values.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-stoplight:
+        id: d50ir9r27kvmc
+      description: 'This creates or updates a private, saved wheel for the user whose API key is sent. Wheels are identified by their title. So to update an existing wheel, set `config.title` to the title of an existing wheel, but change other values in the `config` object. To create a new wheel, `config.title` to a new title that hasn''t been used in the user''s account yet.'
+      tags:
+        - wheels
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - config
+              properties:
+                config:
+                  $ref: '#/components/schemas/WheelConfig'
+                  x-stoplight:
+                    id: 3qsxojzyriyzc
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+    delete:
+      summary: 'Delete a saved, private wheel'
+      description: 'Delete a saved, private wheel'
+      operationId: delete-api-wheels-private
+      responses:
+        '200':
+          description: OK
+      x-stoplight:
+        id: gmeym74v16ubv
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  x-stoplight:
+                    id: bpxn2l1pui5ap
+                  description: Title of the wheel to delete.
+        description: Delete a shared wheel
+      tags:
+        - wheels
+  /wheels/shared:
+    get:
+      summary: Get the shared wheels created by a user
+      tags:
+        - wheels
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      wheels:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Wheel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-api-wheels-shared
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+      description: |-
+        Get all the shared wheels created by a user. These will include wheels created with this API key and wheels created by the user manually on the website.
+
+        The easiest way to create a `WheelConfig` object is to create a new wheel manually on wheelofnames.com, save it, click *More*, click *My account*, and then click *Export my data*. You can copy the `WheelConfig` object for your newly shared/saved wheel from that page.
+
+        A full `WheelConfig` object is not required. It's enough if it contains an entries array, a title, and a description.
+      x-stoplight:
+        id: oz8zrd70tis3e
+    parameters: []
+    post:
+      summary: Create a new shared wheel
+      operationId: post-api-wheels-shared
+      responses:
+        '200':
+          description: OK
+      x-stoplight:
+        id: evu5qqxk0t2ur
+      description: Create a new shared wheel.
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - wheelConfig
+                - shareMode
+              properties:
+                wheelConfig:
+                  $ref: '#/components/schemas/WheelConfig'
+                  x-stoplight:
+                    id: 9rpu2fea5wos6
+                shareMode:
+                  $ref: '#/components/schemas/shareMode'
+                  x-stoplight:
+                    id: f8fwl4pqfg5gq
+        description: |-
+          The easiest way to create a `WheelConfig` object is to create a new wheel manually on wheelofnames.com, share it, click *More*, click *My account*, and then click *Export my data*. You can copy the `WheelConfig` object for your newly shared wheel from that page.
+
+          A full `WheelConfig` object is not required. It's enough if it contains an entries array, a title, and a description.
+      tags:
+        - wheels
+  '/wheels/{path}':
+    delete:
+      summary: Delete shared wheels
+      tags:
+        - wheels
+      operationId: delete-api-wheels
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          description: Unauthorized. No API key was attached to the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden. The request tried to delete a wheel that wasn't created by this API key or the user who owns this API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found. No shared wheel was found and the path in the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: Delete a previously created shared wheel. You can only delete your own shared wheels.
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+      requestBody:
+        content: {}
+        description: ''
+      x-stoplight:
+        id: q54axlyz6wmfe
+    parameters:
+      - schema:
+          type: string
+        name: path
+        in: path
+        required: true
+        description: 'Path of the shared wheel, for example "abc-123"'
+    put:
+      summary: Update a wheel
+      tags:
+        - wheels
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    x-stoplight:
+                      id: q50fr5ip3fxmt
+                    properties:
+                      path:
+                        type: string
+                        x-stoplight:
+                          id: 8lxp4p5jh87qc
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: put-api-wheels-path
+      x-stoplight:
+        id: ck5d76uhtsg3s
+      x-internal: false
+      description: 'This endpoint can be used to update any wheel (private or shared) owned by the user whose API key is sent in the `x-api-key` header. This endpoint can change the `shareMode` of a wheel, privatizing a previously shared wheel, or sharing a previously private wheel.'
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: API key
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                wheelConfig:
+                  $ref: '#/components/schemas/WheelConfig'
+                  x-stoplight:
+                    id: s6x1hz0hd2u8z
+                shareMode:
+                  $ref: '#/components/schemas/shareMode'
+                  x-stoplight:
+                    id: 4ohc6zeu9ct3i
+  '/wheels/shared/{path}':
+    get:
+      summary: Get a shared wheel created by any user
+      tags:
+        - wheels
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Wheel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-api-wheels-shared-path
+      parameters: []
+      description: 'Get one shared wheel, created by *any* user.'
+      x-stoplight:
+        id: s2zxedfjelmnh
+    parameters:
+      - schema:
+          type: string
+        name: path
+        in: path
+        required: true
+        description: 'Path to the shared, public wheel, like "abc-123"'
+  /gallery/suggestions/list:
+    get:
+      summary: Gallery suggestions
+      tags:
+        - gallery
+      responses:
+        '200':
+          description: Everything worked.
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Some randomly selected search terms that others have used to search the gallery.
+                items:
+                  x-stoplight:
+                    id: 7gytnjtdz4fo6
+                  type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-api-suggestions-list
+      description: Get top suggested search terms for the wheel gallery.
+      x-stoplight:
+        id: bmy1gqz4lyfjr
+    parameters: []
+  /gallery/search2:
+    post:
+      summary: Search the gallery
+      tags:
+        - gallery
+      operationId: post-api-gallery-search2
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    x-stoplight:
+                      id: 64lzs0l0aa2jq
+                    properties:
+                      results:
+                        type: array
+                        x-stoplight:
+                          id: xgk6a5kjzhhhw
+                        items:
+                          $ref: '#/components/schemas/GallerySearchResult'
+                          x-stoplight:
+                            id: qz52mlpdzsgih
+                      totalResults:
+                        type: integer
+                        x-stoplight:
+                          id: 3cstgxjfuij5q
+                        description: Number of wheels found in the gallery that match the search query.
+                      relatedSearches:
+                        type: array
+                        x-stoplight:
+                          id: 5ta307pdstsx3
+                        description: Search queries that are related to the query sent by the client.
+                        items:
+                          x-stoplight:
+                            id: 95vww0t8voqon
+                          type: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: Search the gallery for shared wheels.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  x-stoplight:
+                    id: pn2uczozx78rw
+                  description: 'What to search for. The server will look for this search term in wheel titles, descriptions, and entries.'
+                pageNumber:
+                  type: integer
+                  x-stoplight:
+                    id: 4neeocm92y2er
+                  minimum: 1
+                  description: Which page of search results to load. The first page is number 1.
+      x-stoplight:
+        id: vewhhsu2zzi4r
+  /users/info:
+    get:
+      summary: Get the user account for an API key
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+                      lastActive:
+                        $ref: '#/components/schemas/Timestamp'
+        '401':
+          description: 'No API key was sent in the x-api-key header, or an invalid key was sent.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-api-users-info
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: Your API key
+      description: Returns the user account that this API key belongs to. Hitting this endpoint is a good way to test that your API key works.
+      x-stoplight:
+        id: q5kgd78zb3wtb
+      tags:
+        - users
+  /api-keys/info:
+    get:
+      summary: Look up an API key
+      tags:
+        - apiKeys
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+                      lastActive:
+                        $ref: '#/components/schemas/Timestamp'
+                        description: When this API was last used to make an API call.
+                      calls:
+                        type: integer
+                        description: Number of API calls made with this key.
+                      created:
+                        $ref: '#/components/schemas/Timestamp'
+                        description: When this API key was created.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      operationId: get-api-api-keys-info
+      description: Look up how much your API key has been used.
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: Your API key.
+      x-stoplight:
+        id: u6ltyu4a3jqu1
+  /api-keys/create:
+    parameters: []
+    post:
+      summary: Replace an API key
+      tags:
+        - apiKeys
+      operationId: post-api-api-keys-create
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      apiKey:
+                        type: string
+                        description: Your new API key. Use this from now on.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: Create a new API key and delete your current API key.
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: Your current API key. Note that this key will no longer work after this call has been made.
+      x-stoplight:
+        id: uf9irbpqql342
+  /api-keys/delete:
+    parameters: []
+    post:
+      summary: Delete an API key
+      tags:
+        - apiKeys
+      operationId: post-api-api-keys-delete
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      deletedKeys:
+                        type: integer
+                        description: 'Number of API keys deleted. If this is 1, everything worked. If it''s any other number, something went wrong.'
+        '401':
+          description: The API used in the request wasn't valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+            application/xml:
+              schema:
+                type: object
+                properties: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      description: Delete your current API key. Deleting a key does not affect the shared wheels created using this key. You can always generate a new API key later.
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: x-api-key
+          description: Your current API key. Note that this key will no longer work after this call has been made.
+      x-stoplight:
+        id: hgjx4bxciqbxb
+components:
+  schemas:
+    GallerySearchResult:
+      type: object
+      x-stoplight:
+        id: j86wf2zzo5jtq
+      title: GallerySearchResult
+      properties:
+        config:
+          $ref: '#/components/schemas/WheelConfig'
+          x-stoplight:
+            id: wl8kjhi7rkt69
+        copyable:
+          type: boolean
+        created:
+          $ref: '#/components/schemas/Timestamp'
+        lastRead:
+          $ref: '#/components/schemas/Timestamp'
+        path:
+          type: string
+        readCount:
+          type: integer
+        shareMode:
+          type: string
+        displayTitle:
+          type: string
+          x-stoplight:
+            id: rz8s45nejjedp
+        displayDescription:
+          type: string
+          x-stoplight:
+            id: fgaqs5xeybqut
+        displayEntries:
+          type: array
+          x-stoplight:
+            id: xx09e1iz4ax0b
+          items:
+            x-stoplight:
+              id: p74jbn9dem3cs
+            type: string
+    Timestamp:
+      title: Timestamp
+      x-stoplight:
+        id: z6bbp9lwfv00e
+      type: object
+      properties:
+        _seconds:
+          type: integer
+          x-stoplight:
+            id: cgutzfmbgjydy
+        _nanoseconds:
+          type: integer
+          x-stoplight:
+            id: 06im4cbz8yy5j
+    WheelConfig:
+      type: object
+      description: 'Describes a wheel''s entries, appearance, and behavior.'
+      x-stoplight:
+        id: wwq957akrs4d7
+      additionalProperties: false
+      required:
+        - description
+        - title
+        - entries
+      properties:
+        displayWinnerDialog:
+          type: boolean
+          default: true
+          description: Whether or not the winner dialog should announce the winner after a spin
+        slowSpin:
+          type: boolean
+          default: false
+          description: Whether or not the wheel should spin slowly for accessibility reasons
+        pageBackgroundColor:
+          type: string
+          maxLength: 7
+          default: '#FFFFFF'
+          description: Hex color code for the background of the page behind the wheel
+        description:
+          type: string
+          maxLength: 200
+          description: A description for the wheel
+        animateWinner:
+          type: boolean
+          default: false
+          description: Whether or not the winner's name should animate over the wheel after a spin
+        winnerMessage:
+          type: string
+          description: The text that announces the winner in the winner dialog. Requires `displayWinnerDialog` to be `true`
+        title:
+          type: string
+          maxLength: 50
+          description: The title of the wheel
+        type:
+          enum:
+            - color
+            - image
+          default: color
+          description: 'Whether the wheel is split into differently colored slices, or has an image covering it underneath the entries'
+        autoRemoveWinner:
+          type: boolean
+          description: Whether or not the winner should be automatically removed after a few seconds
+        path:
+          type: string
+          description: The wheel's path if it already exists. Never needs to be sent in inside the WheelConfig
+        customPictureName:
+          type: string
+        customCoverImageDataUri:
+          type: string
+          description: An image data URI that will be displayed covering the entire wheel underneath the entries. Requires `type` to be `image` and `coverImageType` to be `uploaded`
+        playClickWhenWinnerRemoved:
+          type: boolean
+          default: false
+          description: Whether or not a click sound should play when the winner is removed
+        duringSpinSound:
+          type: string
+          default: ticking-sound
+          description: The best way to get the correct value for a sound is to save a wheel using it through the website and then GET it through the API
+        maxNames:
+          type: integer
+          minimum: 4
+          maximum: 1000
+          default: 1000
+          description: The maximum number of entries that can be displayed at once
+        centerText:
+          type: string
+          description: Requires `pictureType` to be `text`
+        afterSpinSoundVolume:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 50
+          description: Volume of the sound that plays when the wheel stops
+        spinTime:
+          type: integer
+          minimum: 1
+          maximum: 60
+          default: 10
+          description: The duration of the spin in seconds
+        hubSize:
+          enum:
+            - XS
+            - S
+            - M
+            - L
+            - XL
+            - XXL
+          default: S
+          description: The size of the center cut-out/hub of the wheel where center images or text are displayed
+        coverImageName:
+          type: string
+        entries:
+          type: array
+          description: The list of entries to go on the wheel
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              text:
+                type: string
+                description: The text to be associated with this entry
+              image:
+                type: string
+                x-stoplight:
+                  id: ydcdd5aw97vz5
+                description: A data URI for an image
+              color:
+                type: string
+                x-stoplight:
+                  id: 9rrr6f25bn680
+                description: Requires `isAdvanced` to be `true`
+              weight:
+                type: number
+                x-stoplight:
+                  id: x7fpj1y66ycvh
+                description: Requires `isAdvanced` to be `true`
+              id:
+                type: string
+                x-stoplight:
+                  id: jfy9qj4egbkpn
+                description: No need to set this field when you create a new wheel; it is automically assigned.
+              enabled:
+                type: boolean
+                x-stoplight:
+                  id: kp08gts0bd7uc
+              sound:
+                type: string
+                x-stoplight:
+                  id: vtbl2rvfcn61n
+              message:
+                type: string
+                x-stoplight:
+                  id: ddvyndagf57ry
+        isAdvanced:
+          type: boolean
+          description: Whether or not the wheel should be an advanced wheel
+        galleryPicture:
+          type: string
+        customPictureDataUri:
+          type: string
+          description: An image data URI that will be displayed in the center of the wheel. Requires `type` to be `color` and `pictureType` to be `uploaded`
+        showTitle:
+          type: boolean
+          default: true
+          description: Whether or not the title and description should be shown next to the wheel
+        displayHideButton:
+          type: boolean
+          description: Whether or not the "Hide" button should be shown in the winner dialog. Requires `displayWinnerDialog` and `isAdvanced` to be `true`
+        afterSpinSound:
+          type: string
+          description: The best way to get the correct value for a sound is to save a wheel using it through the website and then GET it through the API
+        colorSettings:
+          type: array
+          description: 'A list of colors for the entries to cycle through. Note that if `isAdvanced` is `true`, this will have no effect'
+          items:
+            type: object
+            properties:
+              color:
+                type: string
+                description: A hex color code
+                maxLength: 7
+                minLength: 7
+                example: '#FFFFFF'
+              enabled:
+                type: boolean
+                description: Whether or not this color should be used on the wheel
+        duringSpinSoundVolume:
+          type: integer
+          minimum: 0
+          default: 50
+          maximum: 100
+          description: The volume of the sound that plays during the spin
+        displayRemoveButton:
+          type: boolean
+          description: Whether or not to show the "Remove" button in the winner dialog. Requires `displayWinnerDialog` to be `true`
+        pictureType:
+          enum:
+            - none
+            - gallery
+            - uploaded
+            - text
+          default: none
+          description: What type of content will be displayed in the wheel hub. `none` will display nothing. `text` will display the content of `centerText`. `gallery` will display the content of `galleryPicture`. `uploaded` will display the content of `customPictureDataUri`
+        allowDuplicates:
+          type: boolean
+          default: true
+          description: Whether or not to prevent duplicate entries
+        coverImageType:
+          enum:
+            - ''
+            - gallery
+            - uploaded
+          description: What type of image to display on the wheel. Requires `type` to be `image`. `uploaded` will display the content of `customCoverImageDataUri`. `gallery` will display the content of `coverImageName`
+        drawOutlines:
+          type: boolean
+          default: false
+          description: Whether or not outlines should be drawn around entries
+        launchConfetti:
+          type: boolean
+          default: true
+          description: Whether or not confetti should be launched when the wheel stops
+        drawShadow:
+          type: boolean
+          x-stoplight:
+            id: ocs7za3y3ifdv
+    Error:
+      title: Error
+      x-stoplight:
+        id: wfh2zud1kyuju
+      type: object
+      properties:
+        error:
+          type: string
+          x-stoplight:
+            id: du6fcntocd7vy
+          description: Human-readable error message.
+    BadRequestError:
+      title: BadRequestError
+      x-stoplight:
+        id: jj720o3ltif47
+      type: object
+      properties:
+        error:
+          type: array
+          x-stoplight:
+            id: hacr6xmue1h38
+          items:
+            x-stoplight:
+              id: 7rxy7wcw3p8vt
+            type: object
+            properties:
+              msg:
+                type: string
+                x-stoplight:
+                  id: ept534j4o1p2h
+                description: Why the parameter was not accepted.
+              param:
+                type: string
+                x-stoplight:
+                  id: e2r1hjq1dxt0x
+                description: Which parameter in the request was not accepted.
+              location:
+                type: string
+                x-stoplight:
+                  id: o90dyed35zslm
+                default: body
+    shareMode:
+      title: ShareMode
+      x-stoplight:
+        id: 7e3apdd54992r
+      enum:
+        - gallery
+        - copyable
+        - spin-only
+        - private
+    Wheel:
+      title: Wheel
+      x-stoplight:
+        id: ubxg6e7p8ynh8
+      type: object
+      description: A `WheelConfig` object plus some metadata about a wheel that has already been created.
+      properties:
+        wheelConfig:
+          $ref: '#/components/schemas/WheelConfig'
+          x-stoplight:
+            id: ypwlt6pto1ksz
+        created:
+          type: integer
+          x-stoplight:
+            id: jccksh9sxdc4y
+          description: 'When this wheel was created, as a Unix timestamp (milliseconds since Jan 1, 1970)'
+        lastRead:
+          type: integer
+          x-stoplight:
+            id: 4vo8you0gzjko
+          description: 'When this wheel was last read, as a Unix timestamp (milliseconds since Jan 1, 1970)'
+        lastWrite:
+          type: integer
+          x-stoplight:
+            id: o679fhe199ojm
+          description: 'When this wheel was last updated by the owner, as a Unix timestamp (milliseconds since Jan 1, 1970)'
+        path:
+          type: string
+          x-stoplight:
+            id: hqz55lntth83v
+          description: Like "abc-123"
+        readCount:
+          type: integer
+          x-stoplight:
+            id: 96gus9r2tj9t8
+          description: 'How many times this wheel has been read, by the owner (private wheels) or by others (shared wheels).'
+        shareMode:
+          $ref: '#/components/schemas/shareMode'
+          x-stoplight:
+            id: dbepvlu6f2yx5
+  securitySchemes:
+    x-api-key:
+      name: x-api-key
+      type: apiKey
+      in: header
+      description: 'You can get your API key at https://wheelofnames.com/api-doc.'

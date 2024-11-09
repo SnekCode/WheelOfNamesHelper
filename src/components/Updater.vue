@@ -34,6 +34,10 @@ const updateLater = () => {
   ipcRenderer.send('update', false)
 }
 
+const skip = () => {
+  updateAvailable.value = false
+}
+
 </script>
 
 <template>
@@ -44,7 +48,8 @@ const updateLater = () => {
       <p class="updater__content__text">Do you want to update now?</p>
       <div class="updater__content__buttons">
         <button @click="updateNow" class="updater__content__buttons__update">Update now</button>
-        <button @click="updateLater" class="updater__content__buttons__later">Later</button>
+        <button @click="updateLater" class="updater__content__buttons__later">Update Later</button>
+        <button @click="skip" class="updater__content__buttons__skip">Skip for Now</button>
       </div>
     </div>
   </div>
@@ -61,6 +66,7 @@ const updateLater = () => {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
 .updater__content {
@@ -94,6 +100,15 @@ const updateLater = () => {
   padding: 5px 10px;
   border: none;
   border-radius: 5px;
+  margin-right: 10px;
+}
+
+.updater__content__buttons__skip {
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  margin-right: 10px;
 }
 
 
