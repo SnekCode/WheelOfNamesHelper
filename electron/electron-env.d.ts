@@ -41,13 +41,16 @@ export interface IElectronAPI {
 
 export interface IContextDataAPI {
   setDefaults: () => void;
-  addWheelUser: (user: WheelUser) => void;
+  resetClaims: () => void;
+  addWheelUser: (user: Entry, override: boolean) => void;
+  updateWheelUser: (user: Entry) => void;
   removeWheelUser: (name: string) => void;
   forceUpdate: () => void;
 }
 
 export interface IDataAPI {
   setPause: (bool:boolean) => void;
+  syncWithWheel: () => void;
 }
 
 // Used in Renderer process, expose in `preload.ts`

@@ -38,43 +38,78 @@ export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   broadcastUpdate(name, data);
 };
 
-const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
-  console.log("addWheelUser", entry);
+const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry, override=false) => {
 
   if (pause) {
     addQueue.push(entry);
-    return;
+    return true;
   }
 
-  let data = store.get(StoreKeys.data);
+  let data = store.get(StoreKeys.data, []);
   if (data.some((existingEntry) => existingEntry.text === entry.text)) {
-    console.log("Duplicate entry detected:", entry.text);
-    return;
+    console.log("Duplicate entry detected:", entry.text, override);
+    // override the existing entry
+    if(override) {
+      data = data.map((existingEntry) =>
+        existingEntry.text === entry.text ? entry : existingEntry
+      );
+      setStore(StoreKeys.data, data);
+      forceUpdate();
+      return true;
+    }
+    return false;
   }
 
   data.push(entry);
   setStore(StoreKeys.data, data);
   forceUpdate();
+  return true;
 };
 
 const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
     if (pause) {
         removeQue.push(name);
-        return;
+        return true;
     }
     let data = store.get(StoreKeys.data);
-    data = data.filter((entry) => entry.text !== name);
-    setStore(StoreKeys.data, data);
+    const newdata = data.filter((entry) => entry.text !== name);
+
+    if (newdata.length === data.length) return false;
+
+    setStore(StoreKeys.data, newdata);
     forceUpdate()
+    return true;
 };
 
+const handleUpdateWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
+
+  let data = store.get(StoreKeys.data);
+  data = data.map((existingEntry) =>
+    existingEntry.text === entry.text ? entry : existingEntry
+  );
+  setStore(StoreKeys.data, data);
+  forceUpdate();
+}
+
+const handleResetClaims = () => {
+
+  let data = store.get(StoreKeys.data);
+  data = data.map((entry) => ({ ...entry, claimedHere: false } as Entry));
+  setStore(StoreKeys.data, data);
+  forceUpdate();
+}
+
+ipcMain.handle('resetClaims', handleResetClaims);
+ipcMain.handle("updateWheelUser", handleUpdateWheelUser);
 ipcMain.handle("addWheelUser", handleAddWheelUser);
 ipcMain.handle("removeWheelUser", handleRemoveWheelUser);
 
 ipcMain.handle(
   "getStore",
   <K extends IStoreKeys>(_: IpcMainInvokeEvent, name: K): IStore[K] => {
-    return store.get(name);
+    const data = store.get(name);
+    
+    return data
   }
 );
 
@@ -107,20 +142,53 @@ ipcMain.handle("setPause", async (_: IpcMainInvokeEvent, value: boolean) => {
 });
 
 const saveConfig = async () => {
-  const lastconfig = JSON.parse(
-    await wheelWindow?.webContents.executeJavaScript(
+  
+  const response = await wheelWindow?.webContents.executeJavaScript(
       `localStorage.getItem('LastWheelConfig')`
     )
-  );
+    
+  const lastconfig = JSON.parse(response)
+    
   setStore(StoreKeys.lastconfig, lastconfig);
 }
+
+ipcMain.handle("saveConfig", saveConfig);
 
 const syncWithWheel = async () => {
   const lastconfig = JSON.parse(await wheelWindow?.webContents.executeJavaScript(
     `localStorage.getItem('LastWheelConfig')`
   ));
+
+  // key:values in the lastconfig.entries may be missing
+  // map though and set defaults if missing
+  let entries = lastconfig.entries.map((entry: Entry) => {
+    return {
+      ...entry,
+      claimedHere: entry.claimedHere || false,
+      enabled: entry.enabled || true,
+      weight: entry.weight || 1,
+    } as Entry;
+  });
+
+  if(!lastconfig.isAdvanced) {
+    const duplicateObjects: {[key: string]: Entry} = {};
+
+    entries.forEach((entry: Entry) => {
+      if (duplicateObjects[entry.text]) {
+        duplicateObjects[entry.text].weight += 1;
+        return;
+      }
+      duplicateObjects[entry.text] = entry;
+    });
+
+    entries = Object.values(duplicateObjects);
+    setStore(StoreKeys.data, entries);
+    forceUpdate();
+    return;
+  }
   
-  setStore(StoreKeys.data, lastconfig.entries);
+  setStore(StoreKeys.data, entries);
+
 };
 
 ipcMain.handle("syncWithWheel", syncWithWheel);

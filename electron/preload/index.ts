@@ -1,6 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import { EChannels } from '~/Shared/channels';
-import { IStore, IStoreKeys, StoreKeys } from '~/Shared/store'
+import { IStore, IStoreKeys } from '~/Shared/store'
 import { Entry } from '~/Shared/types';
 
 import "./data";
@@ -51,8 +51,14 @@ contextBridge.exposeInMainWorld("store", {
 });
 
 contextBridge.exposeInMainWorld("contextData", {
-  addWheelUser(user: Entry) {
-    return ipcRenderer.invoke("addWheelUser", user);
+  resetClaims() {
+    return ipcRenderer.invoke("resetClaims");
+  },
+  updateWheelUser(user: Entry) {
+    return ipcRenderer.invoke("updateWheelUser", user);
+  },
+  addWheelUser(user: Entry, override: boolean) {
+    return ipcRenderer.invoke("addWheelUser", user, override);
   },
   removeWheelUser(name: string) {
     return ipcRenderer.invoke("removeWheelUser", name);
@@ -63,6 +69,9 @@ contextBridge.exposeInMainWorld("contextData", {
   forceUpdate() {
     return ipcRenderer.invoke("forceUpdate");
   },
+  saveConfig() {
+    return ipcRenderer.invoke("saveConfig");
+  }
 });
 
 contextBridge.exposeInMainWorld("electronAPI", {

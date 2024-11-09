@@ -1,19 +1,40 @@
-import { BrowserWindow, ipcMain, session } from "electron";
-import { createRequire } from "node:module";
+import { BrowserWindow, ipcMain, session, webContents } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { VITE_DEV_SERVER_URL } from "./main";
+import { store } from "./store";
 
-const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export let wheelWindow: BrowserWindow | null = null;
 
 export function createWheelWindow() {
+
+    let windowConfig = {
+      width: 1200,
+      height: 800,
+    };
+
+    const bounds = store.get("wheelWindowBounds");
+    if (bounds) {
+      windowConfig = {
+        ...windowConfig,
+        ...bounds,
+      };
+    }
+
+    const windowSettings = store.get("wheelWindowSettings");
+    if (windowSettings) {
+      windowConfig = {
+        ...windowConfig,
+        ...windowSettings,
+      };
+    }
+
+
   wheelWindow = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC!, "logo.png"),
-    width: 1200,
-    height: 800,
+    ...windowConfig,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.mjs"),
@@ -30,28 +51,43 @@ export function createWheelWindow() {
 
   wheelWindow.loadURL("https://wheelofnames.com");
 
-    wheelWindow.webContents.on("dom-ready", () => {
-      // Inject CSS
-      const customCSS = `
+  wheelWindow.webContents.on("dom-ready", () => {
+
+    const customCSS = `
       .ad-declaration {
         display: none !important;
       }
     `;
-      wheelWindow?.webContents.executeJavaScript(`
+    wheelWindow?.webContents.executeJavaScript(`
       const style = document.createElement('style');
       style.innerHTML = \`${customCSS}\`;
       document.head.appendChild(style);
+
     `);
 
     // preloaded event listeners
     setTimeout(() => {
       wheelWindow?.webContents.send("initListeners");
     }, 500);
-    });
-
-  wheelWindow.on("closed", () => {
-    wheelWindow = null;
   });
+
+  wheelWindow.on("close", async () => {
+      await wheelWindow?.webContents.executeJavaScript(`
+          window.data.syncWithWheel()
+          window.data.saveConfig()
+      `);
+      store.set("wheelWindowBounds", wheelWindow?.getNormalBounds());
+      wheelWindow = null;
+  });
+
+  wheelWindow.on('move', () => {
+  store.set("wheelWindowBounds", wheelWindow?.getNormalBounds());
+})
+
+  wheelWindow.on("resize", () => {
+    store.set("wheelWindowBounds", wheelWindow?.getNormalBounds());
+});
+
 
   // session
 
@@ -76,11 +112,7 @@ export function createWheelWindow() {
       }
     );
   });
-
 }
-
-
-
 
 // IPC
 
@@ -90,22 +122,23 @@ ipcMain.handle("open-wheel-window", () => {
   } else {
     wheelWindow.focus();
   }
+  return true;
 });
 
 ipcMain.handle("setDefaults", () => {
   console.log("setDefaults");
-  
+
   wheelWindow?.webContents.send("setDefaults");
-})
+});
 
 ipcMain.handle("set-local-storage", (event, key, value) => {
-    if (wheelWindow) {
-        wheelWindow.webContents.executeJavaScript(
-            `localStorage.setItem('${key}', '${value}');
+  if (wheelWindow) {
+    wheelWindow.webContents.executeJavaScript(
+      `localStorage.setItem('${key}', '${value}');
             location.reload();
             `
-        )
-    }
+    );
+  }
 });
 
 ipcMain.handle("get-local-storage", async (event, key) => {

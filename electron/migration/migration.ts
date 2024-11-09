@@ -12,7 +12,8 @@ export const migrate0_2_1=()=>{
   .map(([key, value]) => ({
     text: key,
     weight: value.chances,
-    claimedHere: value.claimedHere
+    claimedHere: value.claimedHere,
+    enabled: true
   }));
   store.set(StoreKeys.data, entries);
 }

@@ -55,35 +55,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
               }
             }
           },
-        },
-        // get api key with dialog
-        // dialog box has input to save the key and a label with a link to https://wheelofnames.com/api-doc
-        {
-          label: "Set Wheel of Names API Key",
-          sublabel: `Current ${
-            store.get(StoreKeys.wheelOfNamesApiKey)
-              ? "xxxx-MASKED-xxxx"
-              : "Not Set"
-          }`,
-          click: async (_, focusedWindow) => {
-            if (focusedWindow) {
-                const input = await showInputDialog(
-                  focusedWindow as BrowserWindow,
-                  "Set Wheel of Names API Key",
-                  "Get Key --> <a href='https://wheelofnames.com/api-doc' target='blank'>https://wheelofnames.com/api-doc</a> <div style='color:blue;' onClick='navigator.clipboard.writeText(\"https://wheelofnames.com/api-doc\")'>Copy Url</div>",
-                  true
-                );
-              if (input) {
-                setStore(StoreKeys.wheelOfNamesApiKey, input);
-                // ipcRenderer.send('setStore', 'wheelOfNamesAPIKey', input);
-                // Rebuild the menu to update the sublabel
-                const menu = Menu.buildFromTemplate(createMenuTemplate());
-                Menu.setApplicationMenu(menu);
-                // (focusedWindow as BrowserWindow)?.reload();
-              }
-            }
-          },
-        },
+        }
       ],
     },
     {

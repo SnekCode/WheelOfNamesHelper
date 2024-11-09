@@ -1,7 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
-import { Entry } from "~/Shared/types";
-
-console.log("data.ts loaded");
+import { ipcRenderer } from "electron";
 
 // data context to extend handles from data.ts
 window.data = {
@@ -10,13 +7,21 @@ window.data = {
     },
     syncWithWheel() {
     return ipcRenderer.invoke("syncWithWheel");
-  },
+    },
+    saveConfig() {
+        return ipcRenderer.invoke("saveConfig");
+    }
 };
 
 // set up a ipc on the renderer side to listen for a message and execute a function on recieve
 ipcRenderer.on("initListeners", async (event, value) => {
     console.log("initListeners");
     const wheel = document.querySelector("#parentDiv");
+
+    window.addEventListener("blur", (e) => {
+        window.data.syncWithWheel();
+        window.data.saveConfig();
+    });
     
     wheel?.addEventListener("click", () => {
       window.data.setPause(true);
@@ -48,7 +53,7 @@ ipcRenderer.on("initListeners", async (event, value) => {
 
         localStorage.setItem("LastWheelConfig", JSON.stringify({
             ...data,
+            isAdvanced: true,
             entries
         }));
-
 })

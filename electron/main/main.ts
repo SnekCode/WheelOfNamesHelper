@@ -1,5 +1,4 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
-import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
@@ -8,7 +7,6 @@ import pkg from "~/package.json";
 import log from "electron-log/main";
 import { createMenu } from "./menu";
 
-const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import "./wheelOfNames"
@@ -38,7 +36,6 @@ import "../updater/updater";
 
 // load main ipc actions
 import { store } from "./store";
-import { StoreKeys } from '~/Shared/store'
 
 
 // The built directory structure
@@ -116,6 +113,10 @@ async function createWindow() {
     ...windowConfig,
   });
 
+  win.on('close', async () => {  
+    store.set('windowBounds', win?.getBounds())
+  })
+
 
 
   if (VITE_DEV_SERVER_URL) { // #298
@@ -136,8 +137,6 @@ async function createWindow() {
     if (url.startsWith('https:')) shell.openExternal(url)
     return { action: 'deny' }
   })
-  // win.webContents.on('will-navigate', (event, url) => { }) #344
-
     if (import.meta.env.DEV) {
       win.webContents.openDevTools({ mode: "detach" });
     }
@@ -148,21 +147,18 @@ async function createWindow() {
 
     win.loadURL(VITE_DEV_SERVER_URL);
   } else {
-    // win.loadFile('dist/index.html')
     win.loadFile(indexHtml);
   }
-  win.setMenu(menu!);
+
 }
 
-app.on("browser-window-blur", () => {
-  store.set("windowBounds", win?.getNormalBounds());
-})
 
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
   win = null
-  if(import.meta.env.DEV) store.delete(StoreKeys.data);
+  // if(import.meta.env.DEV) store.delete(StoreKeys.data);
+  // if(import.meta.env.DEV) store.delete(StoreKeys.lastconfig);
   if (process.platform !== 'darwin') app.quit()
 })
 
@@ -182,6 +178,7 @@ app.on('activate', () => {
     createWindow()
   }
 })
+  
 
 // New window example arg: new windows url
 ipcMain.handle('open-win', (_, arg) => {
@@ -200,34 +197,3 @@ ipcMain.handle('open-win', (_, arg) => {
   }
 })
 
-
-
-// this gets the live id
-// fetch("https://www.youtube.com/@TypicalGamer/live").then((res) => {
-//   console.log(res.text().then((data) => {
-//     // regex search for live id ':{"videoId":"XtDb-CrYCJA"}'
-//     const liveId = data.match(/"videoId":"(.+?)"/);
-//     console.log(liveId[1]);
-//   }
-// ));});
-
-// explore the readonly google api for youtube chat messages
-
-// fetch(
-//   "https://www.googleapis.com/youtube/v3/liveBroadcasts?id=XtDb-CrYCJA&part=snippet"
-// )
-//   .then((res) => {
-//     console.log(
-//       res
-//         .text()
-//         .then((data) => {
-//           console.log(data);
-//         })
-//         .catch((err) => {
-//           console.log(err);
-//         })
-//     );
-//   })
-//   .catch((err) => {
-//     console.log(err);
-//   });
