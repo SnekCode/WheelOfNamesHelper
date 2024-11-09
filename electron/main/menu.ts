@@ -55,7 +55,29 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
               }
             }
           },
-        }
+        },
+        {
+          label: "Sign In To WheelOfNames",
+          click: async (_, focusedWindow) => {
+            if (focusedWindow) {
+              // https://wheelofnames.com/api-doc
+              // navigate to https://wheelofnames.com/api-doc using new BrowserWindow
+              const authWindow = new BrowserWindow({
+                width: 1400,
+                height: 600,
+                title: "WheelOfNames Login",
+                webPreferences: {
+                  nodeIntegration: false,
+                  contextIsolation: true,
+                  // preload: path.join(__dirname, "preload.js"),
+                },
+              });
+
+              authWindow.loadURL("https://wheelofnames.com/faq/api");
+
+            }
+          },
+        },
       ],
     },
     {

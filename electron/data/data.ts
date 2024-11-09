@@ -30,16 +30,20 @@ ipcMain.handle("forceUpdate", forceUpdate);
 
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
+  console.log("broadcasting update", name, data);
+  
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
 
 export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
+  console.log("setting store", name, data);
+  
   store.set(name, data);
   broadcastUpdate(name, data);
 };
 
 const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry, override=false) => {
-
+  console.log("addWheelUser", entry, override);
   if (pause) {
     addQueue.push(entry);
     return true;
@@ -67,6 +71,7 @@ const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry, override=false)
 };
 
 const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
+    console.log("removeWheelUser", name);
     if (pause) {
         removeQue.push(name);
         return true;
@@ -82,7 +87,7 @@ const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
 };
 
 const handleUpdateWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
-
+  console.log("updateWheelUser", entry);
   let data = store.get(StoreKeys.data);
   data = data.map((existingEntry) =>
     existingEntry.text === entry.text ? entry : existingEntry
@@ -121,6 +126,7 @@ ipcMain.handle(
 );
 
 ipcMain.handle("setPause", async (_: IpcMainInvokeEvent, value: boolean) => {
+  console.log("setPause", value);
   saveConfig();
   
   pause = value;
@@ -142,7 +148,7 @@ ipcMain.handle("setPause", async (_: IpcMainInvokeEvent, value: boolean) => {
 });
 
 const saveConfig = async () => {
-  
+  console.log("saveConfig");
   const response = await wheelWindow?.webContents.executeJavaScript(
       `localStorage.getItem('LastWheelConfig')`
     )
@@ -155,6 +161,7 @@ const saveConfig = async () => {
 ipcMain.handle("saveConfig", saveConfig);
 
 const syncWithWheel = async () => {
+  console.log("syncWithWheel");
   const lastconfig = JSON.parse(await wheelWindow?.webContents.executeJavaScript(
     `localStorage.getItem('LastWheelConfig')`
   ));
@@ -167,6 +174,7 @@ const syncWithWheel = async () => {
       claimedHere: entry.claimedHere || false,
       enabled: entry.enabled || true,
       weight: entry.weight || 1,
+      message: entry.message || "You're Next!",
     } as Entry;
   });
 
@@ -182,6 +190,8 @@ const syncWithWheel = async () => {
     });
 
     entries = Object.values(duplicateObjects);
+    console.log("entries", entries);
+    
     setStore(StoreKeys.data, entries);
     forceUpdate();
     return;

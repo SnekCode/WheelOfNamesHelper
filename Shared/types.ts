@@ -17,6 +17,7 @@ export type WheelUser = {
       id?: string;
       enabled?: boolean;
       claimedHere: boolean;
+      message?: string;
     }
 
 // New state types
