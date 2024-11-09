@@ -70,9 +70,11 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 export let win: BrowserWindow | null = null
-const menu = createMenu();
+createMenu();
 const preload = path.join(__dirname, '../preload/index.mjs')
 const indexHtml = path.join(RENDERER_DIST, 'index.html')
+console.log("indexHtml", indexHtml);
+
 
 
 async function createWindow() {
@@ -140,15 +142,6 @@ async function createWindow() {
     if (import.meta.env.DEV) {
       win.webContents.openDevTools({ mode: "detach" });
     }
-  
-
-  if (VITE_DEV_SERVER_URL) {
-    console.log("loadURL", VITE_DEV_SERVER_URL);
-
-    win.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    win.loadFile(indexHtml);
-  }
 
 }
 
