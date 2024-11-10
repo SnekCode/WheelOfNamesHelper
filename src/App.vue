@@ -9,34 +9,88 @@ const { store, ipcRenderer, contextData } = window;
 
 const channel = ref(""); // Add a ref for the channel
 const twitchClient = ref<tmi.Client | void>(); // Add a ref for the twitch client
-const wheelcount = ref(0); // Add a ref for the count
-const claimedcount = ref(0); // Add a ref for the count
+const twitchCount = ref(0); // Add a ref for the count
+const twitchClaimedCount = ref(0); // Add a ref for the count
+const youtubeCount = ref(0); // Add a ref for the count
+const youtubeClaimedCount = ref(0); // Add a ref for the count
 const users = ref<Entry[]>([] as Entry[]); // Add a ref for the users
 const filterText = ref(""); // Add a ref for the filter text
 
 const newUser = ref(""); // Add a ref for the new user
 const newChances = ref("1"); // Add a ref for the new chances
 
+// youtube status variables
+const isLiveBroadCast = ref(false);
+const handle = ref("");
+const videoId = ref("");
+const searching = ref(false);
+
 const addUser = () => {
   if (newUser.value && newChances.value) {
-    contextData.addWheelUser({
-      text: newUser.value,
-      weight: parseInt(newChances.value),
-      enabled: true,
-      claimedHere: false,
-    } as Entry, true);
+    contextData.addWheelUser(
+      {
+        text: newUser.value,
+        weight: parseInt(newChances.value),
+        enabled: true,
+        claimedHere: false,
+      } as Entry,
+      true
+    );
     // contextData.forceUpdate();
   }
 };
 
 console.log("entries top lvl", users.value);
 
+
+ipcRenderer.on("youtube-add-count", () => {
+  youtubeCount.value += 1;
+});
+
+ipcRenderer.on("youtube-sub-count", () => {
+  youtubeCount.value -= 1;
+});
+
+ipcRenderer.on("twitch-here-count", () => {
+  youtubeClaimedCount.value += 1;
+});
+
+ipcRenderer.on(
+  "youtube-status",
+  (
+    _,
+    status: {
+      isLiveBroadCast: boolean;
+      handle: string;
+      videoId: string;
+      searching: boolean;
+    }
+  ) => {
+    console.log("youtube-status", status);
+    isLiveBroadCast.value = status.isLiveBroadCast;
+    handle.value = status.handle;
+    videoId.value = status.videoId;
+    searching.value = status.searching;
+  }
+);
+
 // get the channel name from the store
 ipcRenderer.invoke("getStore", "twitchChannelName").then((channelName) => {
   console.log("channelName", channelName);
   channel.value = channelName;
-  twitchClient.value = connectToTwitchChat(channel.value, users, wheelcount, claimedcount);
+  twitchClient.value = connectToTwitchChat(
+    channel.value,
+    users,
+    twitchCount,
+    twitchClaimedCount
+  );
 });
+
+ipcRenderer.invoke("getStore", "handle").then((handleName) => {
+  console.log("handleName", handleName);
+  handle.value = handleName;
+});
+
 // get saved wheelusers from the store
 ipcRenderer.invoke("getStore", "entries").then((data) => {
   console.log("entries", data);
@@ -65,7 +119,15 @@ store.on((_: any, name: string, data: string) => {
   if (name === "twitchChannelName") {
     channel.value = data;
     twitchClient.value?.disconnect();
-    twitchClient.value = connectToTwitchChat(channel.value, users, wheelcount, claimedcount);
+    twitchClient.value = connectToTwitchChat(
+      channel.value,
+      users,
+      twitchCount,
+      twitchClaimedCount
+    );
+  }
+  if (name === "handle") {
+    handle.value = data;
   }
 });
 
@@ -80,7 +142,10 @@ const filteredUsers = computed<Entry[]>(() => {
 });
 
 const resetWheelRequests = () => {
-  wheelcount.value = 0;
+  twitchCount.value = 0;
+  twitchClaimedCount.value = 0;
+  youtubeCount.value = 0;
+  youtubeClaimedCount.value = 0;
 };
 
 const resetClaims = () => {
@@ -89,7 +154,6 @@ const resetClaims = () => {
 
 const incrementChances = (user: Entry) => {
   user.weight = (user.weight || 0) + 1;
-  // TODO update entry
   contextData.updateWheelUser({ ...user });
 };
 
@@ -106,27 +170,61 @@ const openWheelWindow = async () => {
   await window.electronAPI.openWheelWindow();
   window.electronAPI.setDefaults();
 };
+
+const youtubeCheckStatus = async () => {
+  await ipcRenderer.invoke("youtube-check-status");
+};
 </script>
 
 <template>
   <button @click="openWheelWindow">Open Wheel</button>
   <!-- watermark style text at the top left of the channel value -->
-  <div class="channel-name" v-if="channel">
-    <div>{{ channel }}</div>
+
+  <div class="channel-name">
+    <!-- Twitch Section -->
+    <div class="channel-section">
+      <label for="channel-name">Twitch Channel</label>
+      <div v-if="!channel" class="hint">(Set channel in App menu dropdown)</div>
+      <div v-else>
+        {{ channel }}<span v-if="channel" class="check-mark">✔️</span>
+      </div>
+    </div>
+
+    <!-- YouTube Section -->
+    <div class="youtube-section">
+      <label for="youtube-channel">YouTube Channel</label>
+      <div v-if="!handle" class="hint">(Set channel in App menu dropdown)</div>
+      <div v-else>
+        {{ handle }}<span v-if="isLiveBroadCast" class="check-mark">✔️</span>
+
+        <button
+          @click="youtubeCheckStatus"
+          :class="`youtube-button ${
+            searching ? 'youtube-button-searching' : ''
+          } ${isLiveBroadCast ? 'hide' : ''}`"
+        >
+          {{ searching ? "Waiting..." : "Check Status" }}
+        </button>
+      </div>
+    </div>
   </div>
-  <div class="channel-name" v-else>
-    <div>(Set channel in App menu dropdown)</div>
-  </div>
+
   <!-- Update component -->
   <Updater />
   <!-- button top right of screen with red background for reset -->
   <div class="container">
     <button @click="resetClaims" class="resetClaimed">Reset !here</button>
 
-    <div class="container flex-center">
-      <div style="margin: 10px;">!wheel: {{ wheelcount }}</div>
-      <div style="margin: 10px;">!here: {{ claimedcount }}</div>
-      </div> 
+    <div class="container">
+      <div class="flex-center">
+        <div style="margin: 10px">Twitch !wheel: {{ twitchCount }}</div>
+        <div style="margin: 10px">Twitch !here: {{ twitchClaimedCount }}</div>
+      </div>
+      <div class="flex-center">
+      <div style="margin: 10px">YouTube !wheel: {{ youtubeCount }}</div>
+      <div style="margin: 10px">YouTube !here: {{ youtubeClaimedCount }}</div>
+      </div>  
+    </div>
     <button @click="resetWheelRequests" class="resetCount">Reset Count</button>
     <br />
     <br />
@@ -227,6 +325,55 @@ const openWheelWindow = async () => {
   user-select: none; /* Prevent text selection */
 }
 
+.check-mark {
+  margin-left: 0.2em;
+  color: green;
+}
+
+.youtube-button {
+  background-color: #ff0000; /* YouTube red */
+  opacity: 0.8;
+  border: 1px solid white;
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: auto;
+  height: 2em;
+  text-align: center;
+  justify-content: center;
+  user-select: none; /* Prevent text selection */
+}
+
+.youtube-button-searching {
+  animation: pulse 2s infinite;
+}
+
+.youtube-button:hover {
+  background-color: #cc0000; /* Darker red on hover */
+}
+
+/* \ animation that pulses the border of the .youtube-button  */
+@keyframes pulse {
+  0% {
+    border-color: white;
+    opacity: 0.2;
+  }
+  50% {
+    border-color: #ff0000;
+    opacity: 1;
+  }
+  100% {
+    border-color: white;
+    opacity: 0.2;
+  }
+}
+
 .addViewer {
   background-color: #4caf4fee;
   color: rgb(255, 255, 255);
@@ -263,6 +410,29 @@ const openWheelWindow = async () => {
   font-size: 16px;
   opacity: 0.5;
   user-select: none; /* Prevent text selection */
+  text-align: left;
+}
+
+.recording {
+  animation: recording 1s infinite alternate;
+  border-radius: 50%;
+  height: 0.5em;
+  width: 0.5em;
+  margin-bottom: 0.1em;
+  display: inline-block;
+  margin-left: 0.5em;
+}
+
+@keyframes recording {
+  0% {
+    background-color: rgb(109, 109, 109);
+  }
+  50% {
+    background-color: #f00;
+  }
+  100% {
+    background-color: red;
+  }
 }
 
 .grid {
@@ -357,6 +527,10 @@ const openWheelWindow = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.hide {
+  display: none;
 }
 
 .logo.electron:hover {

@@ -57,6 +57,29 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
           },
         },
         {
+          label: "Set YouTube @Name Handle",
+          sublabel: `Current: ${store.get("handle") ?? "Not set"} `,
+          click: async (_, focusedWindow) => {
+            if (focusedWindow) {
+              const input = await showInputDialog(
+                focusedWindow as BrowserWindow,
+                "Set Twitch Channel Name",
+                "Enter the Twitch channel name:"
+              );
+              if (input) {
+                // add a @ to the beginning of the input if it doesn't already have one
+                const handle = input.startsWith("@") ? input : `@${input}`;
+                setStore("handle", handle);
+                // ipcRenderer.send('setStore', 'twitchChannelName', input);
+                // Rebuild the menu to update the sublabel
+                const menu = Menu.buildFromTemplate(createMenuTemplate());
+                Menu.setApplicationMenu(menu);
+                // (focusedWindow as BrowserWindow)?.reload();
+              }
+            }
+          },
+        },
+        {
           label: "Sign In To WheelOfNames",
           click: async (_, focusedWindow) => {
             if (focusedWindow) {
@@ -74,7 +97,6 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
               });
 
               authWindow.loadURL("https://wheelofnames.com/faq/api");
-
             }
           },
         },

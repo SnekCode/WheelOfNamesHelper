@@ -30,7 +30,6 @@ ipcMain.handle("forceUpdate", forceUpdate);
 
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
-  console.log("broadcasting update", name, data);
   
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
@@ -42,7 +41,7 @@ export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   broadcastUpdate(name, data);
 };
 
-const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry, override=false) => {
+export const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry, override=false) => {
   console.log("addWheelUser", entry, override);
   if (pause) {
     addQueue.push(entry);
@@ -70,7 +69,7 @@ const handleAddWheelUser = (_: IpcMainInvokeEvent, entry: Entry, override=false)
   return true;
 };
 
-const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
+export const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
     console.log("removeWheelUser", name);
     if (pause) {
         removeQue.push(name);
@@ -86,7 +85,7 @@ const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
     return true;
 };
 
-const handleUpdateWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
+export const handleUpdateWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
   console.log("updateWheelUser", entry);
   let data = store.get(StoreKeys.data);
   data = data.map((existingEntry) =>
