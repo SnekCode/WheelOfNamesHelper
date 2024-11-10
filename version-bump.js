@@ -29,6 +29,7 @@ const main = () => {
   fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
   execSync(`git add package.json`);
   execSync(`git commit -m "chore: bump version to ${newVersion}"`);
+  execSync(`git push origin master`);
   execSync(`git tag v${newVersion}`);
   execSync(`git push origin tag v${newVersion}`);
 
