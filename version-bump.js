@@ -30,7 +30,7 @@ const main = () => {
   execSync(`git add package.json`);
   execSync(`git commit -m "chore: bump version to ${newVersion}"`);
   execSync(`git tag v${newVersion}`);
-  execSync(`git push origin main --tags`);
+  execSync(`git push origin tag v${newVersion}`);
 
   console.log(`Version bumped to ${newVersion} and tagged as v${newVersion}`);
 };
