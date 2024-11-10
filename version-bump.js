@@ -1,5 +1,5 @@
-const fs = require('fs');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import { execSync } from 'child_process';
 
 const incrementVersion = (version, type) => {
   const [major, minor, patch] = version.split('.').map(Number);
