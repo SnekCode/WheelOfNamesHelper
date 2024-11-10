@@ -71,7 +71,7 @@ const wheelCommand = async (text: string) => {
     enabled: true,
     message: "You're Next!",
   };
-  
+
   const bool = handleAddWheelUser({} as IpcMainEvent, entry);
   if (bool) {
     win?.webContents.send("youtube-add-count");
@@ -155,7 +155,6 @@ const sendRendererStatus = () => {
   });
 };
 
-
 const startChat = async () => {
   // const channelId = store.get("channelId", "");
   const handle = store.get("handle", "");
@@ -168,16 +167,15 @@ const startChat = async () => {
       clearInterval(broadcastPing);
       sendRendererStatus();
     }
-  }, 30000);
+  }, 60000);
 };
 
 const setUpChat = async () => {
-
-
+  store.set("searching", true);
+  sendRendererStatus();
   await getStatus();
   const videoId = store.get("videoId", "");
   if (!videoId || !isLiveBroadCast) {
-    store.set("searching", true);
     clearInterval(broadcastPing);
     broadcastPing = setInterval(() => {
       setUpChat();
@@ -188,18 +186,17 @@ const setUpChat = async () => {
   }
 };
 
-ipcMain.handle("youtube-check-status", ()=> {
+ipcMain.handle("youtube-check-status", () => {
   const searching = store.get("searching", false);
   console.log("ipcRenderer received youtube-check-status", searching);
-  
-  
-    if (searching === true) {
-      clearInterval(broadcastPing);
-      store.set("searching", false);
-      sendRendererStatus()
-      return;
-    }
-  setUpChat()
+
+  if (searching === true) {
+    clearInterval(broadcastPing);
+    store.set("searching", false);
+    sendRendererStatus();
+    return;
+  }
+  setUpChat();
 });
 
 app.on("before-quit", () => {
