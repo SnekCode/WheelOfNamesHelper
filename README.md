@@ -25,6 +25,8 @@ This application is designed to enhance the interaction between Twitch streamers
 
 ### Current Features
 * **Twitch Channel Agnostic**: Easily change the targeted Twitch channel name via the menu bar under "App".
+* **YouTube Live Chat Service**: Easily change the targeted Twitch channel name via the menu bar under "App".
+* **No Authentication Required**: No authentication is required to connect to Twitch or Youtube chat. Wheel of names auth is optional but not required.
 * **Wheel Request Counter**: Keep track of the number of wheel requests.
 * **Wheel Counter Reset Button**: Reset the current count without affecting the overall state.
 * **Copy to Clipboard Button**: Copy the list of viewers and their chances, formatted for the Wheel Of Names application.
@@ -36,10 +38,7 @@ This application is designed to enhance the interaction between Twitch streamers
 * **Remove All Chances**: Clicking on a viewer's name will remove all their chances.
 * **Stateful**: The list of viewers and their chances is maintained even when the application closes.
 * **Manual Viewer Addition**: Manually add viewer names and chances.
-
-### Future Goals
-* **YouTube Live Chat Service**: Extend functionality to include YouTube Live Chat.
-* **WheelOfNames API Integration**: Integrate with the WheelOfNames application API for enhanced functionality.
+* **WheelOfNames Wrapper Window**: Integration of the Wheel of Names website into the app allows for instant updates from Twitch and Youtube Chats
 
 ### Current Chat Commands
 * **`!wheel`**: Adds the user's display name to the list with 1 chance.
