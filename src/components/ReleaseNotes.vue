@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-// import { EChannels } from '~/Shared/channels';
 
 const showModal = ref(false);
 const releaseNotesHtml = ref('');
@@ -54,6 +53,7 @@ fetchReleaseNotes();
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -67,10 +67,12 @@ fetchReleaseNotes();
   max-width: 500px;
   width: 100%;
   position: relative;
+  max-height: 80vh; /* Adjust the value as needed */
+  overflow-y: auto;
 }
 
 .modal-content button {
-  position: absolute;
+  position: fixed;
   top: 10px;
   right: 10px;
   /* Additional styling if needed */
@@ -78,11 +80,16 @@ fetchReleaseNotes();
 
 ::v-deep h2 {
   /* your styles for h2 */
-  text-align: left;
+  text-align: center;
 }
 
 ::v-deep h3 {
   /* your styles for h3 */
+  text-align: left;
+}
+
+::v-deep h4 {
+  /* your styles for h4 */
   text-align: left;
 }
 

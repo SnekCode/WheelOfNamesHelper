@@ -92,12 +92,10 @@ export default defineConfig(({ command }) => {
           host: url.hostname,
           port: +url.port,
           watch: {
-            usePolling: true,
-            ignored: ["!public/**"],
+            usePolling: true
           },
         };
       })(),
-    clearScreen: false,
-    publicDir: "public"
+    clearScreen: false
   };
 })
