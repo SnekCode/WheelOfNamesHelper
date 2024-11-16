@@ -2,8 +2,10 @@
 import { ref, computed } from "vue";
 import { connectToTwitchChat } from "./TwitchChatService";
 import Updater from "./components/Updater.vue";
+import ReleaseNotes from "./components/ReleaseNotes.vue";
 import tmi from "tmi.js";
 import { Entry } from "~/Shared/types";
+
 
 const { store, ipcRenderer, contextData } = window;
 
@@ -211,6 +213,8 @@ const youtubeCheckStatus = async () => {
 
   <!-- Update component -->
   <Updater />
+  <!-- Release Notes component -->
+  <ReleaseNotes />
   <!-- button top right of screen with red background for reset -->
   <div class="container">
     <button @click="resetClaims" class="resetClaimed">Reset !here</button>

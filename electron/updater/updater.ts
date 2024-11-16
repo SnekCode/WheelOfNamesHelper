@@ -1,15 +1,19 @@
-import { ipcMain } from "electron";
+import { app, ipcMain } from "electron";
 import log from "electron-log/main";
 import updater from "electron-updater";
 import { win } from "~/electron/main/main";
 import { channelLog, EChannels } from "~/Shared/channels";
-
+import { store } from "../main/store"
 const { autoUpdater } = updater;
+
+
 
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 
-if (!import.meta.env.DEV) {
+const isDev = import.meta.env.DEV;
+
+if (!isDev) {
   setTimeout(() => {
     autoUpdater.checkForUpdates();
   }, 5000);
@@ -20,7 +24,7 @@ if (!import.meta.env.DEV) {
   }, 3600000);
 }
 
-if (import.meta.env.DEV) {
+if (isDev) {
   autoUpdater.forceDevUpdateConfig = true;
   autoUpdater.channel = "alpha";
   autoUpdater.allowPrerelease = true;
@@ -48,8 +52,11 @@ autoUpdater.on("update-not-available", (args) => {
 
 autoUpdater.on("update-downloaded", (args) => {
   channelLog("update-downloaded", "receiving", args);
+  store.set("changeLogViewed", false);
+  store.set("releaseNotes", args.releaseNotes);
   win!.webContents.send(EChannels.updateDownloaded, true);
 });
+
 
 autoUpdater.on("error", (info) => {
   channelLog("update-error", "receiving", info);
@@ -67,6 +74,7 @@ ipcMain.on(EChannels.update, (_, installNow: boolean) => {
     .then(() => {
       if (installNow) {
         console.log("installing update now");
+        if(isDev) return;
         autoUpdater.quitAndInstall(true, true);
       } else {
         console.log("installing update on quit");

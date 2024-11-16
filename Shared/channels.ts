@@ -12,7 +12,7 @@ export enum EChannels {
   updateDownloadProgress = "updateDownloadProgress",
   updateInfo = "updateInfo",
   storeUpdate = "storeUpdate",
-  
+  releaseNotes = "releaseNotes",
 }
 
 export interface IChannelReceive {

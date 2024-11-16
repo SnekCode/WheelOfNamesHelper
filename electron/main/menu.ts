@@ -3,7 +3,8 @@ import path from "node:path";
 import { store } from "./store";
 import { setStore } from "../data/data";
 import prompt from "electron-prompt";
-import { StoreKeys } from "~/Shared/store";
+import { win } from "./main";
+import { getReleaseNotes } from "../updater/releaseNotes";
 
 const appData = process.env.LOCALAPPDATA ?? "";
 
@@ -106,14 +107,11 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
       label: "Help",
       submenu: [
         {
-          label: "Check for Updates",
-          sublabel: "coming soon...",
-          click: () => null,
-        },
-        {
-          label: "About",
-          sublabel: "coming soon...",
-          click: () => null,
+          label: "Changelog",
+          click: async () => {
+            const htmlContent = await getReleaseNotes();
+            win?.webContents.send("releaseNotes", [true, htmlContent]);
+          },
         },
       ],
     },

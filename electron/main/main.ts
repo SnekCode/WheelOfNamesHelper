@@ -11,9 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import "./wheelOfNames"
 import "../YouTube/YouTubeChatService"
-
-// channelId UCvqRdlKsE5Q8mf8YXbdIJLw
-// live id jWjrdz-lLdU
+import "../updater/releaseNotes"
 
 // logging
 log.initialize({ preload: true });

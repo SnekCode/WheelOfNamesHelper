@@ -20,6 +20,8 @@ export interface IStore {
   channelId: string;
   handle: string;
   videoId: string;
+  changeLogViewed: boolean;
+  releaseNotes: string;
 }
 
 export type IStoreKeys = keyof IStore;
