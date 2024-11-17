@@ -16,6 +16,7 @@ export interface IStore {
   entries: Entry[];
   lastconfig: WheelConfig;
   twitchChannelName: string;
+  twitchAuth: string;
   searching: boolean | undefined;
   channelId: string;
   handle: string;

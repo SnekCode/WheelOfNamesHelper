@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { connectToTwitchChat } from "./TwitchChatService";
 import Updater from "./components/Updater.vue";
 import ReleaseNotes from "./components/ReleaseNotes.vue";
 import tmi from "tmi.js";
 import { Entry } from "~/Shared/types";
+import { shell } from "electron";
 
 enum SortType {
   ACTIVITY = "activity",
@@ -15,10 +15,10 @@ const { store, ipcRenderer, contextData } = window;
 
 const channel = ref(""); // Add a ref for the channel
 const twitchClient = ref<tmi.Client | void>(); // Add a ref for the twitch client
-const twitchCount = ref(0); // Add a ref for the count
-const twitchClaimedCount = ref(0); // Add a ref for the count
-const youtubeCount = ref(0); // Add a ref for the count
-const youtubeClaimedCount = ref(0); // Add a ref for the count
+const twitchWheelCount = ref(0); // Add a ref for the count
+const twitchHereCount = ref(0); // Add a ref for the count
+const youtubeWheelCount = ref(0); // Add a ref for the count
+const youtubeHereCount = ref(0); // Add a ref for the count
 const users = ref<Entry[]>([] as Entry[]); // Add a ref for the users
 const filterText = ref(""); // Add a ref for the filter text
 
@@ -29,6 +29,7 @@ const messagesCount = ref(0); // Add a ref for the messages count
 
 // youtube status variables
 const isLiveBroadCast = ref(false);
+const isTwitchConnected = ref(false);
 const handle = ref("");
 const videoId = ref("");
 const searching = ref(false);
@@ -51,16 +52,36 @@ const addUser = () => {
 
 console.log("entries top lvl", users.value);
 
-ipcRenderer.on("youtube-add-count", () => {
-  youtubeCount.value += 1;
+ipcRenderer.on("youtube-add-wheel", () => {
+  youtubeWheelCount.value += 1;
 });
 
-ipcRenderer.on("youtube-sub-count", () => {
-  youtubeCount.value -= 1;
+ipcRenderer.on("youtube-remove-wheel", () => {
+  youtubeWheelCount.value -= 1;
 });
 
-ipcRenderer.on("twitch-here-count", () => {
-  youtubeClaimedCount.value += 1;
+ipcRenderer.on("youtube-add-here", () => {
+  youtubeHereCount.value += 1;
+});
+
+ipcRenderer.on("youtube-remove-here", () => {
+  youtubeHereCount.value -= 1;
+});
+
+ipcRenderer.on("twitch-add-wheel", () => {
+  twitchWheelCount.value += 1;
+});
+
+ipcRenderer.on("twitch-remove-wheel", () => {
+  twitchWheelCount.value -= 1;
+});
+
+ipcRenderer.on("twitch-add-here", () => {
+  twitchHereCount.value += 1;
+});
+
+ipcRenderer.on("twitch-remove-here", () => {
+  twitchHereCount.value -= 1;
 });
 
 ipcRenderer.on(
@@ -86,15 +107,9 @@ ipcRenderer.on(
 ipcRenderer.invoke("getStore", "twitchChannelName").then((channelName) => {
   console.log("channelName", channelName);
   channel.value = channelName;
-  twitchClient.value = connectToTwitchChat(
-    channel.value,
-    users,
-    twitchCount,
-    twitchClaimedCount,
-    messagesCount
-  );
 });
 
+// TODO change event name from handle to youtubeHandle e.g
 ipcRenderer.invoke("getStore", "handle").then((handleName) => {
   console.log("handleName", handleName);
   handle.value = handleName;
@@ -110,6 +125,13 @@ ipcRenderer.invoke("getStore", "entries").then((data) => {
   }
 });
 
+// Twitch chat services setup
+ipcRenderer.send("did-finish-load");
+ipcRenderer.on("twitch-chat-connect", (_, data) => {
+    isTwitchConnected.value = data;
+});
+
+
 // listen for app close event
 ipcRenderer.on("app-close", () => {
   twitchClient.value?.disconnect();
@@ -120,24 +142,6 @@ ipcRenderer.on("storeUpdate", (event, storeName, data) => {
   console.log("storeUpdate", name, data);
   if (storeName === "entries") {
     users.value = data;
-  }
-});
-
-store.on((_: any, name: string, data: string) => {
-  console.log("store.on", name, data);
-  if (name === "twitchChannelName") {
-    channel.value = data;
-    twitchClient.value?.disconnect();
-    twitchClient.value = connectToTwitchChat(
-      channel.value,
-      users,
-      twitchCount,
-      twitchClaimedCount,
-      messagesCount
-    );
-  }
-  if (name === "handle") {
-    handle.value = data;
   }
 });
 
@@ -174,10 +178,11 @@ const filteredUsers = computed<Entry[]>(() => {
 });
 
 const resetWheelRequests = () => {
-  twitchCount.value = 0;
+  twitchWheelCount
+Here= 0;
   twitchClaimedCount.value = 0;
-  youtubeCount.value = 0;
-  youtubeClaimedCount.value = 0;
+  youtubeWheelCount.value = 0;
+  youtubeHereCount.value = 0;
 };
 
 const resetClaims = () => {
@@ -222,6 +227,8 @@ const getTime = (timestamp: number) => {
   }
   return `${minutes}m ${seconds}s`;
 };
+
+
 </script>
 
 <template>
@@ -234,7 +241,9 @@ const getTime = (timestamp: number) => {
       <label for="channel-name">Twitch Channel</label>
       <div v-if="!channel" class="hint">(Set channel in App menu dropdown)</div>
       <div v-else>
-        {{ channel }}<span v-if="channel" class="check-mark">✔️</span>
+        {{ channel }}
+        <span v-if="isTwitchConnected" class="check-mark">✔️</span>
+        <span v-else class="check-mark" style="color: red">❌</span>
       </div>
     </div>
 
@@ -246,7 +255,9 @@ const getTime = (timestamp: number) => {
           (Set channel in App menu dropdown)
         </div>
         <div v-else>
-          {{ handle }}<span v-if="isLiveBroadCast" class="check-mark">✔️</span>
+          {{ handle }}
+          <span v-if="isLiveBroadCast" class="check-mark">✔️</span>
+          <span v-else class="check-mark" style="color: red">❌</span>
         </div>
       </div>
       <button
@@ -275,12 +286,12 @@ const getTime = (timestamp: number) => {
 
     <div class="container">
       <div class="flex-center">
-        <div style="margin: 10px">Twitch !wheel: {{ twitchCount }}</div>
-        <div style="margin: 10px">Twitch !here: {{ twitchClaimedCount }}</div>
+        <div style="margin: 10px">Twitch !wheel: {{ twitchWheelCount }}</div>
+        <div style="margin: 10px">Twitch !here: {{ twitchHereCount }}</div>
       </div>
       <div class="flex-center">
-        <div style="margin: 10px">YouTube !wheel: {{ youtubeCount }}</div>
-        <div style="margin: 10px">YouTube !here: {{ youtubeClaimedCount }}</div>
+        <div style="margin: 10px">YouTube !wheel: {{ youtubeWheelCount }}</div>
+        <div style="margin: 10px">YouTube !here: {{ youtubeHereCount }}</div>
       </div>
     </div>
     <button @click="resetWheelRequests" class="resetCount">Reset Count</button>

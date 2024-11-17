@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import "./wheelOfNames"
 import "../YouTube/YouTubeChatService"
 import "../updater/releaseNotes"
+import '../Twitch/TwitchChatService'
 
 // logging
 log.initialize({ preload: true });
