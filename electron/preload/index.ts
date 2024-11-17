@@ -54,6 +54,9 @@ contextBridge.exposeInMainWorld("contextData", {
   resetClaims() {
     return ipcRenderer.invoke("resetClaims");
   },
+  removeNotClaimed() {
+    return ipcRenderer.invoke("removeNotClaimed");
+  },
   updateWheelUser(user: Entry) {
     return ipcRenderer.invoke("updateWheelUser", user);
   },

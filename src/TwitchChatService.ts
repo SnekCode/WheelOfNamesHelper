@@ -8,7 +8,8 @@ export function connectToTwitchChat(
   channel: string,
   users: Ref<Entry[]>,
   wheelcount: Ref<number>,
-  herecount: Ref<number>
+  herecount: Ref<number>,
+  messagesCount: Ref<number>
 ) {
   const client = new tmi.Client({
     options: { debug: true },
@@ -19,7 +20,7 @@ export function connectToTwitchChat(
 
   client.on("message", async (channel, tags, message, self) => {
     const displayName = tags["display-name"];
-    
+    const channelId = tags["user-id"];
 
     if (self) return; // Ignore messages from the bot itself
     if (message === "!wheel" && displayName ) {
@@ -57,7 +58,8 @@ export function connectToTwitchChat(
 
     // update the user's activity
     if (displayName) {
-      window.contextData.updateActivity(displayName, tags["user-id"]);
+      window.contextData.updateActivity(displayName, channelId);
+      messagesCount.value++;
     }
 
     // // dev debug mode to add random names to the wheel when the message is "!dev" accept a number after for the amount of random names to add

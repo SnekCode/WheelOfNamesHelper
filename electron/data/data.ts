@@ -118,6 +118,13 @@ const handleResetClaims = () => {
   forceUpdate();
 };
 
+const handleNotClaimed = () => {
+  let data = store.get(StoreKeys.data);
+  data = data.filter((entry) => entry.claimedHere);
+  setStore(StoreKeys.data, data);
+  forceUpdate();
+}
+
 export const handleUpdateActivity = async (
   _: IpcMainInvokeEvent,
   displayName: string,
@@ -153,15 +160,18 @@ export const handleUpdateActivity = async (
   lastconfig.entries = entries;
 
   const json = JSON.stringify(lastconfig);
+  const escapedJson = json.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 
-  await wheelWindow?.webContents.executeJavaScript(
-    `localStorage.setItem('LastWheelConfig', '${json}' )`
-  );
-}
+  wheelWindow?.webContents
+    .executeJavaScript(
+      `localStorage.setItem("LastWheelConfig", '${escapedJson}' )`
+    )
+}  
   setStore(StoreKeys.data, entries);
 };
 
 ipcMain.handle("resetClaims", handleResetClaims);
+ipcMain.handle("removeNotClaimed", handleNotClaimed);
 ipcMain.handle("updateWheelUser", handleUpdateWheelUser);
 ipcMain.handle("addWheelUser", handleAddWheelUser);
 ipcMain.handle("removeWheelUser", handleRemoveWheelUser);

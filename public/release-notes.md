@@ -8,8 +8,13 @@ ________________________________________________________________________________
 - Added twitch and youtube channel Ids to meta data to prevent same name collisions
 - Added timestamp to meta data so on entry winning the amount of time since last activity will be shown
 - Added time stamp data to entry cards on main screen
-  - Note these will update when clicking between the wheel of names window and main
-  - Or when filtering for a username
+- Added three card sorting options. Activity, Weight and Alphabetical
+- Added Remove Not Claimed Button ! Caution this will remove viewers from the list
+  - Recommended workflow is to remove a not claimed before starting stream. Then reset the !here command
+
+#### Notes
+- As viewers chat their channelIDs will be added in the meta data. The chances of name collisions will decrease over time.
+- Initially viewers that have no activity data who win on the wheel will have the winning message be set to "You're Next!"
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 

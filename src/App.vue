@@ -6,7 +6,11 @@ import ReleaseNotes from "./components/ReleaseNotes.vue";
 import tmi from "tmi.js";
 import { Entry } from "~/Shared/types";
 
-
+enum SortType {
+  ACTIVITY = "activity",
+  WEIGHT = "weight",
+  ALPHABETICAL = "alphabetical",
+}
 const { store, ipcRenderer, contextData } = window;
 
 const channel = ref(""); // Add a ref for the channel
@@ -21,11 +25,14 @@ const filterText = ref(""); // Add a ref for the filter text
 const newUser = ref(""); // Add a ref for the new user
 const newChances = ref("1"); // Add a ref for the new chances
 
+const messagesCount = ref(0); // Add a ref for the messages count
+
 // youtube status variables
 const isLiveBroadCast = ref(false);
 const handle = ref("");
 const videoId = ref("");
 const searching = ref(false);
+const sortType = ref(SortType.ACTIVITY);
 
 const addUser = () => {
   if (newUser.value && newChances.value) {
@@ -43,7 +50,6 @@ const addUser = () => {
 };
 
 console.log("entries top lvl", users.value);
-
 
 ipcRenderer.on("youtube-add-count", () => {
   youtubeCount.value += 1;
@@ -84,7 +90,8 @@ ipcRenderer.invoke("getStore", "twitchChannelName").then((channelName) => {
     channel.value,
     users,
     twitchCount,
-    twitchClaimedCount
+    twitchClaimedCount,
+    messagesCount
   );
 });
 
@@ -125,7 +132,8 @@ store.on((_: any, name: string, data: string) => {
       channel.value,
       users,
       twitchCount,
-      twitchClaimedCount
+      twitchClaimedCount,
+      messagesCount
     );
   }
   if (name === "handle") {
@@ -133,11 +141,33 @@ store.on((_: any, name: string, data: string) => {
   }
 });
 
+const sortWeight = (a: Entry, b: Entry) => b.weight - a.weight;
+const sortTimestamp = (a: Entry, b: Entry) => {
+  const time1: number = a.timestamp || 0;
+  const time2: number = b.timestamp || 0;
+  return time2 - time1;
+};
+
+const sortAlphabetical = (a: Entry, b: Entry) => a.text.localeCompare(b.text);
+
 const filteredUsers = computed<Entry[]>(() => {
+  const sort = (a: Entry, b: Entry) => {
+    switch (sortType.value) {
+      case SortType.WEIGHT:
+        return sortWeight(a, b);
+      case SortType.ACTIVITY:
+        return sortTimestamp(a, b);
+      case SortType.ALPHABETICAL:
+        return sortAlphabetical(a, b);
+      default:
+        return sortTimestamp(a, b);
+    }
+  };
+
   const filter = filterText.value.toLowerCase();
   const filters = users.value
     .filter((user) => user.text.toLowerCase().includes(filter))
-    .sort((a, b) => b.weight - a.weight);
+    .sort(sort);
   console.log("filters", filters);
 
   return filters;
@@ -152,6 +182,10 @@ const resetWheelRequests = () => {
 
 const resetClaims = () => {
   contextData.resetClaims();
+};
+
+const removeNotClaimed = () => {
+  contextData.removeNotClaimed();
 };
 
 const incrementChances = (user: Entry) => {
@@ -183,16 +217,17 @@ const getTime = (timestamp: number) => {
   const differenceInSeconds = differenceMilliseconds / 1000;
   const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
   const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
-    
+  if (timestamp === 0) {
+    return "???";
+  }
   return `${minutes}m ${seconds}s`;
 };
-
 </script>
 
 <template>
   <button @click="openWheelWindow">Open Wheel</button>
   <!-- watermark style text at the top left of the channel value -->
-
+  <div style="position: fixed; left: -100px">{{ messagesCount }}</div>
   <div class="channel-name">
     <!-- Twitch Section -->
     <div class="channel-section">
@@ -205,20 +240,23 @@ const getTime = (timestamp: number) => {
 
     <!-- YouTube Section -->
     <div class="youtube-section">
-      <label for="youtube-channel">YouTube Channel</label>
-      <div v-if="!handle" class="hint">(Set channel in App menu dropdown)</div>
-      <div v-else>
-        {{ handle }}<span v-if="isLiveBroadCast" class="check-mark">✔️</span>
-
-        <button
-          @click="youtubeCheckStatus"
-          :class="`youtube-button ${
-            searching ? 'youtube-button-searching' : ''
-          } ${isLiveBroadCast ? 'hide' : ''}`"
-        >
-          {{ searching ? "Waiting..." : "Check Status" }}
-        </button>
+      <div class="channel-section">
+        <label for="youtube-channel">YouTube Channel</label>
+        <div v-if="!handle" class="hint">
+          (Set channel in App menu dropdown)
+        </div>
+        <div v-else>
+          {{ handle }}<span v-if="isLiveBroadCast" class="check-mark">✔️</span>
+        </div>
       </div>
+      <button
+        @click="youtubeCheckStatus"
+        :class="`youtube-button ${
+          searching ? 'youtube-button-searching' : ''
+        } ${isLiveBroadCast ? 'hide' : ''}`"
+      >
+        {{ searching ? "Waiting..." : "Check Status" }}
+      </button>
     </div>
   </div>
 
@@ -228,7 +266,12 @@ const getTime = (timestamp: number) => {
   <ReleaseNotes />
   <!-- button top right of screen with red background for reset -->
   <div class="container">
-    <button @click="resetClaims" class="resetClaimed">Reset !here</button>
+    <div class="caution">
+      <button @click="removeNotClaimed" class="removeClaimed">
+        Remove Not Claimed
+      </button>
+      <button @click="resetClaims" class="resetClaimed">Reset !here</button>
+    </div>
 
     <div class="container">
       <div class="flex-center">
@@ -236,9 +279,9 @@ const getTime = (timestamp: number) => {
         <div style="margin: 10px">Twitch !here: {{ twitchClaimedCount }}</div>
       </div>
       <div class="flex-center">
-      <div style="margin: 10px">YouTube !wheel: {{ youtubeCount }}</div>
-      <div style="margin: 10px">YouTube !here: {{ youtubeClaimedCount }}</div>
-      </div>  
+        <div style="margin: 10px">YouTube !wheel: {{ youtubeCount }}</div>
+        <div style="margin: 10px">YouTube !here: {{ youtubeClaimedCount }}</div>
+      </div>
     </div>
     <button @click="resetWheelRequests" class="resetCount">Reset Count</button>
     <br />
@@ -268,6 +311,12 @@ const getTime = (timestamp: number) => {
     </button>
 
     <div style="display: flex; align-items: center">
+      <!-- drop down menu for all sort types -->
+      <select class="select" v-model="sortType">
+        <option value="activity">Sort by Activity</option>
+        <option value="weight">Sort by Weight</option>
+        <option value="alphabetical">Sort by Alphabetical</option>
+      </select>
       <input
         class="search"
         v-model="filterText"
@@ -290,7 +339,7 @@ const getTime = (timestamp: number) => {
           <div class="name" @click="contextData.removeWheelUser(user.text)">
             {{ user.text }}
             <div>{{ user.weight }}</div>
-            <div>{{ getTime(user.timestamp) }}</div>
+            <div>{{ getTime(user.timestamp ?? 0) }}</div>
           </div>
           <button class="addbtn" @click="incrementChances(user)">➕</button>
         </div>
@@ -301,18 +350,45 @@ const getTime = (timestamp: number) => {
 
 <style>
 /* class="flex-center" style="position: absolute; top: 0; right: 0; background-color: red; color: white; border: none; cursor: pointer; padding: 5px 12px; margin: 10px; font-size: 14px;" */
-.resetClaimed {
+
+.caution {
   position: absolute;
   top: 0;
   right: 0;
-  background-color: red;
+  display: flex;
+  flex-direction: column;
+}
+
+.resetClaimed {
+  background-color: rgba(255, 0, 0, 0.4);
   color: white;
-  border: none;
+  border-width: 2px;
   cursor: pointer;
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
   user-select: none; /* Prevent text selection */
+}
+
+.resetClaimed:hover {
+  background-color: rgba(255, 0, 0, 0.8);
+  border-color: white;
+}
+
+.removeClaimed {
+  background-color: rgba(255, 0, 0, 0.4);
+  color: white;
+  border-width: 2px;
+  cursor: pointer;
+  padding: 5px 12px;
+  margin: 10px;
+  font-size: 14px;
+  user-select: none; /* Prevent text selection */
+}
+
+.removeClaimed:hover {
+  background-color: rgba(255, 0, 0, 0.8);
+  border-color: white;
 }
 
 .resetCount {
@@ -321,12 +397,17 @@ const getTime = (timestamp: number) => {
   right: 100; */
   background-color: blue;
   color: white;
-  border: none;
+  border-width: 2px;
   cursor: pointer;
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
   user-select: none; /* Prevent text selection */
+}
+
+.resetCount:hover {
+  background-color: darkblue;
+  border-color: white;
 }
 
 .copyButton {
@@ -347,13 +428,10 @@ const getTime = (timestamp: number) => {
 }
 
 .youtube-button {
-  background-color: #ff0000; /* YouTube red */
-  opacity: 0.8;
-  border: 1px solid white;
+  background-color: rgba(255, 0, 0, 0.4); /* YouTube red */
+  border-width: 2px;
   color: white;
   padding: 10px 20px;
-  font-size: 16px;
-  font-weight: bold;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -371,7 +449,8 @@ const getTime = (timestamp: number) => {
 }
 
 .youtube-button:hover {
-  background-color: #cc0000; /* Darker red on hover */
+  background-color: rgba(255, 0, 0, 0.8); /* Darker red on hover */
+  border-color: white;
 }
 
 /* \ animation that pulses the border of the .youtube-button  */
@@ -424,9 +503,12 @@ const getTime = (timestamp: number) => {
   color: white;
   margin: 5px;
   font-size: 16px;
-  opacity: 0.5;
   user-select: none; /* Prevent text selection */
   text-align: left;
+}
+
+.channel-section {
+  opacity: 0.8;
 }
 
 .recording {
@@ -474,6 +556,13 @@ const getTime = (timestamp: number) => {
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 15px;
 }
 
 .clear {

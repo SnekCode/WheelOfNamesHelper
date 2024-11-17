@@ -42,6 +42,7 @@ export interface IElectronAPI {
 export interface IContextDataAPI {
   setDefaults: () => void;
   resetClaims: () => void;
+  removeNotClaimed: () => void;
   addWheelUser: (user: Entry, override: boolean) => void;
   updateWheelUser: (user: Entry) => void;
   removeWheelUser: (name: string) => void;
