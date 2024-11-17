@@ -176,6 +176,17 @@ const openWheelWindow = async () => {
 const youtubeCheckStatus = async () => {
   await ipcRenderer.invoke("youtube-check-status");
 };
+
+const getTime = (timestamp: number) => {
+  const currentTime = Date.now();
+  const differenceMilliseconds = currentTime - timestamp;
+  const differenceInSeconds = differenceMilliseconds / 1000;
+  const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
+  const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
+    
+  return `${minutes}m ${seconds}s`;
+};
+
 </script>
 
 <template>
@@ -279,6 +290,7 @@ const youtubeCheckStatus = async () => {
           <div class="name" @click="contextData.removeWheelUser(user.text)">
             {{ user.text }}
             <div>{{ user.weight }}</div>
+            <div>{{ getTime(user.timestamp) }}</div>
           </div>
           <button class="addbtn" @click="incrementChances(user)">➕</button>
         </div>

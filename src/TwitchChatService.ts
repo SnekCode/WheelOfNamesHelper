@@ -19,6 +19,7 @@ export function connectToTwitchChat(
 
   client.on("message", async (channel, tags, message, self) => {
     const displayName = tags["display-name"];
+    
 
     if (self) return; // Ignore messages from the bot itself
     if (message === "!wheel" && displayName ) {
@@ -26,6 +27,7 @@ export function connectToTwitchChat(
       // build the Entry object
       const entry = {
         text: displayName,
+        channelId: tags["user-id"],
         claimedHere: true,
         weight: 1,
         enabled: true,
@@ -51,6 +53,11 @@ export function connectToTwitchChat(
         window.contextData.updateWheelUser({...user});
         herecount.value++;
       }
+    }
+
+    // update the user's activity
+    if (displayName) {
+      window.contextData.updateActivity(displayName, tags["user-id"]);
     }
 
     // // dev debug mode to add random names to the wheel when the message is "!dev" accept a number after for the amount of random names to add

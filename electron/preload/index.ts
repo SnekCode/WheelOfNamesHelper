@@ -71,7 +71,10 @@ contextBridge.exposeInMainWorld("contextData", {
   },
   saveConfig() {
     return ipcRenderer.invoke("saveConfig");
-  }
+  },
+  updateActivity(displayName: string, channelId: string) {
+    return ipcRenderer.invoke("updateActivity", displayName, channelId);
+  },
 });
 
 contextBridge.exposeInMainWorld("electronAPI", {

@@ -7,6 +7,7 @@ import { Entry } from "~/Shared/types";
 import {
   handleAddWheelUser,
   handleRemoveWheelUser,
+  handleUpdateActivity,
   handleUpdateWheelUser,
 } from "../data/data";
 import { app, ipcMain, IpcMainEvent } from "electron";
@@ -63,13 +64,14 @@ enum Commands {
   remove = "!remove",
 }
 
-const wheelCommand = async (text: string) => {
+const wheelCommand = async (text: string, id: string) => {
   const entry: Entry = {
     text,
+    channelId: id,
     claimedHere: true,
     weight: 1,
     enabled: true,
-    message: "You're Next!",
+    message: id,
   };
 
   const bool = handleAddWheelUser({} as IpcMainEvent, entry);
@@ -78,19 +80,28 @@ const wheelCommand = async (text: string) => {
   }
 };
 
-const hereCommand = async (text: string) => {
+const hereCommand = async (text: string, id: string) => {
   const entries = store.get("entries", []);
   if (entries.length === 0) {
     return;
   }
 
-  const entry = entries.find((entry: Entry) => entry.text === text);
-
+  const entry = entries.find((entry: Entry) => {
+    if (entry.channelId) {
+      return entry.channelId === id;
+    }else{
+      return entry.text === text
+    }
+  
+  });
+  
   if (entry && !entry.claimedHere) {
     entry.claimedHere = true;
     entry.weight = entry.weight * 2;
     win?.webContents.send("youtube-here-count");
     handleUpdateWheelUser({} as IpcMainEvent, entry);
+  }else{
+    handleUpdateActivity({} as IpcMainEvent, text, id);
   }
 };
 
@@ -116,20 +127,20 @@ const monitorLiveChat = async (chatItem: ChatItem) => {
   const displayName = chatItem.author.name;
   //@ts-expect-error not typed
   const message = chatItem.message[0].text;
-
-  console.log("message", message, chatItem.id);
+  console.log("message", message, chatItem.author.channelId);
 
   switch (message) {
     case Commands.wheel:
-      wheelCommand(displayName);
+      wheelCommand(displayName, chatItem.author.channelId);
       break;
     case Commands.here:
-      hereCommand(displayName);
+      hereCommand(displayName, chatItem.author.channelId);
       break;
     case Commands.remove:
       removeCommand(displayName);
       break;
     default:
+      handleUpdateActivity({} as IpcMainEvent, displayName, chatItem.author.channelId);
       break;
   }
 };

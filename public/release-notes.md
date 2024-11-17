@@ -2,6 +2,17 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 1.2.0
+
+#### Features
+- Added twitch and youtube channel Ids to meta data to prevent same name collisions
+- Added timestamp to meta data so on entry winning the amount of time since last activity will be shown
+- Added time stamp data to entry cards on main screen
+  - Note these will update when clicking between the wheel of names window and main
+  - Or when filtering for a username
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 1.1.0
 
 #### Features
@@ -19,7 +30,7 @@ ________________________________________________________________________________
 #### Features
 - Added Youtube Chat Support
   - You can now add your Youtube handle and connect to the current live broadcast
-  
+
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 

@@ -10,6 +10,7 @@ export type WheelUser = {
   };
 
     export interface Entry {
+      timestamp?: number;
       text: string;
       image?: string;
       color?: string;
@@ -18,6 +19,7 @@ export type WheelUser = {
       enabled?: boolean;
       claimedHere: boolean;
       message?: string;
+      channelId?: string;
     }
 
 // New state types

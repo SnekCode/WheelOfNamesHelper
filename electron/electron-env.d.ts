@@ -46,6 +46,7 @@ export interface IContextDataAPI {
   updateWheelUser: (user: Entry) => void;
   removeWheelUser: (name: string) => void;
   forceUpdate: () => void;
+  updateActivity: (displayName: string, channelId: string) => void;
 }
 
 export interface IDataAPI {
