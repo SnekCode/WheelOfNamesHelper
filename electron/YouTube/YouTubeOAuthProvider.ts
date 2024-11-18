@@ -1,51 +1,90 @@
 import { BrowserWindow } from 'electron';
+import { google } from 'googleapis';
+import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
+import http, { get } from 'http';
+import url from 'url';
+import { generateCodeChallenge, generateCodeVerifier } from './cyrpto';
+import axios from 'axios';
 
 export class YouTubeOAuthProvider {
-    private clientId: string;
-    private redirectUri: string;
-    private scope: string[];
+    private clientId: string = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
+    public redirectUri: string = 'http://localhost:5173';
     private accessToken: string = '';
+    private scope: string[] = [
+        'https://www.googleapis.com/auth/youtube',
+        'https://www.googleapis.com/auth/youtube.force-ssl',
+    ];
+    private authCode: string = '';
+    private codeVerifier: string = '';
+    private auth: OAuth2Client | null = null;
 
     constructor(clientId: string, redirectUri: string, scope: string[]) {
         this.clientId = clientId;
         this.redirectUri = redirectUri;
         this.scope = scope;
+        this.auth = new google.auth.OAuth2(this.clientId, '', this.redirectUri);
+
+        this.auth.on('tokens', (tokens) => {
+            console.log('tokens', tokens);
+
+            if (tokens.access_token) {
+                this.accessToken = tokens.access_token;
+            }
+        });
     }
 
-    async getAccessToken(): Promise<string> {
-        const authWindow = new BrowserWindow({
-            width: 800,
-            height: 600,
-            webPreferences: {
-                nodeIntegration: false,
-                contextIsolation: true,
-            },
+    async getAuthenticationUrl() {
+        console.log('authenticating');
+        if (this.auth === null) return;
+        this.codeVerifier = generateCodeVerifier();
+        const codeChallenge = await generateCodeChallenge(this.codeVerifier);
+        return this.auth.generateAuthUrl({
+            scope: this.scope.join(' '),
+            client_id: this.clientId,
+            prompt: 'consent',
+            redirect_uri: this.redirectUri,
+            response_type: 'code',
+            access_type: 'offline',
+            code_challenge_method: CodeChallengeMethod.S256,
+            code_challenge: codeChallenge,
         });
+    }
 
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${this.clientId}&redirect_uri=${
-            this.redirectUri
-        }&response_type=token&access_type=offline&prompt=consent&scope=${this.scope.join(' ')}`;
-        // authWindow.webContents.session.clearStorageData();
-        authWindow.loadURL(authUrl);
-        authWindow.webContents.openDevTools();
-        return new Promise((resolve, reject) => {
-            authWindow.webContents.on('did-navigate', (event, url) => {
+    async getAccessToken(code: string) {
+        if (this.auth === null) return '';
+        // call https://oauth2.googleapis.com/token
+        const response = await axios.post('https://oauth2.googleapis.com/token', {
+            code,
+            client_id: this.clientId,
+            code_verifier: this.codeVerifier,
+            redirect_uri: this.redirectUri,
+            grant_type: 'authorization_code',
+        }).catch((error) => {
+            console.error('error', error);
+        })
 
-                const match = url.match(/access_token=([^&]*)/);
+        console.log('response', response.data);
+    }
+
+    async listenForRedirects(win: BrowserWindow) {
+        console.log('listening for redirects');
+        
+        win.webContents.on('did-navigate', (event, url) => {
+            
+            const codeMatch = url.match(/code=([^&]*)/);
+            const accessTokenMatch = url.match(/access_token=([^&]*)/);
+
+            if (codeMatch) {
+                this.authCode = codeMatch[1];
+                console.log('authCode', this.authCode);
+                this.getAccessToken(this.authCode);
                 
-                if (match) {
-                console.log(url);
+            }
 
-                    const accessToken = match[1];
-                    this.accessToken = accessToken;
-                    // authWindow.close();
-                    resolve(accessToken);
-                }
-            });
-
-            authWindow.on('closed', () => {
-                reject(new Error('User closed the window'));
-            });
+            if (accessTokenMatch) {
+                this.accessToken = accessTokenMatch[1];
+                console.log('accessToken', this.accessToken);
+            }
         });
     }
 
