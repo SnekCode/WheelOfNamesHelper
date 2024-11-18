@@ -32,7 +32,7 @@ export const handleChatCommand = async (
 ) => {
     let entry: Entry | undefined;
     const entries = store.get('entries', []);
-    switch (message) {
+    switch (message.toLowerCase()) {
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         // ~        WHEEL CASE        ~
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -91,11 +91,6 @@ export const handleChatCommand = async (
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         case EChatCommand.ODDS:
-            if(service === Service.YouTube){
-                // not implemented yet
-                return;
-            }
-
             const weightTotal = entries.reduce((acc: number, entry: Entry) => {
                 return acc + entry.weight;
             }, 0);
@@ -119,6 +114,10 @@ export const handleChatCommand = async (
             }
 
             chatCallBackFn(oddsMessage);
+            handleUpdateActivity({} as IpcMainEvent, displayname, channelId);
             break;
+            default:
+                handleUpdateActivity({} as IpcMainEvent, displayname, channelId);
+                break;
     }
 };

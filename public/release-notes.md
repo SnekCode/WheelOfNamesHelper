@@ -2,6 +2,21 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.0.0
+
+#### Features
+- Authentication methods for Youtube and Twitch added to the menus
+  - Application manages refresh tokens as well
+- New chat command !odds added. This command will send a message back to the viewer informing them of the odds of winning
+  - Possible Messages:
+    - @user your odds of winning are xx.xx% and you have x entries
+    - @user your odds of winning are xx.xx% and you have x entries you can double your odds by typing !here
+    - @user you have not entered the wheel yet with !wheel
+
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 1.2.0
 
 #### Features

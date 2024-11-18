@@ -13,16 +13,17 @@ export enum StoreKeys {
 }
 
 export interface IStore {
-  entries: Entry[];
-  lastconfig: WheelConfig;
-  twitchChannelName: string;
-  twitchAuth: string;
-  searching: boolean | undefined;
-  channelId: string;
-  handle: string;
-  videoId: string;
-  changeLogViewed: boolean;
-  releaseNotes: string;
+    entries: Entry[];
+    lastconfig: WheelConfig;
+    twitchChannelName: string;
+    twitchAuth: string;
+    youtubeAuth: string;
+    searching: boolean | undefined;
+    channelId: string;
+    handle: string;
+    videoId: string;
+    changeLogViewed: boolean;
+    releaseNotes: string;
 }
 
 export type IStoreKeys = keyof IStore;

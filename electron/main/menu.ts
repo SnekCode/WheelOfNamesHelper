@@ -7,6 +7,7 @@ import { win } from "./main";
 import { getReleaseNotes } from "../updater/releaseNotes";
 import { TwitchOAuthProvider } from "../Twitch/TwitchOAuthProvider";
 import { setUpClient } from "../Twitch/TwitchChatService";
+import { YouTubeOAuthProvider } from "../YouTube/YouTubeOAuthProvider";
 
 const appData = process.env.LOCALAPPDATA ?? "";
 
@@ -103,6 +104,11 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                       }
                   },
               },
+          ],
+      },
+      {
+          label: 'Twitch',
+          submenu: [
               {
                   label: 'Sign In To Twitch',
                   click: async (_, focusedWindow) => {
@@ -122,18 +128,57 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
               },
               {
                   label: 'Sign Out of Twitch',
+                  checked: store.get('twitchAuth') ? true : false,
                   click: async (_, focusedWindow) => {
                       const clientId = 'a0jvh4wodyncqkb683vzq4sb2plcpo';
                       const redirectUri = 'http://localhost:5173';
                       const scope = ['chat:read', 'chat:edit'];
-                      const responseType = 'token';
-                      const url = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`;
 
                       const provider = new TwitchOAuthProvider(clientId, redirectUri, scope);
 
                       provider.revokeAccessToken().then(() => {
                           store.delete('twitchAuth');
                           win?.webContents.send('twitch-chat-connect', false);
+                      });
+                  },
+              },
+          ],
+      },
+      {
+          label: 'YouTube',
+          submenu: [
+              {
+                  label: 'Sign In To YouTube',
+                  click: async (_, focusedWindow) => {
+                      const clientId = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
+                      const redirectUri = 'http://localhost:5173';
+                      const scope = [
+                          'https://www.googleapis.com/auth/youtube',
+                          'https://www.googleapis.com/auth/youtube.force-ssl',
+                      ];
+
+                      const provider = new YouTubeOAuthProvider(clientId, redirectUri, scope);
+
+                      provider.getAccessToken().then((accessToken) => {
+                          store.set('youtubeAuth', accessToken);
+                      });
+                  },
+              },
+              {
+                  label: 'Sign Out of YouTube',
+                  click: async (_, focusedWindow) => {
+                      const clientId = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
+                      const redirectUri = 'http://localhost:5173';
+                      const scope = [
+                          'https://www.googleapis.com/auth/youtube',
+                          'https://www.googleapis.com/auth/youtube.force-ssl',
+                      ];
+
+                      const provider = new YouTubeOAuthProvider(clientId, redirectUri, scope);
+
+                      provider.revokeAccessToken().then(() => {
+                          store.delete('youtubeAuth');
+                          win?.webContents.send('youtube-chat-connect', false);
                       });
                   },
               },

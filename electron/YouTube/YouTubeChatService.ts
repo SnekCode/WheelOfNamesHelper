@@ -3,7 +3,7 @@ import { store } from '../main/store';
 import { chatStore } from './store';
 import { LiveChat } from 'youtube-chat';
 import { ChatItem } from 'youtube-chat/dist/types/data';
-import { app, ipcMain, IpcMainEvent } from 'electron';
+import { app, ipcMain } from 'electron';
 import { win } from '../main/main';
 import { handleChatCommand, Service } from '../ChatService/ChatService';
 
@@ -11,6 +11,54 @@ import { handleChatCommand, Service } from '../ChatService/ChatService';
 
 export let isLiveBroadCast = false;
 let broadcastChatHistory: string[] = [];
+
+const findLiveBroadcast = async () => {
+    const accessToken = store.get('youtubeAuth', '')
+    axios.get(`https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active`, {
+        headers: {
+            'Content-Type': 'application/json',
+            "Authorization": `Bearer ${accessToken}`
+        }}).then((response) => {
+            console.log('response', response.data);
+            store.set("liveChatId", response.data.items[0].snippet.liveChatId);
+        }).catch((error) => {
+            store.set('liveChatId', "");
+        }); 
+}
+
+
+const sendMessage = async (message: string) => {
+    // api end point https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet
+
+    const videoId = store.get('videoId', '');
+    const liveChatId = store.get('liveChatId', '');
+    const accessToken = store.get('youtubeAuth', '');
+    if (!videoId || !accessToken) {
+        console.error('No videoId or accessToken found');
+        return;
+    }
+    const body = {
+        snippet: {
+            liveChatId: liveChatId,
+            textMessageDetails: {
+                messageText: message,
+            },
+            type: 'textMessageEvent',
+        },
+    };
+
+    const response = await axios.post(
+        `https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet`,
+        body, {
+            headers: {
+                'Content-Type': 'application/json',
+                "Authorization": `Bearer ${accessToken}`
+            },
+        }
+    ).catch((error) => {
+        console.error('error', error);
+    });
+}
 
 const getStatus = async () => {
     // search is expensive, use regex to find videoId on the returned page using the customURL
@@ -68,7 +116,7 @@ const monitorLiveChat = async (chatItem: ChatItem) => {
     //@ts-expect-error not typed
     const message = chatItem.message[0].text;
     console.log('message', message, chatItem.author.channelId);
-    handleChatCommand(message, displayName, chatItem.author.channelId, Service.YouTube, ()=> null);
+    handleChatCommand(message, displayName, chatItem.author.channelId, Service.YouTube, sendMessage);
 };
 
 let broadcastPing: NodeJS.Timeout;
@@ -133,6 +181,7 @@ ipcMain.handle('youtube-check-status', () => {
         sendRendererStatus();
         return;
     }
+    findLiveBroadcast();
     setUpChat();
 });
 
