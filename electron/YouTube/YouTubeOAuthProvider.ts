@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, session } from 'electron';
 import { google } from 'googleapis';
 import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import { generateCodeChallenge, generateCodeVerifier } from './cyrpto';
@@ -157,9 +157,9 @@ export class YouTubeOAuthProvider extends EventEmitter {
     }
 
     async listenForRedirects(win: BrowserWindow) {
-        console.log('listening for redirects');
+        win?.webContents.send('main-process-message', "Listening for redirects");
 
-        win.webContents.on('did-navigate', (event, url) => {
+        win.webContents.on('will-redirect', (event, url) => {
             const codeMatch = url.match(/code=([^&]*)/);
 
             if (codeMatch) {
@@ -169,6 +169,9 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 win.close();
             }
         });
+
+
+            
     }
 
     async revokeAccessToken(): Promise<void> {
