@@ -5,6 +5,7 @@ import { setStore } from "../data/data";
 import prompt from "electron-prompt";
 import { win } from "./main";
 import { getReleaseNotes } from "../updater/releaseNotes";
+import { autoUpdater } from "../updater/updater";
 
 const appData = process.env.LOCALAPPDATA ?? "";
 
@@ -118,6 +119,42 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
     {
       label: "Developer",
       submenu: [
+          {
+          label: "Select Update Channel",
+          // select menu item based on current channel
+          submenu: [
+            {
+              label: "Alpha",
+              type: "radio",
+              checked: store.get("channel") === "alpha",
+              click: () => {
+                setStore("channel", "alpha");
+                autoUpdater.channel = "alpha";
+                autoUpdater.checkForUpdates()
+              },
+            },
+            {
+              label: "Beta",
+              type: "radio",
+              checked: store.get("channel") === "beta",
+              click: () => {
+                setStore("channel", "beta");
+                autoUpdater.channel = "beta";
+                autoUpdater.checkForUpdates();
+              },
+            },
+            {
+              label: "Stable",
+              type: "radio",
+              checked: store.get("channel") === "latest",
+              click: () => {
+                setStore("channel", "latest");
+                autoUpdater.channel = "latest";
+                autoUpdater.checkForUpdates();
+              },
+            },
+          ],
+        },
         {
           label: "Force Reload",
           accelerator: "CmdOrCtrl+Shift+R",

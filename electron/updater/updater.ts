@@ -4,14 +4,15 @@ import updater from "electron-updater";
 import { win } from "~/electron/main/main";
 import { channelLog, EChannels } from "~/Shared/channels";
 import { store } from "../main/store"
-const { autoUpdater } = updater;
-
+export const { autoUpdater } = updater;
 
 
 autoUpdater.logger = log;
 autoUpdater.autoDownload = false;
 
 const isDev = import.meta.env.DEV;
+
+autoUpdater.channel = store.get("channel") || "latest";
 
 if (!isDev) {
   setTimeout(() => {
@@ -26,11 +27,7 @@ if (!isDev) {
 
 if (isDev) {
   autoUpdater.forceDevUpdateConfig = true;
-  autoUpdater.channel = "alpha";
   autoUpdater.allowPrerelease = true;
-  autoUpdater.checkForUpdatesAndNotify();
-  autoUpdater.checkForUpdates();
-  console.log("DEV MODE: Simulating update available in 5 seconds");
 }
 
 if (process.env.VITE_UPDATER) {
