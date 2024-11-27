@@ -130,7 +130,7 @@ export const handleUpdateActivity = async (
   _: IpcMainInvokeEvent,
   displayName: string,
   channelId: string,
-  service: Service
+  service?: Service
 ) => {
   
   let entries = store.get(StoreKeys.data);
