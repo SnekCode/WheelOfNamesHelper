@@ -3,189 +3,254 @@ import { store } from '../main/store';
 import { chatStore } from './store';
 import { LiveChat } from 'youtube-chat';
 import { ChatItem } from 'youtube-chat/dist/types/data';
-import { app, ipcMain } from 'electron';
-import { win } from '../main/main';
+import { youtubeOAuthProvider, win } from '../main/main';
 import { handleChatCommand, Service } from '../ChatService/ChatService';
+import EventEmitter from 'node:events';
 
-// Consider creating a utilityProcess for this service https://www.electronjs.org/docs/latest/api/utility-process
+export class YouTubeChatService extends EventEmitter {
+    public liveChatId: string = '';
+    public videoId: string = '';
+    public handle: string = '';
+    public isLiveBroadCast: boolean = false;
+    public searching: boolean = true;
 
-export let isLiveBroadCast = false;
-let broadcastChatHistory: string[] = [];
+    private searchTimer: NodeJS.Timeout | null = null;
+    private broadcastPing: NodeJS.Timeout | null = null;
+    private searchInterval: number = 5000;
+    private pingInterval: number = 60000;
 
-const findLiveBroadcast = async () => {
-    const accessToken = store.get('youtubeAuth', '')
-    axios.get(`https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active`, {
-        headers: {
-            'Content-Type': 'application/json',
-            "Authorization": `Bearer ${accessToken}`
-        }}).then((response) => {
-            console.log('response', response.data);
-            store.set("liveChatId", response.data.items[0].snippet.liveChatId);
-        }).catch((error) => {
-            store.set('liveChatId', "");
-        }); 
-}
+    private broadcastChatHistory: string[] = [];
+    private chat: LiveChat | null = null;
 
+    constructor() {
+        super();
 
-const sendMessage = async (message: string) => {
-    // api end point https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet
+        this.on('liveBroadcast', (_: boolean) => {
+            if (this.isLiveBroadCast) {
+                this.startChat();
+                this.stopBroadcastSearch();
+            } else {
+                this.startBroadcastSearch();
+                clearInterval(this.broadcastPing!);
+                this.stopChat();
+            }
+            this.sendRendererStatus();
+        });
 
-    const videoId = store.get('videoId', '');
-    const liveChatId = store.get('liveChatId', '');
-    const accessToken = store.get('youtubeAuth', '');
-    if (!videoId || !accessToken) {
-        console.error('No videoId or accessToken found');
-        return;
+        this.on('searching', (searching) => {
+            win?.webContents.send('youtube-broadcast-searching', searching);
+        });
     }
-    const body = {
-        snippet: {
-            liveChatId: liveChatId,
-            textMessageDetails: {
-                messageText: message,
-            },
-            type: 'textMessageEvent',
-        },
+
+    // setters
+    setLiveChatId(liveChatId: string) {
+        this.liveChatId = liveChatId;
+    }
+
+    setVideoId(videoId: string) {
+        const previousVideoId = store.get('videoId', '');
+        if (previousVideoId !== videoId) {
+            store.set('videoId', videoId);
+            chatStore.delete(previousVideoId);
+            chatStore.set(videoId, []);
+        }
+
+        this.videoId = videoId;
+    }
+
+    setHandle(handle: string) {
+        this.handle = handle;
+    }
+
+    setIsLiveBroadCast(isLiveBroadCast: boolean) {
+        this.isLiveBroadCast = isLiveBroadCast;
+        this.emit('liveBroadcast', isLiveBroadCast);
+        if (!isLiveBroadCast) {
+            this.setLiveChatId('');
+        }
+    }
+
+    // Broadcast Stuff
+
+    startBroadcastSearch() {
+        this.stopBroadcastSearch();
+        this.searching = true;
+        this.getStatus();
+        this.searchTimer = setInterval(() => {
+            console.log('SEARCHING FOR BROADCAST');
+            this.getStatus();
+        }, this.searchInterval);
+    }
+
+    stopBroadcastSearch() {
+        this.searching = false;
+        clearInterval(this.searchTimer!);
+    }
+
+    getLiveChatId = async () => {
+        if (this.liveChatId) return;
+        console.log('Getting Live Chat Id');
+        const accessToken = youtubeOAuthProvider.accessToken;
+        const response = await axios.get(
+            `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        if (response) {
+            // check if response.data.items[0].snippet.liveChatId exists
+            if (!response.data.items[0]?.snippet?.liveChatId) {
+                return;
+            } else {
+                this.setLiveChatId(response.data.items[0].snippet.liveChatId);
+                console.log('liveChatId', this.liveChatId);
+                this.setIsLiveBroadCast(true);
+            }
+        }
     };
 
-    const response = await axios.post(
-        `https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet`,
-        body, {
-            headers: {
-                'Content-Type': 'application/json',
-                "Authorization": `Bearer ${accessToken}`
+    getStatus = async () => {
+        // search is expensive, use regex to find videoId on the returned page using the customURL
+        const handle = store.get('handle', '');
+        console.log('Checking Status', handle);
+        if (!handle) {
+            console.error('No handle found');
+            return;
+        }
+        axios
+            .get(`https://www.youtube.com/@${handle}/live`)
+            .then((response) => {
+                this.setVideoId(response.data.match(/"videoId":"(.+?)"/)[1]);
+                const islive = response.data.includes('<meta itemprop="isLiveBroadcast"')
+                                
+                if(islive){
+                    this.getLiveChatId();
+                } else if (this.isLiveBroadCast) {
+                    this.setIsLiveBroadCast(false);
+                }
+
+                this.broadcastChatHistory = chatStore.get(this.videoId);
+
+                this.sendRendererStatus();
+            })
+            .catch((error) => {
+                if (error.response.status === 503 && this.isLiveBroadCast) {
+                    console.log('Service Unavailable');
+                    this.setIsLiveBroadCast(false);
+                    return;
+                }
+                if (error.response.status === 404 && this.isLiveBroadCast) {
+                    console.log('No live broadcast found');
+                    this.setIsLiveBroadCast(false);
+                } else {
+                    console.log('other error', error.response.status);
+                }
+            });
+    };
+
+    // Chat Stuff
+
+    sendRendererStatus = () => {
+        console.log('sending status', {
+            isLiveBroadCast: this.isLiveBroadCast,
+            searching: this.searching,
+            handle: this.handle,
+            videoId: this.videoId,
+        });
+
+        win?.webContents.send('youtube-status', {
+            isLiveBroadCast: this.isLiveBroadCast,
+            searching: this.searching,
+            handle: this.handle,
+            videoId: this.videoId,
+        });
+    };
+
+    startBroadcastPing = () => {
+        this.stopBroadcastPing();
+        this.broadcastPing = setInterval(async () => {
+            await this.getStatus();
+            if (!this.isLiveBroadCast) {
+                this.emit('liveBroadcast', false);
+                this.sendRendererStatus();
+            }
+        }, this.pingInterval);
+    };
+
+    stopBroadcastPing = () => {
+        clearInterval(this.broadcastPing!);
+    };
+
+    startChat = async () => {
+        this.chat = new LiveChat({ handle: this.handle });
+        this.chat.start();
+        this.chat.on('chat', this.monitorLiveChat);
+        this.startBroadcastPing();
+    };
+
+    stopChat = () => {
+        this.chat?.stop();
+        this.chat?.removeListener('chat', this.monitorLiveChat);
+    };
+
+    disconnect = () => {
+        this.stopBroadcastSearch();
+        this.stopBroadcastPing();
+        this.stopChat();
+        this.isLiveBroadCast = false;
+        this.searching = false;
+        this.sendRendererStatus();
+    }
+
+    monitorLiveChat = async (chatItem: ChatItem) => {
+        if (!this.videoId) {
+            console.error('No videoId found');
+            return;
+        }
+        // filter out old chats
+        if (this.broadcastChatHistory.includes(chatItem.id)) {
+            return;
+        }
+        this.broadcastChatHistory.push(chatItem.id);
+        chatStore.set(this.videoId, this.broadcastChatHistory);
+        const displayName = chatItem.author.name;
+        //@ts-expect-error not typed
+        const message = chatItem.message[0].text;
+        console.log('message', message, chatItem.author.channelId);
+        handleChatCommand(message, displayName, chatItem.author.channelId, Service.YouTube, this.sendMessage);
+    };
+
+    sendMessage = async (message: string) => {
+        // api end point https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet
+
+        const accessToken = youtubeOAuthProvider.accessToken;
+        if (!accessToken) {
+            console.error('N accessToken found');
+            return;
+        }
+        const body = {
+            snippet: {
+                liveChatId: this.liveChatId,
+                textMessageDetails: {
+                    messageText: message,
+                },
+                type: 'textMessageEvent',
             },
-        }
-    ).catch((error) => {
-        console.error('error', error);
-    });
+        };
+
+        const response = await axios
+            .post(`https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet`, body, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            })
+            .catch((error) => {
+                console.error('error', error);
+            });
+    };
 }
-
-const getStatus = async () => {
-    // search is expensive, use regex to find videoId on the returned page using the customURL
-    const handle = store.get('handle', '');
-    console.log('Checking Status', handle);
-    if (!handle) {
-        console.error('No handle found');
-        return;
-    }
-    const response = await axios.get(`https://www.youtube.com/${handle}/live`);
-
-    const videoId = response.data.match(/"videoId":"(.+?)"/)[1];
-
-    isLiveBroadCast = response.data.includes('<meta itemprop="isLiveBroadcast"');
-
-    const previousVideoId = store.get('videoId', '');
-
-    // auto clean up of chat history
-    if (previousVideoId !== videoId) {
-        store.set('videoId', videoId);
-        chatStore.delete(previousVideoId);
-        chatStore.set(videoId, []);
-    }
-
-    broadcastChatHistory = chatStore.get(videoId);
-    let searching = store.get('searching', false);
-    if (isLiveBroadCast) {
-        store.set('searching', false);
-        searching = false;
-    }
-
-    win?.webContents.send('youtube-status', {
-        isLiveBroadCast,
-        handle,
-        videoId,
-        searching,
-    });
-
-    return isLiveBroadCast;
-};
-
-const monitorLiveChat = async (chatItem: ChatItem) => {
-    const videoId = store.get('videoId', '');
-    if (!videoId) {
-        console.error('No videoId found');
-        return;
-    }
-    // filter out old chats
-    if (broadcastChatHistory.includes(chatItem.id)) {
-        return;
-    }
-    broadcastChatHistory.push(chatItem.id);
-    chatStore.set(videoId, broadcastChatHistory);
-    const displayName = chatItem.author.name;
-    //@ts-expect-error not typed
-    const message = chatItem.message[0].text;
-    console.log('message', message, chatItem.author.channelId);
-    handleChatCommand(message, displayName, chatItem.author.channelId, Service.YouTube, sendMessage);
-};
-
-let broadcastPing: NodeJS.Timeout;
-
-const sendRendererStatus = () => {
-    const handle = store.get('handle', '');
-    const searching = store.get('searching', false);
-    const videoId = store.get('videoId', '');
-    console.log('sending status', {
-        isLiveBroadCast,
-        searching,
-        handle,
-        videoId,
-    });
-
-    win?.webContents.send('youtube-status', {
-        isLiveBroadCast,
-        searching,
-        handle,
-        videoId,
-    });
-};
-
-const startChat = async () => {
-    // const channelId = store.get("channelId", "");
-    const handle = store.get('handle', '');
-    const chat = new LiveChat({ handle });
-    chat.start();
-    chat.on('chat', monitorLiveChat);
-    broadcastPing = setInterval(async () => {
-        await getStatus();
-        if (!isLiveBroadCast) {
-            clearInterval(broadcastPing);
-            sendRendererStatus();
-        }
-    }, 60000);
-};
-
-const setUpChat = async () => {
-    store.set('searching', true);
-    sendRendererStatus();
-    await getStatus();
-    const videoId = store.get('videoId', '');
-    if (!videoId || !isLiveBroadCast) {
-        clearInterval(broadcastPing);
-        broadcastPing = setInterval(() => {
-            setUpChat();
-        }, 3000);
-    } else {
-        clearInterval(broadcastPing);
-        startChat();
-    }
-};
-
-ipcMain.handle('youtube-check-status', () => {
-    const searching = store.get('searching', false);
-    console.log('ipcRenderer received youtube-check-status', searching);
-
-    if (searching === true) {
-        clearInterval(broadcastPing);
-        store.set('searching', false);
-        sendRendererStatus();
-        return;
-    }
-    findLiveBroadcast();
-    setUpChat();
-});
-
-app.on('before-quit', () => {
-    console.log('Quitting');
-    store.delete('searching');
-});

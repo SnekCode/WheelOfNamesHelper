@@ -66,7 +66,7 @@ ipcRenderer.on("initListeners", async (event, value) => {
         if (isNaN(minutes) || isNaN(seconds)) {
           messageBox.textContent = `Not sure if they are here...`;
         }else{
-          messageBox.textContent = `Last Seen: ${minutes} Minutes and ${seconds}s ago`;
+          messageBox.textContent = `Last Seen: ${minutes} Minutes and ${seconds}s ago ${entry.service ? `on ${entry.service}` : ""}`;
         }
       }
 

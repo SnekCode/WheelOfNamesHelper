@@ -3,13 +3,11 @@ import path from 'node:path';
 import { store } from './store';
 import { setStore } from '../data/data';
 import prompt from 'electron-prompt';
-import { win } from './main';
-import url from 'url';
-
+import { youtubeOAuthProvider, win, youTubeChatService, twitchAuthProvider } from './main';
 import { getReleaseNotes } from '../updater/releaseNotes';
 import { TwitchOAuthProvider } from '../Twitch/TwitchOAuthProvider';
 import { setUpClient } from '../Twitch/TwitchChatService';
-import { YouTubeOAuthProvider } from '../YouTube/YouTubeOAuthProvider';
+import axios from 'axios';
 
 const appData = process.env.LOCALAPPDATA ?? '';
 
@@ -35,56 +33,18 @@ async function showInputDialog(
     return result;
 }
 
+function rebuildMenu() {
+    // Rebuild the menu to update the sublabel
+    const menu = Menu.buildFromTemplate(createMenuTemplate());
+    Menu.setApplicationMenu(menu);
+}
+
 // Function to create the menu template
 function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
     return [
         {
             label: 'App',
             submenu: [
-                {
-                    label: 'Set Twitch Channel Name',
-                    sublabel: `Current: ${store.get('twitchChannelName') ?? 'Not set'} `,
-                    click: async (_, focusedWindow) => {
-                        if (focusedWindow) {
-                            const input = await showInputDialog(
-                                focusedWindow as BrowserWindow,
-                                'Set Twitch Channel Name',
-                                'Enter the Twitch channel name:'
-                            );
-                            if (input) {
-                                setStore('twitchChannelName', input);
-                                // ipcRenderer.send('setStore', 'twitchChannelName', input);
-                                // Rebuild the menu to update the sublabel
-                                const menu = Menu.buildFromTemplate(createMenuTemplate());
-                                Menu.setApplicationMenu(menu);
-                                // (focusedWindow as BrowserWindow)?.reload();
-                            }
-                        }
-                    },
-                },
-                {
-                    label: 'Set YouTube @Name Handle',
-                    sublabel: `Current: ${store.get('handle') ?? 'Not set'} `,
-                    click: async (_, focusedWindow) => {
-                        if (focusedWindow) {
-                            const input = await showInputDialog(
-                                focusedWindow as BrowserWindow,
-                                'Set Twitch Channel Name',
-                                'Enter the Twitch channel name:'
-                            );
-                            if (input) {
-                                // add a @ to the beginning of the input if it doesn't already have one
-                                const handle = input.startsWith('@') ? input : `@${input}`;
-                                setStore('handle', handle);
-                                // ipcRenderer.send('setStore', 'twitchChannelName', input);
-                                // Rebuild the menu to update the sublabel
-                                const menu = Menu.buildFromTemplate(createMenuTemplate());
-                                Menu.setApplicationMenu(menu);
-                                // (focusedWindow as BrowserWindow)?.reload();
-                            }
-                        }
-                    },
-                },
                 {
                     label: 'Sign In To WheelOfNames',
                     click: async (_, focusedWindow) => {
@@ -114,15 +74,14 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                 {
                     label: 'Sign In To Twitch',
                     click: async (_, focusedWindow) => {
-                        const clientId = 'a0jvh4wodyncqkb683vzq4sb2plcpo';
-                        const redirectUri = 'http://localhost:5173';
-                        const scope = ['chat:read', 'chat:edit'];
-                        const responseType = 'token';
-                        const url = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`;
+                        
+                        twitchAuthProvider.getAccessToken().then((accessToken) => {
 
-                        const provider = new TwitchOAuthProvider(clientId, redirectUri, scope);
+                            // vaildate the access token
+                            if (!accessToken) {
+                                return;
+                            }
 
-                        provider.getAccessToken().then((accessToken) => {
                             store.set('twitchAuth', accessToken);
                             setUpClient();
                         });
@@ -132,13 +91,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                     label: 'Sign Out of Twitch',
                     checked: store.get('twitchAuth') ? true : false,
                     click: async (_, focusedWindow) => {
-                        const clientId = 'a0jvh4wodyncqkb683vzq4sb2plcpo';
-                        const redirectUri = 'http://localhost:5173';
-                        const scope = ['chat:read', 'chat:edit'];
-
-                        const provider = new TwitchOAuthProvider(clientId, redirectUri, scope);
-
-                        provider.revokeAccessToken().then(() => {
+                        twitchAuthProvider.revokeAccessToken().then(() => {
                             store.delete('twitchAuth');
                             win?.webContents.send('twitch-chat-connect', false);
                         });
@@ -152,15 +105,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                 {
                     label: 'Sign In To YouTube',
                     click: async (_, focusedWindow) => {
-                        const clientId = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
-                        const redirectUri = 'http://localhost:5173';
-                        const scope = [
-                            'https://www.googleapis.com/auth/youtube',
-                            'https://www.googleapis.com/auth/youtube.force-ssl',
-                        ];
-
-                        const provider = new YouTubeOAuthProvider(clientId, redirectUri, scope);
-                        const authorizeUrl = await provider.getAuthenticationUrl();
+                        const authorizeUrl = await youtubeOAuthProvider.getAuthenticationUrl();
 
                         if (authorizeUrl === undefined) {
                             return;
@@ -177,28 +122,22 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         // open the browser to the authorize url to start the workflow
                         // open(authorizeUrl, { wait: false }).then((cp) => cp.unref());
                         authWindow.loadURL(authorizeUrl);
-                        if(authWindow) provider.listenForRedirects(authWindow)
 
+                        // return and handle ipc comm
+                        if (authWindow) {
+                            youtubeOAuthProvider.listenForRedirects(authWindow);
+                        }
                     },
                 },
                 {
                     label: 'Sign Out of YouTube',
                     click: async (_, focusedWindow) => {
-                        const clientId = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
-                        const redirectUri = 'http://localhost:5173';
-                        const scope = [
-                            'https://www.googleapis.com/auth/youtube',
-                            'https://www.googleapis.com/auth/youtube.force-ssl',
-                        ];
-
-                        const provider = new YouTubeOAuthProvider(clientId, redirectUri, scope);
-
-                        provider.revokeAccessToken().then(() => {
+                        youtubeOAuthProvider.revokeAccessToken().then(() => {
                             store.delete('youtubeAuth');
-                            win?.webContents.send('youtube-chat-connect', false);
+                            youTubeChatService.disconnect();
                         });
                     },
-                },
+                }
             ],
         },
         {

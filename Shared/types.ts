@@ -1,3 +1,5 @@
+import { Service } from "~/electron/ChatService/ChatService";
+
 // Old state types
 export type WheelUsers = {
   [key: string]: WheelUser 
@@ -20,6 +22,7 @@ export type WheelUser = {
       claimedHere: boolean;
       message?: string;
       channelId?: string;
+      service?: Service;
     }
 
 // New state types

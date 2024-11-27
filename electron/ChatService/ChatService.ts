@@ -15,8 +15,8 @@ export enum EChatCommand {
 }
 
 export enum Service {
-    YouTube = 'youtube',
-    Twitch = 'twitch',
+    YouTube = 'YouTube',
+    Twitch = 'Twitch',
 }
 
 const updateCounts = (service: Service, type: "add" | "remove", resource: "count" | "here" | "wheel") => {
@@ -45,6 +45,7 @@ export const handleChatCommand = async (
                 weight: 1,
                 enabled: true,
                 message: channelId,
+                service
             };
             const success = handleAddWheelUser({} as IpcMainInvokeEvent, entry, false);
             if (success) updateCounts(service, 'add', 'wheel');
@@ -70,10 +71,11 @@ export const handleChatCommand = async (
             if (entry && !entry.claimedHere) {
                 entry.claimedHere = true;
                 entry.weight = entry.weight * 2;
+                entry['service'] = service;
                 handleUpdateWheelUser({} as IpcMainEvent, entry);
                 updateCounts(service, "add", "here");
             } else {
-                handleUpdateActivity({} as IpcMainEvent, displayname, channelId);
+                handleUpdateActivity({} as IpcMainEvent, displayname, channelId, service);
             }
             break;
 
@@ -114,10 +116,10 @@ export const handleChatCommand = async (
             }
 
             chatCallBackFn(oddsMessage);
-            handleUpdateActivity({} as IpcMainEvent, displayname, channelId);
+            handleUpdateActivity({} as IpcMainEvent, displayname, channelId, service);
             break;
             default:
-                handleUpdateActivity({} as IpcMainEvent, displayname, channelId);
+                handleUpdateActivity({} as IpcMainEvent, displayname, channelId, service);
                 break;
     }
 };

@@ -13,7 +13,7 @@ enum SortType {
 }
 const { store, ipcRenderer, contextData } = window;
 
-const channel = ref(""); // Add a ref for the channel
+const twitchHandle = ref(""); // Add a ref for the channel
 const twitchClient = ref<tmi.Client | void>(); // Add a ref for the twitch client
 const twitchWheelCount = ref(0); // Add a ref for the count
 const twitchHereCount = ref(0); // Add a ref for the count
@@ -29,8 +29,9 @@ const messagesCount = ref(0); // Add a ref for the messages count
 
 // youtube status variables
 const isLiveBroadCast = ref(false);
+const isYoutubeAuthenticated = ref(false);
 const isTwitchConnected = ref(false);
-const handle = ref("");
+const youtubeHandle = ref("");
 const videoId = ref("");
 const searching = ref(false);
 const sortType = ref(SortType.ACTIVITY);
@@ -84,6 +85,25 @@ ipcRenderer.on("twitch-remove-here", () => {
   twitchHereCount.value -= 1;
 });
 
+ipcRenderer.on('youtube-broadcast-searching', (_, bool: boolean) => {
+  // isLiveBroadCast.value = bool;
+  searching.value = bool;
+});
+
+ipcRenderer.on("youtube-authenticated", () => {
+  console.log("youtube-authenticated");
+  
+  isYoutubeAuthenticated.value = true;
+});
+
+ipcRenderer.on("youtube-unauthenticated", () => {
+  isYoutubeAuthenticated.value = false;
+});
+
+ipcRenderer.on("youtube-handle", (_, data) => {
+  youtubeHandle.value = data;
+});
+
 ipcRenderer.on(
   "youtube-status",
   (
@@ -97,22 +117,34 @@ ipcRenderer.on(
   ) => {
     console.log("youtube-status", status);
     isLiveBroadCast.value = status.isLiveBroadCast;
-    handle.value = status.handle;
+    youtubeHandle.value = status.handle;
     videoId.value = status.videoId;
     searching.value = status.searching;
   }
 );
 
+ipcRenderer.on('twitch-authenticated', () => {
+  isTwitchConnected.value = true;
+});
+
+ipcRenderer.on('twitch-unauthenticated', () => {
+  isTwitchConnected.value = false;
+});
+
+ipcRenderer.on("twitch-handle", (_, data) => {
+  twitchHandle.value = data;
+});
+
 // get the channel name from the store
 ipcRenderer.invoke("getStore", "twitchChannelName").then((channelName) => {
   console.log("channelName", channelName);
-  channel.value = channelName;
+  twitchHandle.value = channelName;
 });
 
 // TODO change event name from handle to youtubeHandle e.g
 ipcRenderer.invoke("getStore", "handle").then((handleName) => {
   console.log("handleName", handleName);
-  handle.value = handleName;
+  youtubeHandle.value = handleName;
 });
 
 // get saved wheelusers from the store
@@ -127,9 +159,9 @@ ipcRenderer.invoke("getStore", "entries").then((data) => {
 
 // Twitch chat services setup
 ipcRenderer.send("did-finish-load");
-ipcRenderer.on("twitch-chat-connect", (_, data) => {
-    isTwitchConnected.value = data;
-});
+// ipcRenderer.on("twitch-chat-connect", (_, data) => {
+//     isTwitchConnected.value = data;
+// });
 
 
 // listen for app close event
@@ -178,9 +210,9 @@ const filteredUsers = computed<Entry[]>(() => {
 });
 
 const resetWheelRequests = () => {
-  twitchWheelCount
-Here= 0;
-  twitchClaimedCount.value = 0;
+  twitchWheelCount.value = 0;
+  twitchHereCount.value = 0;
+
   youtubeWheelCount.value = 0;
   youtubeHereCount.value = 0;
 };
@@ -212,10 +244,6 @@ const openWheelWindow = async () => {
   window.electronAPI.setDefaults();
 };
 
-const youtubeCheckStatus = async () => {
-  await ipcRenderer.invoke("youtube-check-status");
-};
-
 const getTime = (timestamp: number) => {
   const currentTime = Date.now();
   const differenceMilliseconds = currentTime - timestamp;
@@ -239,9 +267,9 @@ const getTime = (timestamp: number) => {
     <!-- Twitch Section -->
     <div class="channel-section">
       <label for="channel-name">Twitch Channel</label>
-      <div v-if="!channel" class="hint">(Set channel in App menu dropdown)</div>
+      <div v-if="!twitchHandle" class="hint">(Set channel in App menu dropdown)</div>
       <div v-else>
-        {{ channel }}
+        {{ twitchHandle }}
         <span v-if="isTwitchConnected" class="check-mark">✔️</span>
         <span v-else class="check-mark" style="color: red">❌</span>
       </div>
@@ -251,17 +279,16 @@ const getTime = (timestamp: number) => {
     <div class="youtube-section">
       <div class="channel-section">
         <label for="youtube-channel">YouTube Channel</label>
-        <div v-if="!handle" class="hint">
-          (Set channel in App menu dropdown)
+        <div v-if="!youtubeHandle" class="hint">
+          (Sign In to Youtube account)
         </div>
         <div v-else>
-          {{ handle }}
-          <span v-if="isLiveBroadCast" class="check-mark">✔️</span>
+          {{ youtubeHandle }}
+          <span v-if="isYoutubeAuthenticated" class="check-mark">✔️</span>
           <span v-else class="check-mark" style="color: red">❌</span>
         </div>
       </div>
       <button
-        @click="youtubeCheckStatus"
         :class="`youtube-button ${
           searching ? 'youtube-button-searching' : ''
         } ${isLiveBroadCast ? 'hide' : ''}`"
