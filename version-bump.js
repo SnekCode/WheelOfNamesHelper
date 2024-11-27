@@ -46,9 +46,12 @@ const main = () => {
   } catch (error) {
     console.log(`No existing tag v${newVersion} found`);
   }
-
-  execSync(`git add package.json`);
-  execSync(`git commit -m "chore: bump version to ${newVersion}"`);
+  try{
+    execSync(`git add package.json`);
+    execSync(`git commit -m "chore: bump version to ${newVersion}"`);
+  }catch(error){
+    console.log(`No changes in package.json`);
+  }
   execSync(`git push origin master`);
   execSync(`git tag v${newVersion}`);
   execSync(`git push origin tag v${newVersion}`);
