@@ -27,7 +27,10 @@
     "publish": "vue-tsc --noEmit && vite build && electron-builder --publish always",
     "version:major": "node version-bump.js major",
     "version:minor": "node version-bump.js minor",
-    "version:patch": "node version-bump.js patch"
+    "version:patch": "node version-bump.js patch",
+    "version:major:beta": "node version-bump.js major beta",
+    "version:minor:beta": "node version-bump.js minor beta",
+    "version:patch:beta": "node version-bump.js patch beta"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
