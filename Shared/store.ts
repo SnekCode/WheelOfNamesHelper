@@ -10,18 +10,22 @@ export enum StoreKeys {
     channelId = "channelId",
     handle = "handle",
     videoId = "videoId",
+    channel = "channel",
 }
 
 export interface IStore {
-  entries: Entry[];
-  lastconfig: WheelConfig;
-  twitchChannelName: string;
-  searching: boolean | undefined;
-  channelId: string;
-  handle: string;
-  videoId: string;
-  changeLogViewed: boolean;
-  releaseNotes: string;
+    entries: Entry[];
+    lastconfig: WheelConfig;
+    twitchChannelName: string;
+    twitchAuth: string;
+    youtubeAuth: string;
+    searching: boolean | undefined;
+    channelId: string;
+    handle: string;
+    videoId: string;
+    changeLogViewed: boolean;
+    releaseNotes: string;
+    channel: string;
 }
 
 export type IStoreKeys = keyof IStore;

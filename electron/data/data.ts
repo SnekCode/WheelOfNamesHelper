@@ -13,6 +13,7 @@ import { EChannels } from "~/Shared/channels";
 // load main ipc actions
 import { store } from "../main/store";
 import { Entry } from "~/Shared/types";
+import { Service } from "../ChatService/ChatService";
 
 let pause = false;
 let addQueue: Entry[] = [];
@@ -128,20 +129,22 @@ const handleNotClaimed = () => {
 export const handleUpdateActivity = async (
   _: IpcMainInvokeEvent,
   displayName: string,
-  channelId: string
+  channelId: string,
+  service?: Service
 ) => {
   
   let entries = store.get(StoreKeys.data);
-
+  
   entries = entries.map((entry: Entry) => {
     if (entry.channelId === channelId) {
-      return { ...entry, timestamp: Date.now(), message: channelId };
+      return { ...entry, timestamp: Date.now(), message: channelId, service: service };
     } else if (entry.text === displayName) {
       return {
         ...entry,
         channelId,
         timestamp: Date.now(),
         message: channelId,
+        service: service
       };
     } else {
       return entry;

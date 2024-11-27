@@ -1,6 +1,6 @@
 {
   "name": "wheel-of-names-helper",
-  "version": "1.2.0",
+  "version": "2.0.0-beta",
   "main": "dist-electron/main/main.js",
   "description": "Wheel of names tool for Twitch streamers",
   "author": "SnekCode",
@@ -27,7 +27,12 @@
     "publish": "vue-tsc --noEmit && vite build && electron-builder --publish always",
     "version:major": "node version-bump.js major",
     "version:minor": "node version-bump.js minor",
-    "version:patch": "node version-bump.js patch"
+    "version:patch": "node version-bump.js patch",
+    "version:current": "node version-bump.js current",
+    "version:major:beta": "node version-bump.js major beta",
+    "version:minor:beta": "node version-bump.js minor beta",
+    "version:patch:beta": "node version-bump.js patch beta",
+    "version:current:beta": "node version-bump.js current beta"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
@@ -46,6 +51,8 @@
     "vue-tsc": "^2.0.6"
   },
   "dependencies": {
+    "@twurple/auth": "^7.2.0",
+    "@twurple/auth-ext": "^7.2.0",
     "axios": "^1.7.7",
     "electron-forge": "^5.2.4",
     "electron-log": "^5.2.0",
@@ -53,9 +60,14 @@
     "electron-store": "^10.0.0",
     "electron-updater": "^6.3.9",
     "googleapis": "^144.0.0",
+    "http": "^0.0.1-security",
     "keytar": "^7.9.0",
     "marked": "^15.0.0",
+    "open": "^10.1.0",
     "tmi.js": "^1.8.5",
+    "twitch-auth": "^4.6.7",
+    "twitch-chat-client": "^4.6.7",
+    "url": "^0.11.4",
     "vite-tsconfig-paths": "^5.0.1",
     "youtube-chat": "^2.2.0"
   }
