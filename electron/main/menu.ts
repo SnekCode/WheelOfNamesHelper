@@ -9,6 +9,9 @@ import { TwitchOAuthProvider } from '../Twitch/TwitchOAuthProvider';
 import { setUpClient } from '../Twitch/TwitchChatService';
 import axios from 'axios';
 
+import { autoUpdater } from '../updater/updater';
+
+
 const appData = process.env.LOCALAPPDATA ?? '';
 
 // Function to show input dialog and get user input
@@ -155,7 +158,43 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
         {
             label: 'Developer',
             submenu: [
-                {
+                  {
+          label: "Select Update Channel",
+          // select menu item based on current channel
+          submenu: [
+            {
+              label: "Alpha",
+              type: "radio",
+              checked: store.get("channel") === "alpha",
+              click: () => {
+                setStore("channel", "alpha");
+                autoUpdater.channel = "alpha";
+                autoUpdater.checkForUpdates()
+              },
+            },
+            {
+              label: "Beta",
+              type: "radio",
+              checked: store.get("channel") === "beta",
+              click: () => {
+                setStore("channel", "beta");
+                autoUpdater.channel = "beta";
+                autoUpdater.checkForUpdates();
+              },
+            },
+            {
+              label: "Stable",
+              type: "radio",
+              checked: store.get("channel") === "latest",
+              click: () => {
+                setStore("channel", "latest");
+                autoUpdater.channel = "latest";
+                autoUpdater.checkForUpdates();
+              },
+            },
+          ],
+        },
+        {
                     label: 'Force Reload',
                     accelerator: 'CmdOrCtrl+Shift+R',
                     click: (_, focusedWindow) => {

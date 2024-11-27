@@ -10,6 +10,7 @@ export enum StoreKeys {
     channelId = "channelId",
     handle = "handle",
     videoId = "videoId",
+    channel = "channel",
 }
 
 export interface IStore {
@@ -24,6 +25,7 @@ export interface IStore {
     videoId: string;
     changeLogViewed: boolean;
     releaseNotes: string;
+    channel: string;
 }
 
 export type IStoreKeys = keyof IStore;
