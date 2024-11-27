@@ -10,6 +10,8 @@ const incrementVersion = (version, type) => {
       return `${major}.${minor + 1}.0`;
     case 'patch':
       return `${major}.${minor}.${patch + 1}`;
+    case 'current':
+      return version;
     default:
       throw new Error(`Unknown version increment type: ${type}`);
   }
@@ -18,8 +20,8 @@ const incrementVersion = (version, type) => {
 const main = () => {
   const type = process.argv[2];
   const channel = process.argv[3] || 'stable';
-  if (!['major', 'minor', 'patch'].includes(type)) {
-    console.error('Usage: node version-bump.js <major|minor|patch>');
+  if (!['major', 'minor', 'patch', "current"].includes(type)) {
+    console.error('Usage: node version-bump.js <major|minor|patch|current>');
     process.exit(1);
   }
   if (!["stable", "beta", "alpha"].includes(channel)) {
