@@ -30,7 +30,8 @@
     "version:patch": "node version-bump.js patch",
     "version:major:beta": "node version-bump.js major beta",
     "version:minor:beta": "node version-bump.js minor beta",
-    "version:patch:beta": "node version-bump.js patch beta"
+    "version:patch:beta": "node version-bump.js patch beta",
+    "tag-version": "git tag v$(jq -r .version package.json) && git push origin --tags"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
