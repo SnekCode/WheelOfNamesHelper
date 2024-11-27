@@ -37,6 +37,16 @@ const main = () => {
   packageJson.version = newVersion;
   }
   fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
+
+  try {
+    execSync(`git rev-parse -q --verify "refs/tags/v${newVersion}"`);
+    execSync(`git tag -d v${newVersion}`);
+    execSync(`git push --delete origin v${newVersion}`);
+    console.log(`Deleted existing tag v${newVersion}`);
+  } catch (error) {
+    console.log(`No existing tag v${newVersion} found`);
+  }
+
   execSync(`git add package.json`);
   execSync(`git commit -m "chore: bump version to ${newVersion}"`);
   execSync(`git push origin master`);
