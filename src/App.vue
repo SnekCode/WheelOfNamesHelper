@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import Updater from "./components/Updater.vue";
 import ReleaseNotes from "./components/ReleaseNotes.vue";
 import tmi from "tmi.js";
 import { Entry } from "~/Shared/types";
 import { shell } from "electron";
+import { RefSymbol } from "@vue/reactivity";
 
 enum SortType {
   ACTIVITY = "activity",
@@ -21,6 +22,8 @@ const youtubeWheelCount = ref(0); // Add a ref for the count
 const youtubeHereCount = ref(0); // Add a ref for the count
 const users = ref<Entry[]>([] as Entry[]); // Add a ref for the users
 const filterText = ref(""); // Add a ref for the filter text
+let timerRef = ref(""); // Add a ref for the timer
+const appLoadTime = ref(Date.now()); // Add a ref for the app load time
 
 const newUser = ref(""); // Add a ref for the new user
 const newChances = ref("1"); // Add a ref for the new chances
@@ -92,7 +95,7 @@ ipcRenderer.on('youtube-broadcast-searching', (_, bool: boolean) => {
 
 ipcRenderer.on("youtube-authenticated", () => {
   console.log("youtube-authenticated");
-  
+
   isYoutubeAuthenticated.value = true;
 });
 
@@ -177,6 +180,29 @@ ipcRenderer.on("storeUpdate", (event, storeName, data) => {
   }
 });
 
+let intervalId: NodeJS.Timeout | null = null;
+
+const updateTimer = () => {
+  console.log("updateTimer");
+
+  timerRef.value = getTime(appLoadTime.value);
+  console.log("timerRef", timerRef.value);
+
+};
+
+onMounted(() => {
+  console.log("onMounted");
+
+  updateTimer(); // Initial call to set the value immediately
+  intervalId = setInterval(updateTimer, 1000);
+});
+
+onUnmounted(() => {
+  if (intervalId) clearInterval(intervalId); // Clean up interval when component is unmounted
+});
+
+
+
 const sortWeight = (a: Entry, b: Entry) => b.weight - a.weight;
 const sortTimestamp = (a: Entry, b: Entry) => {
   const time1: number = a.timestamp || 0;
@@ -204,8 +230,6 @@ const filteredUsers = computed<Entry[]>(() => {
   const filters = users.value
     .filter((user) => user.text.toLowerCase().includes(filter))
     .sort(sort);
-  console.log("filters", filters);
-
   return filters;
 });
 
@@ -263,6 +287,8 @@ const getTime = (timestamp: number) => {
   <button @click="openWheelWindow">Open Wheel</button>
   <!-- watermark style text at the top left of the channel value -->
   <div style="position: fixed; left: -100px">{{ messagesCount }}</div>
+  <div class="hiddenTimer">{{
+    timerRef }}</div>
   <div class="channel-name">
     <!-- Twitch Section -->
     <div class="channel-section">
@@ -288,11 +314,8 @@ const getTime = (timestamp: number) => {
           <span v-else class="check-mark" style="color: red">❌</span>
         </div>
       </div>
-      <button
-        :class="`youtube-button ${
-          searching ? 'youtube-button-searching' : ''
-        } ${isLiveBroadCast ? 'hide' : ''}`"
-      >
+      <button :class="`youtube-button ${searching ? 'youtube-button-searching' : ''
+        } ${isLiveBroadCast ? 'hide' : ''}`">
         {{ searching ? "Waiting..." : "Check Status" }}
       </button>
     </div>
@@ -326,25 +349,13 @@ const getTime = (timestamp: number) => {
     <br />
 
     <!-- Add Button with two input fields one for name and the other for chances the add button will add the name and chances to the wheelofname users -->
-    <input
-      style="margin: 15px"
-      v-model="newUser"
-      placeholder="Enter the name"
-    />
-    <input
-      style="margin: 15px"
-      v-model="newChances"
-      placeholder="Enter the chances"
-      @input="newChances = newChances.replace(/\D/g, '')"
-    />
-    <button
-      :class="{
-        addViewer: newUser && newChances,
-        disabled: !newUser || !newChances,
-      }"
-      style="margin: 15px"
-      @click="addUser"
-    >
+    <input style="margin: 15px" v-model="newUser" placeholder="Enter the name" />
+    <input style="margin: 15px" v-model="newChances" placeholder="Enter the chances"
+      @input="newChances = newChances.replace(/\D/g, '')" />
+    <button :class="{
+      addViewer: newUser && newChances,
+      disabled: !newUser || !newChances,
+    }" style="margin: 15px" @click="addUser">
       Add Viewer
     </button>
 
@@ -355,11 +366,7 @@ const getTime = (timestamp: number) => {
         <option value="weight">Sort by Weight</option>
         <option value="alphabetical">Sort by Alphabetical</option>
       </select>
-      <input
-        class="search"
-        v-model="filterText"
-        placeholder="Filter users by name"
-      />
+      <input class="search" v-model="filterText" placeholder="Filter users by name" />
       <button class="clear" @click="filterText = ''">✖</button>
     </div>
     <br />
@@ -368,11 +375,8 @@ const getTime = (timestamp: number) => {
     <!-- map over the wheelUsers object to display in a grid pattern with buttons to remove from the object -->
     <div class="grid">
       <div v-for="user in filteredUsers" :key="user.text">
-        <div
-          class="userList"
-          v-if="(user && user.weight > 0) || filterText"
-          :class="{ new: !user.claimedHere, here: user.claimedHere }"
-        >
+        <div class="userList" v-if="(user && user.weight > 0) || filterText"
+          :class="{ new: !user.claimedHere, here: user.claimedHere }">
           <button class="subbtn" @click="decrementChances(user)">➖</button>
           <div class="name" @click="contextData.removeWheelUser(user.text)">
             {{ user.text }}
@@ -405,7 +409,8 @@ const getTime = (timestamp: number) => {
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .resetClaimed:hover {
@@ -421,7 +426,8 @@ const getTime = (timestamp: number) => {
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .removeClaimed:hover {
@@ -440,7 +446,8 @@ const getTime = (timestamp: number) => {
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .resetCount:hover {
@@ -457,7 +464,8 @@ const getTime = (timestamp: number) => {
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .check-mark {
@@ -466,7 +474,8 @@ const getTime = (timestamp: number) => {
 }
 
 .youtube-button {
-  background-color: rgba(255, 0, 0, 0.4); /* YouTube red */
+  background-color: rgba(255, 0, 0, 0.4);
+  /* YouTube red */
   border-width: 2px;
   color: white;
   padding: 10px 20px;
@@ -479,7 +488,8 @@ const getTime = (timestamp: number) => {
   height: 2em;
   text-align: center;
   justify-content: center;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .youtube-button-searching {
@@ -487,7 +497,8 @@ const getTime = (timestamp: number) => {
 }
 
 .youtube-button:hover {
-  background-color: rgba(255, 0, 0, 0.8); /* Darker red on hover */
+  background-color: rgba(255, 0, 0, 0.8);
+  /* Darker red on hover */
   border-color: white;
 }
 
@@ -497,10 +508,12 @@ const getTime = (timestamp: number) => {
     border-color: white;
     opacity: 0.2;
   }
+
   50% {
     border-color: #ff0000;
     opacity: 1;
   }
+
   100% {
     border-color: white;
     opacity: 0.2;
@@ -515,7 +528,8 @@ const getTime = (timestamp: number) => {
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .disabled {
@@ -526,12 +540,14 @@ const getTime = (timestamp: number) => {
   padding: 5px 12px;
   margin: 10px;
   font-size: 14px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .container {
   margin-top: 0;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
 }
 
 .channel-name {
@@ -541,8 +557,20 @@ const getTime = (timestamp: number) => {
   color: white;
   margin: 5px;
   font-size: 16px;
-  user-select: none; /* Prevent text selection */
+  user-select: none;
+  /* Prevent text selection */
   text-align: left;
+}
+
+.hiddenTimer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  color: white;
+  margin: 5px;
+  font-size: 16px;
+  user-select: none;
+  opacity: 0;
 }
 
 .channel-section {
@@ -563,9 +591,11 @@ const getTime = (timestamp: number) => {
   0% {
     background-color: rgb(109, 109, 109);
   }
+
   50% {
     background-color: #f00;
   }
+
   100% {
     background-color: red;
   }

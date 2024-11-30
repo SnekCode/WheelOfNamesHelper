@@ -2,6 +2,8 @@ import axios from 'axios';
 import { BrowserWindow } from 'electron';
 import EventEmitter from 'node:events';
 import keytar from 'keytar';
+import { store } from '../main/store';
+import { win } from '../main/main';
 
 export class TwitchOAuthProvider extends EventEmitter {
     private clientId: string = 'a0jvh4wodyncqkb683vzq4sb2plcpo';
@@ -30,6 +32,8 @@ export class TwitchOAuthProvider extends EventEmitter {
                 this.login = response.data.login;
                 this.expiresInSeconds = response.data.expires_in;
                 this.login = response.data.login;
+                console.log('Twitch Validated Access Token');
+                store.set('twitchChannelName', this.login);
             })
             .catch(() => {
                 return;
@@ -44,12 +48,26 @@ export class TwitchOAuthProvider extends EventEmitter {
     async retrieveAccessToken(): Promise<string> {
         this.accessToken = await keytar.getPassword(this.serviceName, this.accountName);
         console.log('accessToken', this.accessToken);
-        
-        if (this.accessToken && await this.validateAccessToken()) {
+
+        if (this.accessToken && (await this.validateAccessToken())) {
             this.emit('authenticated');
             return this.accessToken;
         } else {
-            return "";
+            return '';
+        }
+    }
+
+    async parserAccessToken(url: string, authWindow: BrowserWindow, resolve: (value: string) => void) {
+        const match = url.match(/access_token=([^&]*)/);
+        if (match) {
+            const accessToken = match[1];
+            console.log('access_token', accessToken);
+            this.accessToken = accessToken;
+            await this.validateAccessToken();
+            await keytar.setPassword(this.serviceName, this.accountName, accessToken);
+            this.emit('authenticated');
+            authWindow.close();
+            resolve(accessToken);
         }
     }
 
@@ -67,23 +85,26 @@ export class TwitchOAuthProvider extends EventEmitter {
             this.redirectUri
         }&response_type=token&scope=${this.scope.join(' ')}`;
         authWindow.webContents.session.clearStorageData();
+
+        authWindow.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+            console.log('onBeforeSendHeaders', details);
+
+            details.requestHeaders['Referrer-Policy'] = 'origin-when-cross-origin';
+            callback({ requestHeaders: details.requestHeaders });
+        });
+
         authWindow.loadURL(authUrl);
 
         return new Promise((resolve, reject) => {
-            authWindow.webContents.on('did-navigate', async (event, url) => {
-                console.log('did-navigate', url);
+            authWindow.webContents.on('did-navigate', async (_, url) => {
+                // Electron redirect in dev solution
+                this.parserAccessToken(url, authWindow, resolve)
+            });
 
-                const match = url.match(/access_token=([^&]*)/);
-                if (match) {
-                    const accessToken = match[1];
-                    console.log('access_token', accessToken);
-                    this.accessToken = accessToken;
-                    await this.validateAccessToken();
-                    await keytar.setPassword(this.serviceName, this.accountName, accessToken);
-                    this.emit('authenticated');
-                    authWindow.close();
-                    resolve(accessToken);
-                }
+            authWindow.webContents.session.webRequest.onErrorOccurred((details) => {
+                // Electron cors in prod error solution
+                // in prod the redirect errors for `strict-origin-when-cross-origin` policy
+                this.parserAccessToken(details.url, authWindow, resolve);
             });
 
             authWindow.on('closed', () => {

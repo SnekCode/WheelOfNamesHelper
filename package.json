@@ -1,6 +1,6 @@
 {
   "name": "wheel-of-names-helper",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "dist-electron/main/main.js",
   "description": "Wheel of names tool for Twitch streamers",
   "author": "SnekCode",
@@ -48,7 +48,7 @@
     "vite-plugin-electron": "^0.28.4",
     "vite-plugin-electron-renderer": "^0.14.5",
     "vue": "^3.4.21",
-    "vue-tsc": "^2.0.6"
+    "vue-tsc": "^2.1.10"
   },
   "dependencies": {
     "@twurple/auth": "^7.2.0",
