@@ -2,7 +2,6 @@ name: Build
 
 on:
   push:
-    branches: [main]
     paths-ignore:
       - "**.md"
       - "**.spec.js"
@@ -14,14 +13,12 @@ on:
       - ".github/**"
       - "!.github/workflows/build.yml"
 
-jobs:
+jobs:    
   build:
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -29,10 +26,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 23
 
       - name: Install Dependencies
         run: npm install
+
+      # - name: Run Tests
+      #   continue-on-error: true
+      #   run: npm test
+
+      - name: node ls
+        run: npm ls
 
       - name: Build Release Files
         run: npm run build
