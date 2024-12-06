@@ -31,10 +31,7 @@ jobs:
       # - name: Run Tests
       #   continue-on-error: true
       #   run: npm test
-
-      - name: Node Version
-        run: node --version
-
+      
       - name: node ls
         run: npm ls
 
