@@ -15,11 +15,7 @@ on:
 
 jobs:    
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -35,6 +31,12 @@ jobs:
       # - name: Run Tests
       #   continue-on-error: true
       #   run: npm test
+
+      - name: Node Version
+        run: node --version
+
+      - name: node ls
+        run: npm ls
 
       - name: Build Release Files
         run: npm run build
