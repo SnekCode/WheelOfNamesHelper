@@ -54,8 +54,6 @@ const addUser = () => {
   }
 };
 
-console.log("entries top lvl", users.value);
-
 ipcRenderer.on("youtube-add-wheel", () => {
   youtubeWheelCount.value += 1;
 });
@@ -140,19 +138,16 @@ ipcRenderer.on("twitch-handle", (_, data) => {
 
 // get the channel name from the store
 ipcRenderer.invoke("getStore", "twitchChannelName").then((channelName) => {
-  console.log("channelName", channelName);
   twitchHandle.value = channelName;
 });
 
 // TODO change event name from handle to youtubeHandle e.g
 ipcRenderer.invoke("getStore", "handle").then((handleName) => {
-  console.log("handleName", handleName);
   youtubeHandle.value = handleName;
 });
 
 // get saved wheelusers from the store
 ipcRenderer.invoke("getStore", "entries").then((data) => {
-  console.log("entries", data);
   if (!data) {
     users.value = [];
   } else {
@@ -183,16 +178,10 @@ ipcRenderer.on("storeUpdate", (event, storeName, data) => {
 let intervalId: NodeJS.Timeout | null = null;
 
 const updateTimer = () => {
-  console.log("updateTimer");
-
   timerRef.value = getTime(appLoadTime.value);
-  console.log("timerRef", timerRef.value);
-
 };
 
 onMounted(() => {
-  console.log("onMounted");
-
   updateTimer(); // Initial call to set the value immediately
   intervalId = setInterval(updateTimer, 1000);
 });
