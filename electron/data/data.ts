@@ -13,7 +13,7 @@ import { EChannels } from "~/Shared/channels";
 // load main ipc actions
 import { store } from "../main/store";
 import { Entry } from "~/Shared/types";
-import { Service } from "../ChatService/ChatService";
+import { Service } from "~/Shared/enums";
 
 let pause = false;
 let addQueue: Entry[] = [];
