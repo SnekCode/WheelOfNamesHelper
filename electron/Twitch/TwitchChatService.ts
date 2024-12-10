@@ -1,8 +1,9 @@
 import { ipcMain } from "electron";
 import { store } from "../main/store";
 import tmi, { Client } from "tmi.js";
-import { handleChatCommand, Service } from "../ChatService/ChatService";
+import { handleChatCommand } from "../ChatService/ChatService";
 import { win } from "../main/main";
+import { Service } from "Shared/enums";
 
 
 // TODO update later to use keygen

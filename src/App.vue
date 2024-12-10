@@ -3,9 +3,8 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import Updater from "./components/Updater.vue";
 import ReleaseNotes from "./components/ReleaseNotes.vue";
 import tmi from "tmi.js";
-import { Entry } from "~/Shared/types";
-import { shell } from "electron";
-import { RefSymbol } from "@vue/reactivity";
+import { Entry } from "../Shared/types";
+import { Service } from "../Shared/enums";
 
 enum SortType {
   ACTIVITY = "activity",
@@ -54,35 +53,35 @@ const addUser = () => {
   }
 };
 
-ipcRenderer.on("youtube-add-wheel", () => {
+ipcRenderer.on(`${Service.YouTube}-add-wheel`, () => {
   youtubeWheelCount.value += 1;
 });
 
-ipcRenderer.on("youtube-remove-wheel", () => {
+ipcRenderer.on(`${Service.YouTube}-remove-wheel`, () => {
   youtubeWheelCount.value -= 1;
 });
 
-ipcRenderer.on("youtube-add-here", () => {
+ipcRenderer.on(`${Service.YouTube}-add-here`, () => {
   youtubeHereCount.value += 1;
 });
 
-ipcRenderer.on("youtube-remove-here", () => {
+ipcRenderer.on(`${Service.YouTube}-remove-here`, () => {
   youtubeHereCount.value -= 1;
 });
 
-ipcRenderer.on("twitch-add-wheel", () => {
+ipcRenderer.on(`${Service.Twitch}-add-wheel`, () => {
   twitchWheelCount.value += 1;
 });
 
-ipcRenderer.on("twitch-remove-wheel", () => {
+ipcRenderer.on(`${Service.Twitch}-remove-wheel`, () => {
   twitchWheelCount.value -= 1;
 });
 
-ipcRenderer.on("twitch-add-here", () => {
+ipcRenderer.on(`${Service.Twitch}-add-here`, () => {
   twitchHereCount.value += 1;
 });
 
-ipcRenderer.on("twitch-remove-here", () => {
+ipcRenderer.on(`${Service.Twitch}-remove-here`, () => {
   twitchHereCount.value -= 1;
 });
 

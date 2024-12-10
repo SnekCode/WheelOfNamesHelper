@@ -11,6 +11,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
     public redirectUri: string = 'http://localhost:5173';
     public accessToken: string = '';
 
+    private readonly tokenExchangeEndpoint = 'https://auth.snekcode.com/WheelOfNamesGoogleAuth'
     private clientId: string = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
     private refreshToken: string = '';
     private expiresTimestamp: number = Date.now();
@@ -76,7 +77,6 @@ export class YouTubeOAuthProvider extends EventEmitter {
             console.log('expires in', this.getExpiresInMilliSeconds());
             this.startDebugTimer();
         }, 5000);
-
     }
 
     private timer: NodeJS.Timeout | null = null;
@@ -84,20 +84,25 @@ export class YouTubeOAuthProvider extends EventEmitter {
         if (this.timer) clearTimeout(this.timer);
         let timeLeft = this.getExpiresInMilliSeconds() - this.tokenRefreshBuffer;
         if (timeLeft < 0) timeLeft = 0;
-
-        win?.webContents.send('main-process-message', 'Starting refresh timer');
+        if(!timeLeft) return;
 
         this.timer = setTimeout(() => {
+            win?.webContents.send('main-process-message', `Starting refresh timer ${timeLeft}`);
             console.log('refreshing token timer');
             this.emit('refreshToken');
             this.refreshAccessToken();
             // one minute before the token expires refresh it
-        }, timeLeft );
+        }, timeLeft);
     }
 
     async retrieveAccessToken(): Promise<string> {
         this.accessToken = (await keytar.getPassword(this.serviceName, this.accountName)) ?? '';
         this.refreshToken = (await keytar.getPassword(this.serviceName, this.refreshTokenName)) ?? '';
+
+        if (this.accessToken === '' || this.refreshToken === '') {
+            return '';
+        }
+
         this.expiresTimestamp = parseInt(
             (await keytar.getPassword(this.serviceName, this.expiresInSecondsName)) ?? Date.now().toString()
         );
@@ -133,14 +138,14 @@ export class YouTubeOAuthProvider extends EventEmitter {
             console.log('auth is null');
             return;
         }
-        const response = await axios.post('https://auth.snekcode.com/WheelOfNamesGoogleAuth', {
+        const response = await axios.post(this.tokenExchangeEndpoint, {
             refresh_token: this.refreshToken,
             grant_type: 'refresh_token',
         });
 
         const body = JSON.parse(response.data.body);
         this.accessToken = body.access_token ?? '';
-        body.expires_in ? this.calculateExpiryTimestamp(body.expires_in) : this.calculateExpiryTimestamp('0')
+        body.expires_in ? this.calculateExpiryTimestamp(body.expires_in) : this.calculateExpiryTimestamp('0');
 
         this.emit('authenticated');
 
@@ -149,8 +154,8 @@ export class YouTubeOAuthProvider extends EventEmitter {
 
     private calculateExpiryTimestamp(expires_in: string): number {
         console.log('calculate expires_in', expires_in);
-        
-        this.expiresTimestamp = Date.now() + (parseInt(expires_in) * 1000);
+
+        this.expiresTimestamp = Date.now() + parseInt(expires_in) * 1000;
         keytar.setPassword(this.serviceName, this.expiresInSecondsName, this.expiresTimestamp.toString());
 
         return this.expiresTimestamp;
@@ -166,7 +171,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
         // console.log(JSON.stringify(body));
 
         await axios
-            .post('https://auth.snekcode.com/WheelOfNamesGoogleAuth', body)
+            .post(this.tokenExchangeEndpoint, body)
             .then(async (response) => {
                 const body = JSON.parse(response.data.body);
                 console.log(body);
@@ -189,7 +194,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 this.refreshTimer();
             })
             .catch((error) => {
-                console.log('error');
+                console.log(error, 'error');
             });
     }
 
@@ -230,7 +235,9 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 Authorization: `Bearer ${this.accessToken}`,
             },
         });
-        const channelName = response.data.items[0].snippet.title;
+        const channelName = response.data.items[0].snippet.customUrl;
+        console.log(JSON.stringify(response.data));
+        
         console.log('channelName', channelName);
 
         return channelName;

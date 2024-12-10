@@ -4,8 +4,9 @@ import { chatStore } from './store';
 import { LiveChat } from 'youtube-chat';
 import { ChatItem } from 'youtube-chat/dist/types/data';
 import { youtubeOAuthProvider, win } from '../main/main';
-import { handleChatCommand, Service } from '../ChatService/ChatService';
+import { handleChatCommand } from '../ChatService/ChatService';
 import EventEmitter from 'node:events';
+import { Service } from 'Shared/enums';
 
 export class YouTubeChatService extends EventEmitter {
     public liveChatId: string = '';
@@ -122,12 +123,13 @@ export class YouTubeChatService extends EventEmitter {
             return;
         }
         axios
-            .get(`https://www.youtube.com/@${handle}/live`)
+            .get(`https://www.youtube.com/${handle}/live`)
             .then((response) => {
                 this.setVideoId(response.data.match(/"videoId":"(.+?)"/)[1]);
-                const islive = response.data.includes('<meta itemprop="isLiveBroadcast"')
+                const islive = response.data.includes('<meta itemprop="isLiveBroadcast"') 
                                 
                 if(islive){
+                    this.setIsLiveBroadCast(true);
                     this.getLiveChatId();
                 } else if (this.isLiveBroadCast) {
                     this.setIsLiveBroadCast(false);
@@ -155,13 +157,6 @@ export class YouTubeChatService extends EventEmitter {
     // Chat Stuff
 
     sendRendererStatus = () => {
-        console.log('sending status', {
-            isLiveBroadCast: this.isLiveBroadCast,
-            searching: this.searching,
-            handle: this.handle,
-            videoId: this.videoId,
-        });
-
         win?.webContents.send('youtube-status', {
             isLiveBroadCast: this.isLiveBroadCast,
             searching: this.searching,

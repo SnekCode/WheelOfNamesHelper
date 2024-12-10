@@ -3,24 +3,14 @@
 
 import { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { handleAddWheelUser, handleRemoveWheelUser, handleUpdateActivity, handleUpdateWheelUser } from '../data/data';
-import { Entry } from '~/Shared/types';
+import { Entry } from 'Shared/types';
 import { win } from '../main/main';
 import { store } from '../main/store';
+import { EChatCommand, Service } from 'Shared/enums';
 
-export enum EChatCommand {
-    WHEEL = '!wheel',
-    REMOVE = '!remove',
-    HERE = '!here',
-    ODDS = '!odds',
-}
-
-export enum Service {
-    YouTube = 'YouTube',
-    Twitch = 'Twitch',
-}
 
 const updateCounts = (service: Service, type: "add" | "remove", resource: "count" | "here" | "wheel") => {
-        win?.webContents.send(`${service}-${type}-${resource}`);
+    win?.webContents.send(`${service}-${type}-${resource}`);
 };
 
 export const handleChatCommand = async (

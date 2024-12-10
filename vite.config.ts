@@ -6,10 +6,12 @@ import renderer from "vite-plugin-electron-renderer";
 import tsconfigPaths from "vite-tsconfig-paths";
 import pkg from './package.json'
 import path from "node:path";
+import { fileURLToPath, URL } from 'node:url';
+
 
 const alias = {
   "~/": `${path.resolve(__dirname, "./")}/`,
-  Shared: `${path.resolve(__dirname, "./Shared")}/`,
+  "Shared": fileURLToPath(new URL("./Shared", import.meta.url)),
   "Electron/": `${path.resolve(__dirname, "./electron")}/`,
 };
 
