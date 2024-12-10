@@ -2,6 +2,15 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.0.2
+
+#### Bug Fix
+- Youtube auth token expiration is now saved as a timestamp allowing for calculating the time remaining on app restart which could cause missing a refresh 
+- Youtube customUrl is now used as the channel name in case customUrl and name are different. Due to the url youtube.com/@handle/live required to determine broadcast status
+- !wheel / !here command counts fixed. Improper use of enums caused the issue
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.0.1
 
 #### Bug Fix
