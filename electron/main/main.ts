@@ -17,7 +17,6 @@ import '../updater/releaseNotes';
 // Youtube Auth Provider
 export const youtubeOAuthProvider = new YouTubeOAuthProvider();
 export const youTubeChatService = new YouTubeChatService();
-
 // Twitch Auth Provider
 export const twitchAuthProvider = new TwitchOAuthProvider();
 

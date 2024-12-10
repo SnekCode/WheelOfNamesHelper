@@ -1,19 +1,20 @@
-import { BrowserWindow, session } from 'electron';
+import { BrowserWindow, ipcMain, session } from 'electron';
 import { google } from 'googleapis';
 import { CodeChallengeMethod, OAuth2Client } from 'google-auth-library';
 import { generateCodeChallenge, generateCodeVerifier } from './cyrpto';
 import axios from 'axios';
 import { EventEmitter } from 'events';
 import keytar from 'keytar';
-
+import { win } from '../main/main';
 
 export class YouTubeOAuthProvider extends EventEmitter {
     public redirectUri: string = 'http://localhost:5173';
     public accessToken: string = '';
 
+    private readonly tokenExchangeEndpoint = 'https://auth.snekcode.com/WheelOfNamesGoogleAuth'
     private clientId: string = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
     private refreshToken: string = '';
-    private expiresInSeconds: number = 0;
+    private expiresTimestamp: number = Date.now();
     private scope: string[] = [
         'https://www.googleapis.com/auth/youtube',
         'https://www.googleapis.com/auth/youtube.force-ssl',
@@ -27,6 +28,8 @@ export class YouTubeOAuthProvider extends EventEmitter {
     private refreshTokenName: string = 'refresh';
     private expiresInSecondsName: string = 'expiresInSeconds';
 
+    private readonly tokenRefreshBuffer = 300;
+
     constructor(clientId?: string, redirectUri?: string, scope?: string[]) {
         super();
         if (clientId) this.clientId = clientId;
@@ -34,13 +37,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
         if (scope) this.scope = scope;
 
         this.auth = new google.auth.OAuth2(this.clientId, '', this.redirectUri);
-        this.auth.on('tokens', (tokens) => {
-            console.log('tokens', tokens);
-
-            if (tokens.access_token) {
-                this.accessToken = tokens.access_token;
-            }
-        });
+        this.retrieveAccessToken();
     }
 
     async getAuthenticationUrl() {
@@ -62,64 +59,106 @@ export class YouTubeOAuthProvider extends EventEmitter {
         });
     }
 
+    getExpiresInMilliSeconds() {
+        const timeLeftMilliseconds = this.expiresTimestamp - Date.now();
+        return timeLeftMilliseconds;
+    }
+
     isAuthenticated() {
-        if (this.expiresInSeconds === 0) return false;
+        if (this.getExpiresInMilliSeconds() === 0) return false;
         else return true;
+    }
+
+    private debugTimer: NodeJS.Timeout | null = null;
+
+    async startDebugTimer() {
+        if (this.debugTimer) clearTimeout(this.debugTimer);
+        this.debugTimer = setTimeout(() => {
+            console.log('expires in', this.getExpiresInMilliSeconds());
+            this.startDebugTimer();
+        }, 5000);
     }
 
     private timer: NodeJS.Timeout | null = null;
     async refreshTimer() {
         if (this.timer) clearTimeout(this.timer);
-        console.log('start refresh timer');
+        let timeLeft = this.getExpiresInMilliSeconds() - this.tokenRefreshBuffer;
+        if (timeLeft < 0) timeLeft = 0;
+        if(!timeLeft) return;
 
         this.timer = setTimeout(() => {
+            win?.webContents.send('main-process-message', `Starting refresh timer ${timeLeft}`);
+            console.log('refreshing token timer');
             this.emit('refreshToken');
             this.refreshAccessToken();
             // one minute before the token expires refresh it
-        }, (this.expiresInSeconds - 60) * 1000);
+        }, timeLeft);
     }
 
     async retrieveAccessToken(): Promise<string> {
         this.accessToken = (await keytar.getPassword(this.serviceName, this.accountName)) ?? '';
         this.refreshToken = (await keytar.getPassword(this.serviceName, this.refreshTokenName)) ?? '';
-        this.expiresInSeconds = parseInt((await keytar.getPassword(this.serviceName, this.expiresInSecondsName)) ?? '0');
+
+        if (this.accessToken === '' || this.refreshToken === '') {
+            return '';
+        }
+
+        this.expiresTimestamp = parseInt(
+            (await keytar.getPassword(this.serviceName, this.expiresInSecondsName)) ?? Date.now().toString()
+        );
 
         console.log('accessToken', this.accessToken);
         console.log('refreshToken', this.refreshToken);
-        console.log('expiresInSeconds', this.expiresInSeconds);
-        
+        console.log('expiresTimeStamp', this.expiresTimestamp);
 
-        if (this.accessToken !== '' && this.refreshToken !== '' && this.expiresInSeconds > 1800) {
-            console.log("TOKEN VALID");
-            
+        if (this.accessToken !== '' && this.refreshToken !== '' && this.getExpiresInMilliSeconds() > 1800) {
+            console.log('TOKEN VALID');
+            // send window message how long untile token expires in minutes
+            win?.webContents.send(
+                'main-process-message',
+                `Token expires in ${Math.floor(this.getExpiresInMilliSeconds() / 1000 / 60)} minutes`
+            );
+
             this.refreshTimer();
             this.emit('authenticated');
             return this.accessToken;
         } else if (this.accessToken !== '' && this.refreshToken !== '') {
-        console.log('REFRESHING TOKEN');
+            console.log('REFRESHING TOKEN');
             await this.refreshAccessToken();
             return this.accessToken;
-        }else {
+        } else {
             return '';
         }
     }
 
     async refreshAccessToken() {
-        console.log('refreshing token');
+        win?.webContents.send('main-process-message', 'Refreshing token');
 
-        if (this.auth === null) return;
-        const response = await axios.post('https://auth.snekcode.com/WheelOfNamesGoogleAuth', {
+        if (this.auth === null) {
+            console.log('auth is null');
+            return;
+        }
+        const response = await axios.post(this.tokenExchangeEndpoint, {
             refresh_token: this.refreshToken,
             grant_type: 'refresh_token',
         });
 
         const body = JSON.parse(response.data.body);
         this.accessToken = body.access_token ?? '';
-        this.expiresInSeconds = body.expiry_date ?? 0;
+        body.expires_in ? this.calculateExpiryTimestamp(body.expires_in) : this.calculateExpiryTimestamp('0');
 
         this.emit('authenticated');
 
         this.refreshTimer();
+    }
+
+    private calculateExpiryTimestamp(expires_in: string): number {
+        console.log('calculate expires_in', expires_in);
+
+        this.expiresTimestamp = Date.now() + parseInt(expires_in) * 1000;
+        keytar.setPassword(this.serviceName, this.expiresInSecondsName, this.expiresTimestamp.toString());
+
+        return this.expiresTimestamp;
     }
 
     async getAccessToken(code: string) {
@@ -132,19 +171,22 @@ export class YouTubeOAuthProvider extends EventEmitter {
         // console.log(JSON.stringify(body));
 
         await axios
-            .post('https://auth.snekcode.com/WheelOfNamesGoogleAuth', body)
+            .post(this.tokenExchangeEndpoint, body)
             .then(async (response) => {
                 const body = JSON.parse(response.data.body);
                 console.log(body);
 
                 this.accessToken = body.access_token;
                 this.refreshToken = body.refresh_token;
-                this.expiresInSeconds = body.expires_in;
+                this.expiresTimestamp = this.calculateExpiryTimestamp(body.expiry_date);
                 console.log(body.access_token);
+
+                console.log('accessToken', this.accessToken);
+                console.log('refreshToken', this.refreshToken);
+                console.log('expiresTimeStamp', this.expiresTimestamp);
 
                 await keytar.setPassword(this.serviceName, this.accountName, this.accessToken);
                 await keytar.setPassword(this.serviceName, this.refreshTokenName, this.refreshToken);
-                await keytar.setPassword(this.serviceName, this.expiresInSecondsName, this.expiresInSeconds.toString());
 
                 this.emit('initAuth');
                 this.emit('authenticated');
@@ -152,12 +194,12 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 this.refreshTimer();
             })
             .catch((error) => {
-                console.log('error');
+                console.log(error, 'error');
             });
     }
 
     async listenForRedirects(win: BrowserWindow) {
-        win?.webContents.send('main-process-message', "Listening for redirects");
+        win?.webContents.send('main-process-message', 'Listening for redirects');
 
         win.webContents.on('will-redirect', (event, url) => {
             const codeMatch = url.match(/code=([^&]*)/);
@@ -169,9 +211,6 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 win.close();
             }
         });
-
-
-            
     }
 
     async revokeAccessToken(): Promise<void> {
@@ -179,7 +218,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
         fetch(`https://oauth2.googleapis.com/revoke?token=${this.accessToken}`);
         this.accessToken = '';
         this.refreshToken = '';
-        this.expiresInSeconds = 0;
+        this.expiresTimestamp = Date.now();
         clearTimeout(this.timer!);
 
         this.emit('unauthenticated');
@@ -196,7 +235,9 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 Authorization: `Bearer ${this.accessToken}`,
             },
         });
-        const channelName = response.data.items[0].snippet.title;
+        const channelName = response.data.items[0].snippet.customUrl;
+        console.log(JSON.stringify(response.data));
+        
         console.log('channelName', channelName);
 
         return channelName;

@@ -1,4 +1,4 @@
-import { Service } from "~/electron/ChatService/ChatService";
+import { Service } from "./enums";
 
 // Old state types
 export type WheelUsers = {

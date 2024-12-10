@@ -46,7 +46,7 @@ export function createWheelWindow() {
 
   if (VITE_DEV_SERVER_URL) {
     // Open devTool if the app is not packaged
-    wheelWindow.webContents.openDevTools();
+    // wheelWindow.webContents.openDevTools();
   }
 
   wheelWindow.loadURL("https://wheelofnames.com");
