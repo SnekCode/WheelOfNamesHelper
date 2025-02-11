@@ -1,6 +1,6 @@
 import Store from "electron-store";
 import { IStore } from "~/Shared/store";
-import { migrate0_2_1 } from "../migration/migration";
+import { migrate0_2_1, migrate2_1_0 } from "../migration/migration";
 
 export const store = new Store<IStore>({
   beforeEachMigration: (_, context) => {
@@ -10,10 +10,9 @@ export const store = new Store<IStore>({
     if (context.fromVersion === "0.2.1") {
       migrate0_2_1();
     }
+    if (context.fromVersion === "2.0.2") {
+      console.log("migrate2_1_0");
+      migrate2_1_0();
+    }
   },
 });
-
-// if (import.meta.env.DEV) {
-//   migrate0_2_1();
-//   // win on will close event to delete the StoreKeys.data
-// }

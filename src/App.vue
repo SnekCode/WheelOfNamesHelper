@@ -6,10 +6,15 @@ import tmi from "tmi.js";
 import { Entry } from "../Shared/types";
 import { Service } from "../Shared/enums";
 
-enum SortType {
+enum FilterType {
   ACTIVITY = "activity",
   WEIGHT = "weight",
   ALPHABETICAL = "alphabetical",
+  ENABLED = "enabled",
+}
+enum SortType {
+  ASC = "asc",
+  DESC = "desc",
 }
 const { store, ipcRenderer, contextData } = window;
 
@@ -36,7 +41,8 @@ const isTwitchConnected = ref(false);
 const youtubeHandle = ref("");
 const videoId = ref("");
 const searching = ref(false);
-const sortType = ref(SortType.ACTIVITY);
+const filterType = ref(FilterType.ACTIVITY);
+const sortType = ref(SortType.DESC);
 
 const addUser = () => {
   if (newUser.value && newChances.value) {
@@ -202,13 +208,15 @@ const sortAlphabetical = (a: Entry, b: Entry) => a.text.localeCompare(b.text);
 
 const filteredUsers = computed<Entry[]>(() => {
   const sort = (a: Entry, b: Entry) => {
-    switch (sortType.value) {
-      case SortType.WEIGHT:
+    switch (filterType.value) {
+      case FilterType.WEIGHT:
         return sortWeight(a, b);
-      case SortType.ACTIVITY:
+      case FilterType.ACTIVITY:
         return sortTimestamp(a, b);
-      case SortType.ALPHABETICAL:
+      case FilterType.ALPHABETICAL:
         return sortAlphabetical(a, b);
+      case FilterType.ENABLED:
+        return a.enabled === b.enabled ? 0 : a.enabled ? -1 : 1;
       default:
         return sortTimestamp(a, b);
     }
@@ -218,6 +226,11 @@ const filteredUsers = computed<Entry[]>(() => {
   const filters = users.value
     .filter((user) => user.text.toLowerCase().includes(filter))
     .sort(sort);
+
+  if (sortType.value === SortType.ASC) {
+    return filters.reverse();
+  }
+
   return filters;
 });
 
@@ -349,10 +362,16 @@ const getTime = (timestamp: number) => {
 
     <div style="display: flex; align-items: center">
       <!-- drop down menu for all sort types -->
-      <select class="select" v-model="sortType">
+      <select class="select" v-model="filterType">
         <option value="activity">Sort by Activity</option>
         <option value="weight">Sort by Weight</option>
         <option value="alphabetical">Sort by Alphabetical</option>
+        <option value="enabled">Sort by Enabled</option>
+      </select>
+      <!-- drop down menu for sort ascension -->
+      <select class="select" v-model="sortType">
+        <option value="asc">Sort Ascending</option>
+        <option value="desc">Sort Descending</option>
       </select>
       <input class="search" v-model="filterText" placeholder="Filter users by name" />
       <button class="clear" @click="filterText = ''">✖</button>
@@ -366,10 +385,16 @@ const getTime = (timestamp: number) => {
         <div class="userList" v-if="(user && user.weight > 0) || filterText"
           :class="{ new: !user.claimedHere, here: user.claimedHere }">
           <button class="subbtn" @click="decrementChances(user)">➖</button>
-          <div class="name" @click="contextData.removeWheelUser(user.text)">
+          <!-- @click="contextData.removeWheelUser(user.text)" -->
+          <div class="name">
             {{ user.text }}
             <div>{{ user.weight }}</div>
             <div>{{ getTime(user.timestamp ?? 0) }}</div>
+            <!-- checkbox based on the user.enabled property. This should set the property when checked -->
+            <!-- contextData.updateWheelUser({...user, enabled:}) -->
+             <!-- onclick pass the checkbox value to contextData.updateWheelUser -->
+            <input type="checkbox" v-model="user.enabled" @click="contextData.updateWheelUser({...user, enabled: !user.enabled})" />
+
           </div>
           <button class="addbtn" @click="incrementChances(user)">➕</button>
         </div>
