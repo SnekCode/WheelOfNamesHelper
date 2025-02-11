@@ -56,6 +56,8 @@ export const handleAddWheelUser = (
   override = false
 ) => {
   entry.timestamp = Date.now();
+  console.log("addWheelUser", pause);
+  
   if (pause) {
     addQueue.push(entry);
     return true;
@@ -114,7 +116,7 @@ export const handleUpdateWheelUser = (_: IpcMainInvokeEvent, entry: Entry) => {
 
 const handleResetClaims = () => {
   let data = store.get(StoreKeys.data);
-  data = data.map((entry) => ({ ...entry, claimedHere: false } as Entry));
+  data = data.map((entry) => ({ ...entry, claimedHere: false, enabled: false } as Entry));
   setStore(StoreKeys.data, data);
   forceUpdate();
 };
@@ -240,46 +242,34 @@ const saveConfig = async () => {
 
 ipcMain.handle("saveConfig", saveConfig);
 
-export const syncWithWheel = async () => {
-  console.log("syncWithWheel");
-  const lastconfig = JSON.parse(
-    await wheelWindow?.webContents.executeJavaScript(
-      `localStorage.getItem('LastWheelConfig')`
-    )
+const hideSelected = async (event: Electron.IpcMainInvokeEvent, id: string) => {
+    
+  // filter entries from store and set enabled to false
+  let entries = store.get(StoreKeys.data);
+  entries = entries.map((entry) =>
+    entry.channelId === id ? { ...entry, enabled: false } : entry
   );
-
-  // key:values in the lastconfig.entries may be missing
-  // map though and set defaults if missing
-  let entries = lastconfig.entries.map((entry: Entry) => {
-    return {
-      ...entry,
-      claimedHere: entry.claimedHere || false,
-      enabled: entry.enabled || true,
-      weight: entry.weight || 1,
-      message: entry.message || "You're Next!",
-    } as Entry;
-  });
-
-  if (!lastconfig.isAdvanced) {
-    const duplicateObjects: { [key: string]: Entry } = {};
-
-    entries.forEach((entry: Entry) => {
-      if (duplicateObjects[entry.text]) {
-        duplicateObjects[entry.text].weight += 1;
-        return;
-      }
-      duplicateObjects[entry.text] = entry;
-    });
-
-    entries = Object.values(duplicateObjects);
-    console.log("entries", entries);
-
-    setStore(StoreKeys.data, entries);
-    forceUpdate();
-    return;
-  }
-
+    setTimeout(() => {
+        console.log('hiding ', id);
+        console.log(entries);
+        
+    }, 500);
   setStore(StoreKeys.data, entries);
+}
+
+ipcMain.handle("hideSelected", hideSelected);
+
+const removeSelected = async (event: Electron.IpcMainInvokeEvent, id: string) => {
+  // filter entries from store and remove entry
+  let entries = store.get(StoreKeys.data);
+  entries = entries.filter((entry) => entry.channelId !== id);
+  setStore(StoreKeys.data, entries);
+}
+
+ipcMain.handle("removeSelected", removeSelected);
+
+export const syncWithWheel = async () => {
+  
 };
 
 ipcMain.handle("syncWithWheel", syncWithWheel);
