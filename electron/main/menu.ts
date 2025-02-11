@@ -3,7 +3,7 @@ import path from 'node:path';
 import { store } from './store';
 import { setStore } from '../data/data';
 import prompt from 'electron-prompt';
-import { youtubeOAuthProvider, win, youTubeChatService, twitchAuthProvider } from './main';
+import { youtubeOAuthProvider, win, youTubeChatService, twitchAuthProvider, RENDERER_DIST, indexHtml, VITE_DEV_SERVER_URL, preload } from './main';
 import { getReleaseNotes } from '../updater/releaseNotes';
 import { TwitchOAuthProvider } from '../Twitch/TwitchOAuthProvider';
 import { setUpClient } from '../Twitch/TwitchChatService';
@@ -227,6 +227,37 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         if (focusedWindow) {
                             (focusedWindow as Electron.BrowserWindow).webContents.toggleDevTools();
                         }
+                    },
+                },
+                // custom dev tool window open devtools.html
+                {
+                    label: 'Open Dev Tools Window',
+                    click: async () => {
+                        // add url bar to the devtools window
+                        const devToolWindow = new BrowserWindow({
+                            titleBarOverlay: true,
+                            width: 800,
+                            height: 600,
+                            webPreferences: {
+                                preload,
+                                nodeIntegration: false,
+                                contextIsolation: true,
+                            },
+                        });
+                        // load the /devtools route
+                          const startURL =
+                              process.env.NODE_ENV === 'development'
+                                  ? 'http://localhost:3000/#/devtools'
+                                  : `file://${path.join(__dirname, '../dist/index.html')}#/devtools`;
+
+                            if (VITE_DEV_SERVER_URL) {
+                                // #298
+                                devToolWindow.loadURL(VITE_DEV_SERVER_URL + 'devtools');
+                                // Open devTool if the app is not packaged
+                                // win.webContents.openDevTools()
+                            } else {
+                                devToolWindow.loadFile(indexHtml + 'devtools');
+                            }
                     },
                 },
                 {

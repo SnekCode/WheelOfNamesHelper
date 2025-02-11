@@ -5,7 +5,7 @@ import { generateCodeChallenge, generateCodeVerifier } from './cyrpto';
 import axios from 'axios';
 import { EventEmitter } from 'events';
 import keytar from 'keytar';
-import { win } from '../main/main';
+import { win, youTubeChatService } from '../main/main';
 
 export class YouTubeOAuthProvider extends EventEmitter {
     public redirectUri: string = 'http://localhost:5173';
@@ -220,7 +220,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
         this.refreshToken = '';
         this.expiresTimestamp = Date.now();
         clearTimeout(this.timer!);
-
+        youTubeChatService.stopChat();
         this.emit('unauthenticated');
         keytar.deletePassword(this.serviceName, this.accountName);
         keytar.deletePassword(this.serviceName, this.refreshTokenName);

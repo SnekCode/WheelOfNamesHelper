@@ -68,8 +68,8 @@ if (!app.requestSingleInstanceLock()) {
 
 export let win: BrowserWindow | null = null;
 createMenu();
-const preload = path.join(__dirname, '../preload/index.mjs');
-const indexHtml = path.join(RENDERER_DIST, 'index.html');
+export const preload = path.join(__dirname, '../preload/index.mjs');
+export const indexHtml = path.join(RENDERER_DIST, 'index.html');
 console.log('indexHtml', indexHtml);
 
 async function createWindow() {
@@ -120,8 +120,6 @@ async function createWindow() {
         // win.webContents.openDevTools()
     } else {
         win.loadFile(indexHtml);
-
-
     }
 
     // Test actively push message to the Electron-Renderer

@@ -1,6 +1,6 @@
 {
   "name": "wheel-of-names-helper",
-  "version": "2.1.0-beta",
+  "version": "2.1.0",
   "main": "dist-electron/main/main.js",
   "description": "Wheel of names tool for Twitch streamers",
   "author": "SnekCode",
@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
+    "@types/crypto-js": "^4.2.2",
     "@types/electron-prompt": "^1.6.5",
     "@types/node": "^22.8.6",
     "@types/tmi.js": "^1.8.6",
@@ -54,6 +55,7 @@
     "@twurple/auth": "^7.2.0",
     "@twurple/auth-ext": "^7.2.0",
     "axios": "^1.7.7",
+    "crypto-js": "^4.2.0",
     "electron-forge": "^5.2.4",
     "electron-log": "^5.2.0",
     "electron-prompt": "^1.7.0",
@@ -69,6 +71,7 @@
     "twitch-chat-client": "^4.6.7",
     "url": "^0.11.4",
     "vite-tsconfig-paths": "^5.0.1",
+    "vue-router": "^4.5.0",
     "youtube-chat": "^2.2.0"
   }
 }

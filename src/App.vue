@@ -392,8 +392,9 @@ const getTime = (timestamp: number) => {
             <div>{{ getTime(user.timestamp ?? 0) }}</div>
             <!-- checkbox based on the user.enabled property. This should set the property when checked -->
             <!-- contextData.updateWheelUser({...user, enabled:}) -->
-             <!-- onclick pass the checkbox value to contextData.updateWheelUser -->
-            <input type="checkbox" v-model="user.enabled" @click="contextData.updateWheelUser({...user, enabled: !user.enabled})" />
+            <!-- onclick pass the checkbox value to contextData.updateWheelUser -->
+            <input type="checkbox" v-model="user.enabled"
+              @click="contextData.updateWheelUser({...user, enabled: !user.enabled})" />
 
           </div>
           <button class="addbtn" @click="incrementChances(user)">➕</button>

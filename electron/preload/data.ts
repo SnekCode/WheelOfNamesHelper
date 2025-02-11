@@ -27,7 +27,7 @@ ipcRenderer.on("initListeners", async (event, value) => {
   console.log(wheel);
   
   window.addEventListener("blur", (e) => {
-    window.data.syncWithWheel();
+    // window.data.syncWithWheel();
         window.data.saveConfig();
   });
 
@@ -80,6 +80,7 @@ ipcRenderer.on("initListeners", async (event, value) => {
 
       targetElement?.addEventListener("click", () => {
         window.data.setPause(false);
+        window.data.saveConfig();
       });
     }, spinTime * 1000 + 100);
   });
@@ -92,10 +93,11 @@ ipcRenderer.on("reload", () => {
 ipcRenderer.on("setDefaults", async () => {
   const data = JSON.parse(localStorage.getItem("LastWheelConfig") || "{}");
   const entries = await ipcRenderer.invoke("getStore", "entries");
-
     localStorage.setItem("LastWheelConfig", JSON.stringify({
       ...data,
       isAdvanced: true,
       entries
-        }));
+    }));
+
+    window.data.saveConfig()
     })

@@ -72,12 +72,16 @@ export function createWheelWindow() {
   });
 
   wheelWindow.on("close", async () => {
+    setTimeout(() => {
+      wheelWindow = null;
+      console.log('window null');
+    }, 1000);
+    
       await wheelWindow?.webContents.executeJavaScript(`
-          window.data.syncWithWheel()
           window.data.saveConfig()
       `);
       store.set("wheelWindowBounds", wheelWindow?.getNormalBounds());
-      wheelWindow = null;
+      console.log("close window");
   });
 
   wheelWindow.on('move', () => {

@@ -17,10 +17,3 @@ export const migrate0_2_1=()=>{
   }));
   store.set(StoreKeys.data, entries);
 }
-
-export const migrate2_1_0=()=>{
-  // update all user property enabled to false
-  const data = store.get("wheelUsers") as WheelUsers
-  const newData = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, { ...value, enabled: false }])
-  );
-}

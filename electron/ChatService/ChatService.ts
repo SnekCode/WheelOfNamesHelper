@@ -1,7 +1,7 @@
 // Intent of this service is to provide a centralized service for chat related operations
 // Youtube and Twitch Chat Services utilize this service to determine what chat commands are available
 
-import { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { handleAddWheelUser, handleRemoveWheelUser, handleUpdateActivity, handleUpdateWheelUser } from '../data/data';
 import { Entry } from 'Shared/types';
 import { win } from '../main/main';
@@ -12,6 +12,28 @@ import { EChatCommand, Service } from 'Shared/enums';
 const updateCounts = (service: Service, type: "add" | "remove", resource: "count" | "here" | "wheel") => {
     win?.webContents.send(`${service}-${type}-${resource}`);
 };
+
+
+export const handleIPCMainChatCommand = async (
+    _: IpcMainInvokeEvent,
+    message: string,
+    displayname: string,
+    channelId: string,
+    service: Service
+) => {
+    console.log('handleIPCMainChatCommand', message, displayname, channelId, service);
+    const chatCallBackFn = (message: string) => {
+        setTimeout(() => {
+        console.log('chatCallBackFn', message);
+        }, 500);
+    };
+        
+    handleChatCommand(message, displayname, channelId, service, chatCallBackFn);
+    return true;
+};
+
+ipcMain.handle("chatService", handleIPCMainChatCommand);
+
 
 export const handleChatCommand = async (
     message: string,
@@ -62,6 +84,7 @@ export const handleChatCommand = async (
                 entry.claimedHere = true;
                 entry.weight = entry.weight * 2;
                 entry['service'] = service;
+                entry.enabled = true;
                 handleUpdateWheelUser({} as IpcMainEvent, entry);
                 updateCounts(service, "add", "here");
             } else {

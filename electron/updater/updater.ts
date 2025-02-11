@@ -4,6 +4,7 @@ import updater from "electron-updater";
 import { win } from "~/electron/main/main";
 import { channelLog, EChannels } from "~/Shared/channels";
 import { store } from "../main/store"
+import { migrate2_1_0 } from "../migration/migration";
 export const { autoUpdater } = updater;
 
 
@@ -28,7 +29,7 @@ if (!isDev) {
 if (isDev) {
   autoUpdater.forceDevUpdateConfig = true;
   autoUpdater.allowPrerelease = true;
-}
+  }
 
 if (process.env.VITE_UPDATER) {
   autoUpdater.allowPrerelease = true;

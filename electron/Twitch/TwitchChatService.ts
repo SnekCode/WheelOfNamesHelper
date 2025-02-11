@@ -4,6 +4,7 @@ import tmi, { Client } from "tmi.js";
 import { handleChatCommand } from "../ChatService/ChatService";
 import { win } from "../main/main";
 import { Service } from "Shared/enums";
+import { kill } from "process";
 
 
 // TODO update later to use keygen
@@ -22,6 +23,10 @@ ipcMain.on('did-finish-load', () => {
 
 const sendChatMessage = (message: string) => {
     client?.say(twitchChannelName, message);
+}
+
+export const killTwitchClient = () => {
+    client?.disconnect();
 }
 
 export const setUpClient = () => {

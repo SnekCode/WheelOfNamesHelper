@@ -134,22 +134,33 @@ export const handleUpdateActivity = async (
 ) => {
   
   let entries = store.get(StoreKeys.data);
-  
+  let willSyncWheel= false
   entries = entries.map((entry: Entry) => {
     if (entry.channelId === channelId) {
-      return { ...entry, timestamp: Date.now(), message: channelId, service: service };
+      willSyncWheel = !entry.enabled;
+      return { ...entry, timestamp: Date.now(), message: channelId, service: service, enabled: true };
     } else if (entry.text === displayName) {
+      willSyncWheel = !entry.enabled;
       return {
         ...entry,
         channelId,
         timestamp: Date.now(),
         message: channelId,
+        enabled: true,
         service: service
       };
     } else {
       return entry;
     }
   });
+
+  if(willSyncWheel){
+    setTimeout(() => {
+      console.log("reloading wheel");
+    }, 500); 
+    forceUpdate();
+  }
+    
 
   if(wheelWindow){
     console.log("WHEELOPEN", displayName, channelId);
@@ -229,7 +240,7 @@ const saveConfig = async () => {
 
 ipcMain.handle("saveConfig", saveConfig);
 
-const syncWithWheel = async () => {
+export const syncWithWheel = async () => {
   console.log("syncWithWheel");
   const lastconfig = JSON.parse(
     await wheelWindow?.webContents.executeJavaScript(

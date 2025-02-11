@@ -4,6 +4,7 @@ import EventEmitter from 'node:events';
 import keytar from 'keytar';
 import { store } from '../main/store';
 import { win } from '../main/main';
+import { killTwitchClient } from './TwitchChatService';
 
 export class TwitchOAuthProvider extends EventEmitter {
     private clientId: string = 'a0jvh4wodyncqkb683vzq4sb2plcpo';
@@ -118,6 +119,7 @@ export class TwitchOAuthProvider extends EventEmitter {
         fetch(`https://id.twitch.tv/oauth2/revoke?client_id=${this.clientId}&token=${this.accessToken}`);
         this.accessToken = '';
         await keytar.deletePassword(this.serviceName, this.accountName);
+        killTwitchClient();
         this.emit('unauthenticated');
     }
 }
