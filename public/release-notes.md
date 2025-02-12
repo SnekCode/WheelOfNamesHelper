@@ -2,6 +2,32 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.1.1
+
+### Minor Feature
+- !remove now disables entry on wheel
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
+### Version 2.1.0
+
+### Feature Update!
+- Reset !here button now hides all entries from the wheel
+- Wheel winner buttons will now remove or hide based on button pressed
+  - Close button does nothing
+- Commands
+  - !wheel enables entry on wheel
+  - !here also enables entry on wheel
+- New filter to sort for enabled entries
+- New Sort filter added to show entries in ascending and descending order
+
+### Optimization features
+Wheel winner buttons now target saved config rather than relying on black magic along with hopes and prayers.
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.0.2
 
 #### Bug Fix
