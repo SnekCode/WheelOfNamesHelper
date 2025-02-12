@@ -94,9 +94,12 @@ export const handleRemoveWheelUser = (_: IpcMainInvokeEvent, name: string) => {
     return true;
   }
   let data = store.get(StoreKeys.data);
-  const newdata = data.filter((entry) => entry.text !== name);
-
-  if (newdata.length === data.length) return false;
+  const newdata = data.map((entry) =>
+    {
+      const data = entry.text === name ? { ...entry, timestamp: Date.now(), enabled: false } : entry;
+      return data
+    }
+  );
 
   setStore(StoreKeys.data, newdata);
   forceUpdate();
