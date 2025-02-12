@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router';
 import App from '@/App.vue';
 import DevTools from '@/DevTools.vue';
 
@@ -15,8 +15,12 @@ const routes = [
     },
 ];
 
+const isElectron = window.location. origin === "file://"
+console.log("isElectron", isElectron);
+
+
 const router = createRouter({
-    history: createWebHistory(),
+    history: isElectron ? createWebHashHistory() : createWebHistory(),
     routes,
 });
 

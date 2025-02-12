@@ -98,14 +98,6 @@ export default defineConfig(({ command }) => {
           },
         };
       })(),
-    clearScreen: false,
-    build: {
-      rollupOptions: {
-        input: {
-          index: path.resolve(__dirname, "index.html"),
-          devtools: path.resolve(__dirname, "devtools.html"),
-        },
-      },
-    }
+    clearScreen: false
   };
 })
