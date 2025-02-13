@@ -149,6 +149,8 @@ export class YouTubeOAuthProvider extends EventEmitter {
             console.log(error, 'error');
         })
 
+        if (!response) return;
+
         const body = JSON.parse(response.data.body);
         this.accessToken = body.access_token ?? '';
         body.expires_in ? this.calculateExpiryTimestamp(body.expires_in) : this.calculateExpiryTimestamp('0');

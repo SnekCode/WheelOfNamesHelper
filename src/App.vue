@@ -298,7 +298,7 @@ const getTime = (timestamp: number) => {
       <div v-else>
         {{ twitchHandle }}
         <span v-if="isTwitchConnected" class="check-mark">✔️</span>
-        <span v-else class="check-mark" style="color: red">❌</span>
+        <span v-else class="check-mark" style="color: pink">Sign in for Chat Bot</span>
       </div>
     </div>
 
@@ -309,10 +309,10 @@ const getTime = (timestamp: number) => {
         <div v-if="!youtubeHandle" class="hint">
           (Sign In to Youtube account)
         </div>
-        <div v-else class="youtube-section">
+        <div v-else>
           {{ youtubeHandle }}
           <span v-if="isYoutubeAuthenticated" class="check-mark">✔️</span>
-          <span v-else class="check-mark" style="color: red">Sign in to send Messages</span>
+          <span v-else class="check-mark" style="color: pink">Sign in for !odds</span>
         </div>
       </div>
       <button :class="`youtube-button ${searching ? 'youtube-button-searching' : ''

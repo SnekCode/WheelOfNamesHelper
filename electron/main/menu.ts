@@ -8,7 +8,6 @@ import { getReleaseNotes } from '../updater/releaseNotes';
 import { setUpClient } from '../Twitch/TwitchChatService';
 
 import { autoUpdater } from '../updater/updater';
-import { json } from 'node:stream/consumers';
 
 
 const appData = process.env.LOCALAPPDATA ?? '';
