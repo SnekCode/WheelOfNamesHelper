@@ -73,6 +73,14 @@ npm run dev
 
 This will start the application in development mode and allow you to make changes to the code.
 
+## Deployment
+Ensure your github token is valid
+1. set an env var `GH_TOKEN` locally in terminal or in a `electron-builder.env` file
+1. git commit and push to the `master` branch
+1. create a tag. Ensure you have updated `package.json`
+1. `npm run build`
+1. `npm run publish`
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
