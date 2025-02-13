@@ -11,6 +11,7 @@ import { autoUpdater } from '../updater/updater';
 
 
 const appData = process.env.LOCALAPPDATA ?? '';
+const isDev = import.meta.env.DEV;
 
 // Function to show input dialog and get user input
 async function showInputDialog(
@@ -158,6 +159,26 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
         {
             label: 'Developer',
             submenu: [
+            // DEBUG settings
+            {
+                label: "Debug Menu",
+                enabled: isDev,
+                submenu: [
+                    {
+                        label: "Malform Youtube Authentication",
+                        click: () => {
+                            youtubeOAuthProvider.DEBUG_malformedAuthentications();
+                        },
+                    },
+                    {
+                        label: "Delete Youtube Authentication",
+                        click: () => {
+                            youtubeOAuthProvider.DEBUG_deleteAuthentications();
+                        },
+                    }
+                ]
+            },
+
                   {
           label: "Select Update Channel",
           // select menu item based on current channel

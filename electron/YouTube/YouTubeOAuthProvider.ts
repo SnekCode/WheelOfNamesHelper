@@ -100,6 +100,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
         this.refreshToken = (await keytar.getPassword(this.serviceName, this.refreshTokenName)) ?? '';
 
         if (this.accessToken === '' || this.refreshToken === '') {
+            this.emit('unauthenticated');
             return '';
         }
 
@@ -127,6 +128,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
             await this.refreshAccessToken();
             return this.accessToken;
         } else {
+            this.emit('unauthenticated');
             return '';
         }
     }
@@ -136,12 +138,16 @@ export class YouTubeOAuthProvider extends EventEmitter {
 
         if (this.auth === null) {
             console.log('auth is null');
+            this.emit('unauthenticated');
             return;
         }
         const response = await axios.post(this.tokenExchangeEndpoint, {
             refresh_token: this.refreshToken,
             grant_type: 'refresh_token',
-        });
+        }).catch((error) => {
+            this.emit('unauthenticated');
+            console.log(error, 'error');
+        })
 
         const body = JSON.parse(response.data.body);
         this.accessToken = body.access_token ?? '';
@@ -212,6 +218,19 @@ export class YouTubeOAuthProvider extends EventEmitter {
             }
         });
     }
+
+    async DEBUG_deleteAuthentications() {
+        await keytar.deletePassword(this.serviceName, this.accountName);
+        await keytar.deletePassword(this.serviceName, this.refreshTokenName);
+        await keytar.deletePassword(this.serviceName, this.expiresInSecondsName);
+    }
+
+    async DEBUG_malformedAuthentications() {
+        await keytar.setPassword(this.serviceName, this.accountName, 'malformed');
+        await keytar.setPassword(this.serviceName, this.refreshTokenName, 'malformed');
+        await keytar.setPassword(this.serviceName, this.expiresInSecondsName, '320');
+    }
+
 
     async revokeAccessToken(): Promise<void> {
         // Implement token revoke logic if needed
