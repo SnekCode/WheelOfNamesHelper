@@ -7,6 +7,7 @@ ________________________________________________________________________________
 ### Bug Fix
 - Youtube Authentication will now properly display connection status in the UI if tokens are expired.
 - Additionally Replaced Red X with "Sign in to send Messages" for clarity
+- Removed flicker from page reload resulting from ! commands
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
