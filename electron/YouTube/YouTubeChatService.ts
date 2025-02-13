@@ -224,7 +224,7 @@ export class YouTubeChatService extends EventEmitter {
 
         const accessToken = youtubeOAuthProvider.accessToken;
         if (!accessToken) {
-            console.error('N accessToken found');
+            console.error('No accessToken found');
             return;
         }
         const body = {
@@ -246,6 +246,7 @@ export class YouTubeChatService extends EventEmitter {
             })
             .catch((error) => {
                 console.error('error', error);
+                youtubeOAuthProvider.emit('unauthenticated');
             });
     };
 }

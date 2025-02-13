@@ -309,10 +309,10 @@ const getTime = (timestamp: number) => {
         <div v-if="!youtubeHandle" class="hint">
           (Sign In to Youtube account)
         </div>
-        <div v-else>
+        <div v-else class="youtube-section">
           {{ youtubeHandle }}
           <span v-if="isYoutubeAuthenticated" class="check-mark">✔️</span>
-          <span v-else class="check-mark" style="color: red">❌</span>
+          <span v-else class="check-mark" style="color: red">Sign in to send Messages</span>
         </div>
       </div>
       <button :class="`youtube-button ${searching ? 'youtube-button-searching' : ''
@@ -487,6 +487,13 @@ const getTime = (timestamp: number) => {
   color: green;
 }
 
+.youtube-section {
+  /* align items left */
+  display: flex;
+  flex-direction: column;
+  justify-items: end;
+}
+
 .youtube-button {
   background-color: rgba(255, 0, 0, 0.4);
   /* YouTube red */
@@ -497,9 +504,8 @@ const getTime = (timestamp: number) => {
   cursor: pointer;
   display: flex;
   align-items: center;
-  margin-left: auto;
-  margin-right: auto;
   height: 2em;
+  max-width: fit-content;
   text-align: center;
   justify-content: center;
   user-select: none;

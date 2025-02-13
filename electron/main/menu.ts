@@ -8,21 +8,27 @@ import { getReleaseNotes } from '../updater/releaseNotes';
 import { setUpClient } from '../Twitch/TwitchChatService';
 
 import { autoUpdater } from '../updater/updater';
+import { json } from 'node:stream/consumers';
 
 
 const appData = process.env.LOCALAPPDATA ?? '';
 const isDev = import.meta.env.DEV;
+
+let jsonMessage: string | null = "{test: 'test'}";
+let event: string | null = "message";
 
 // Function to show input dialog and get user input
 async function showInputDialog(
     window: BrowserWindow,
     title: string,
     label: string,
+    value = '',
     html = false
 ): Promise<string | null> {
     const result = await prompt({
         title,
         label,
+        value,
         inputAttrs: {
             type: 'text',
         },
@@ -175,7 +181,40 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         click: () => {
                             youtubeOAuthProvider.DEBUG_deleteAuthentications();
                         },
-                    }
+                    },
+                    // custom form to send messages to the renderer in the form of event and message. allow for js objects to be sent too
+                    {
+                        label: "Send Message",
+                        acceleratorWorksWhenHidden: true,
+                        accelerator: 'CmdOrCtrl+M',
+                        click: async () => {
+                            // open devtools
+                            win?.webContents.openDevTools();
+                            while (!win?.webContents.isDevToolsOpened()) {
+                                await new Promise((resolve) => setTimeout(resolve, 100));
+                            }
+                            event = await showInputDialog(win!, "Send Message", "Event", event ?? "");
+                            jsonMessage = await showInputDialog(win!, "Send Message", "Message", jsonMessage ?? "");
+                            const isObject = jsonMessage?.startsWith('{') && jsonMessage?.endsWith('}');
+
+                            // if the message is an object we need to make sure it is formated correctly for JSON parse
+                            // ensure that all properties are wrapped in double quotes
+                            if(isObject) {
+                                const regex = /(['"])?([a-zA-Z0-9_]+)(['"])?:/g;
+                                jsonMessage = jsonMessage?.replace(regex, '"$2":') ?? jsonMessage;
+                                // also replace single quotes with double quotes
+                                jsonMessage = jsonMessage?.replace(/'/g, '"') ?? jsonMessage;
+                            }
+                            try{
+                            const messageObj = isObject ? JSON.parse(jsonMessage!) : jsonMessage;
+                            if (jsonMessage && event) {
+                                win?.webContents.send(event, messageObj);
+                            }
+                        } catch (e: any) {
+                            win?.webContents.send('message', e.message);
+                        }
+                        },
+                    },
                 ]
             },
 
