@@ -50,28 +50,6 @@ export const handleChatCommand = async (
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         case EChatCommand.WHEEL:
-            entry = {
-                text: displayname,
-                channelId,
-                claimedHere: true,
-                weight: 1,
-                enabled: true,
-                message: channelId,
-                service
-            };
-            const success = handleAddWheelUser({} as IpcMainInvokeEvent, entry, false);
-            if (success) updateCounts(service, 'add', 'wheel');
-            break;
-
-        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        // ~        HERE CASE         ~
-        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-        case EChatCommand.HERE:
-            if (entries.length === 0) {
-                return;
-            }
-
             entry = entries.find((entry: Entry) => {
                 if (entry.channelId) {
                     return entry.channelId === channelId;
@@ -87,9 +65,27 @@ export const handleChatCommand = async (
                 entry.enabled = true;
                 handleUpdateWheelUser({} as IpcMainEvent, entry);
                 updateCounts(service, "add", "here");
-            } else {
-                handleUpdateActivity({} as IpcMainEvent, displayname, channelId, service);
+            }else {
+                entry = {
+                    text: displayname,
+                    channelId,
+                    claimedHere: true,
+                    weight: 1,
+                    enabled: true,
+                    message: channelId,
+                    service
+                };
+                const success = handleAddWheelUser({} as IpcMainInvokeEvent, entry, false);
+                if (success) updateCounts(service, 'add', 'wheel');
             }
+            break;
+
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        // ~        HERE CASE         ~
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        case EChatCommand.HERE:
+            handleChatCommand(EChatCommand.WHEEL, displayname, channelId, service, chatCallBackFn);
             break;
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
