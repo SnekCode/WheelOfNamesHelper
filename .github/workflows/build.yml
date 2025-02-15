@@ -25,5 +25,4 @@ jobs:
       
       - name: Build
         run: npm run build
-  release:
-    uses: ./.github/workflows/release.yml
+        
