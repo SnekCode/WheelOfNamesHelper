@@ -1,6 +1,6 @@
 {
     "name": "wheel-of-names-helper",
-    "version": "2.2.5-beta.0",
+    "version": "2.2.6-beta.0",
     "main": "dist-electron/main/main.js",
     "description": "Wheel of names tool for Twitch streamers",
     "author": "SnekCode",
