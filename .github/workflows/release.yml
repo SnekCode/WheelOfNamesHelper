@@ -1,4 +1,4 @@
-name: Stage Release
+name: Release
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ on:
           - premajor --preid=beta
 
 jobs:
-  release:
+  tag:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -51,3 +51,5 @@ jobs:
         run: |
           git tag v$VERSION
           git push origin v$VERSION
+  release:
+    uses: ./.github/workflows/publish.yml

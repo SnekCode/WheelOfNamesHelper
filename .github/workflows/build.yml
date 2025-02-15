@@ -25,20 +25,5 @@ jobs:
       
       - name: Build
         run: npm run build
-
-      - name: Trigger Release Workflow
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const workflow_id = 'release.yml';
-            const ref = 'refs/heads/master';
-            await github.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id,
-              ref,
-              inputs: {
-                release_type: 'patch' // Default value, can be changed by user input in the release workflow
-              }
-            });
+  release:
+    uses: ./.github/workflows/release.yml

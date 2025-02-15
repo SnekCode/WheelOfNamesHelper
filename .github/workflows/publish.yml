@@ -1,9 +1,7 @@
-name: Build/release
+name: Publish
 
-on: 
-  push:
-    tags:
-      - 'v*'
+on:
+  workflow_call:
 
 jobs:
   release:
