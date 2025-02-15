@@ -11,6 +11,9 @@ on:
           - patch
           - minor
           - major
+          - prepatch --preid=beta
+          - preminor --preid=beta
+          - premajor --preid=beta
 
 jobs:
   release:
