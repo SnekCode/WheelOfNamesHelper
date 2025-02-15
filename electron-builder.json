@@ -15,7 +15,9 @@
         "publish": {
             "provider": "github",
             "owner": "SnekCode",
-            "repo": "WheelOfNamesHelper"
+            "repo": "WheelOfNamesHelper",
+            "releaseType": "release",
+            "publishAutoUpdate": true
         },
         "target": [
             {
