@@ -1,6 +1,6 @@
 name: Build/Publish
 
-on: push
+on: workflow_call
 
 jobs:
   release:
