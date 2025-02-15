@@ -294,7 +294,7 @@ const getTime = (timestamp: number) => {
     <!-- Twitch Section -->
     <div class="channel-section">
       <label for="channel-name">Twitch Channel</label>
-      <div v-if="!twitchHandle" class="hint">(Set channel in App menu dropdown)</div>
+      <div v-if="!twitchHandle" class="hint">(Sign In to Twitch account)</div>
       <div v-else>
         {{ twitchHandle }}
         <span v-if="isTwitchConnected" class="check-mark">✔️</span>

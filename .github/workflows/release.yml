@@ -1,0 +1,50 @@
+name: Stage Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Select the release type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures tags are fetched
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version
+        run: |
+          npm version ${{ github.event.inputs.release_type }} --no-git-tag-version
+
+      - name: Get new version
+        id: package_version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      - name: Commit updated package.json
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(release): bump version to $VERSION"
+          git push origin main
+
+      - name: Create and push Git tag
+        run: |
+          git tag v$VERSION
+          git push origin v$VERSION

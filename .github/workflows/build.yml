@@ -2,16 +2,8 @@ name: Build
 
 on:
   push:
-    paths-ignore:
-      - "**.md"
-      - "**.spec.js"
-      - ".idea"
-      - ".vscode"
-      - ".dockerignore"
-      - "Dockerfile"
-      - ".gitignore"
-      - ".github/**"
-      - "!.github/workflows/build.yml"
+    branches:
+      - main
 
 jobs:    
   build:
@@ -30,22 +22,8 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-
-      # - name: Run Tests
-      #   continue-on-error: true
-      #   run: npm test
-
-      - name: node ls
-        run: npm ls
-
-      - name: Build Release Files
+      
+      - name: Build
         run: npm run build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: release_on_${{ matrix. os }}
-          path: release/
-          retention-days: 5
+# new tag job that lets me choose the tag name then pushes the tag to the repository
