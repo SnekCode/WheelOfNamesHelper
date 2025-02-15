@@ -15,8 +15,7 @@
         "publish": {
             "provider": "github",
             "owner": "SnekCode",
-            "repo": "WheelOfNamesHelper",
-            "channel": "${}"
+            "repo": "WheelOfNamesHelper"
         },
         "target": [
             {
