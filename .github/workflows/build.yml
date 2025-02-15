@@ -25,5 +25,3 @@ jobs:
       
       - name: Build
         run: npm run build
-
-# new tag job that lets me choose the tag name then pushes the tag to the repository
