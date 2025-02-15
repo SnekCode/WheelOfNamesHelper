@@ -28,14 +28,15 @@
         "build": "vue-tsc --noEmit && vite build && electron-builder --publish never",
         "preview": "vite preview",
         "publish": "vue-tsc --noEmit && vite build && electron-builder --publish always",
-        "version:major": "node version-bump.js major",
-        "version:minor": "node version-bump.js minor",
-        "version:patch": "node version-bump.js patch",
-        "version:current": "node version-bump.js current",
-        "version:major:beta": "node version-bump.js major beta",
-        "version:minor:beta": "node version-bump.js minor beta",
-        "version:patch:beta": "node version-bump.js patch beta",
-        "version:current:beta": "node version-bump.js current beta"
+        "version:major": "npm version major",
+        "version:minor": "npm version minor",
+        "version:patch": "npm version patch",
+        "version:current": "npm version from-git --no-git-tag-version",
+        "version:major:beta": "npm version premajor --preid=beta",
+        "version:minor:beta": "npm version preminor --preid=beta",
+        "version:patch:beta": "npm version prepatch --preid=beta",
+        "version:current:beta": "npm version from-git --preid=beta --no-git-tag-version",
+        "version:pre:beta": "npm version prerelease --preid=beta"
     },
     "devDependencies": {
         "@types/axios": "^0.14.4",
