@@ -45,7 +45,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "chore(release): bump version to $VERSION"
-          git push origin main
+          git push origin master
 
       - name: Create and push Git tag
         run: |
