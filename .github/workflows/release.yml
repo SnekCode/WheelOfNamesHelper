@@ -51,5 +51,3 @@ jobs:
         run: |
           git tag v$VERSION
           git push origin v$VERSION
-  release:
-    uses: ./.github/workflows/publish.yml
