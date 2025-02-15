@@ -25,7 +25,6 @@ release
 *.sw?
 *.py
 # lockfile
-package-lock.json
 pnpm-lock.yaml
 yarn.lock
 tsconfig.node.tsbuildinfo
