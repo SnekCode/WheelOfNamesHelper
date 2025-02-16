@@ -233,9 +233,9 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         {
                             label: 'Pre Release',
                             type: 'radio',
-                            checked: store.get('channel') === 'beta',
+                            checked: store.get('channel') === 'pre',
                             click: () => {
-                                setStore('channel', 'latest');
+                                setStore('channel', 'pre');
                                 autoUpdater.allowPrerelease = true;
                                 autoUpdater.allowDowngrade = true;
                                 autoUpdater.channel = 'latest';

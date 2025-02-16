@@ -29,6 +29,7 @@ const { ipcRenderer } = window
 
 
 const updateAvailable = ref(false)
+const updateLaterCheck = ref(false)
 const newVersion = ref('unknown')
 const downloadProgress = ref(0)
 const bytesPerSecond = ref("0")
@@ -76,6 +77,11 @@ ipcRenderer.on(EChannels.updateDownloadProgress, (_, progress: UpdateProgress) =
   downloadProgress.value = progress.percent
   bytesPerSecond.value = (progress.bytesPerSecond / (1024 * 1024)).toFixed(2); // Convert to MB/s
   timeRemaining.value = calculateTimeRemaining(progress)
+  if(progress.percent === 100) {
+    setTimeout(() => {
+      updateAvailable.value = false
+    }, 2000)
+  }
 })
 
 const updateNow = () => {
@@ -83,7 +89,7 @@ const updateNow = () => {
 }
 
 const updateLater = () => {
-  updateAvailable.value = false
+  updateLaterCheck.value = true
   ipcRenderer.send('update', false)
 }
 
@@ -107,6 +113,7 @@ const skip = () => {
       </div>
     </div>
     <div v-else class="updater__content__progress">
+      <p v-if="updateLaterCheck" class="updater__content__text">Application will update after on quit</p>
       <p class="updater__content__text">Download Speed: {{ bytesPerSecond }} MB/s</p>
       <p class="updater__content__text">
         Time Remaining: 
