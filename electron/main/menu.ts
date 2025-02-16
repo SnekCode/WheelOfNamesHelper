@@ -8,6 +8,7 @@ import { getReleaseNotes } from '../updater/releaseNotes';
 import { setUpClient } from '../Twitch/TwitchChatService';
 
 import { autoUpdater } from '../updater/updater';
+import { EChannels } from '~/Shared/channels';
 
 
 const appData = process.env.LOCALAPPDATA ?? '';
@@ -223,6 +224,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             type: 'radio',
                             checked: store.get('channel') === 'latest',
                             click: () => {
+                                win!.webContents.send(EChannels.updateAvailable, false);
                                 setStore('channel', 'latest');
                                 autoUpdater.allowPrerelease = false;
                                 autoUpdater.allowDowngrade = true;
@@ -235,6 +237,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             type: 'radio',
                             checked: store.get('channel') === 'pre',
                             click: () => {
+                                win!.webContents.send(EChannels.updateAvailable, false);
                                 setStore('channel', 'pre');
                                 autoUpdater.allowPrerelease = true;
                                 autoUpdater.allowDowngrade = true;
@@ -247,6 +250,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             type: 'radio',
                             checked: store.get('channel') === 'beta',
                             click: () => {
+                                win!.webContents.send(EChannels.updateAvailable, false);
                                 setStore('channel', 'beta');
                                 autoUpdater.allowPrerelease = true;
                                 autoUpdater.allowDowngrade = true;
