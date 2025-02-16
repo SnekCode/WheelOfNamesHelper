@@ -28,7 +28,7 @@ interface TimeRemaining {
 const { ipcRenderer } = window
 
 
-const updateAvailable = ref(true)
+const updateAvailable = ref(false)
 const newVersion = ref('unknown')
 const downloadProgress = ref(0)
 const bytesPerSecond = ref("0")
