@@ -2,6 +2,21 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.2.2
+
+### Feature update
+- The update window will now provide feedback on download progress
+- The channel update menu has been improved to allow downloading of pre release versions
+  - This will improve testing and reduce the number of bad deployments.
+
+If you so choose to be brave:
+
+![alt text](channels.png)
+
+<br/>
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.2.1
 
 ### Bug Fix
