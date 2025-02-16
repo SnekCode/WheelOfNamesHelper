@@ -7,6 +7,8 @@
         "output": "release/${version}"
     },
     "files": ["dist", "dist-electron", "public"],
+    "detectUpdateChannel": true,
+    "generateUpdatesFilesForAllChannels": true,
     "mac": {
         "target": ["dmg"],
         "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
@@ -16,8 +18,9 @@
             "provider": "github",
             "owner": "SnekCode",
             "repo": "WheelOfNamesHelper",
-            "releaseType": "release",
-            "publishAutoUpdate": true
+            "releaseType": "prerelease",
+            "publishAutoUpdate": true,
+            "channel": "latest"
         },
         "target": [
             {

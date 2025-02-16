@@ -12,7 +12,7 @@ autoUpdater.autoDownload = false;
 
 const isDev = import.meta.env.DEV;
 
-autoUpdater.channel = store.get("channel") || "latest";
+autoUpdater.channel = "latest";
 
 if (!isDev) {
   setTimeout(() => {
@@ -27,7 +27,7 @@ if (!isDev) {
 
 if (isDev) {
   autoUpdater.forceDevUpdateConfig = true;
-  autoUpdater.allowPrerelease = true;
+  // autoUpdater.allowPrerelease = true;
   }
 
 if (process.env.VITE_UPDATER) {

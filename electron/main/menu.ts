@@ -222,21 +222,13 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
           // select menu item based on current channel
           submenu: [
             {
-              label: "Alpha",
-              type: "radio",
-              checked: store.get("channel") === "alpha",
-              click: () => {
-                setStore("channel", "alpha");
-                autoUpdater.channel = "alpha";
-                autoUpdater.checkForUpdates()
-              },
-            },
-            {
               label: "Beta",
               type: "radio",
               checked: store.get("channel") === "beta",
               click: () => {
                 setStore("channel", "beta");
+                autoUpdater.allowPrerelease = true;
+                autoUpdater.allowDowngrade = true;
                 autoUpdater.channel = "beta";
                 autoUpdater.checkForUpdates();
               },
@@ -247,6 +239,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
               checked: store.get("channel") === "latest",
               click: () => {
                 setStore("channel", "latest");
+                autoUpdater.allowPrerelease = false;
                 autoUpdater.channel = "latest";
                 autoUpdater.checkForUpdates();
               },
