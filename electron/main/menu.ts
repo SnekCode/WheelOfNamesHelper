@@ -81,9 +81,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                 {
                     label: 'Sign In To Twitch',
                     click: async (_, focusedWindow) => {
-                        
                         twitchAuthProvider.getAccessToken().then((accessToken) => {
-
                             // vaildate the access token
                             if (!accessToken) {
                                 return;
@@ -133,7 +131,6 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
 
                         // return and handle ipc comm
                         if (authWindow) {
-                            
                             youtubeOAuthProvider.listenForRedirects(authWindow);
                         }
                     },
@@ -146,7 +143,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             youTubeChatService.disconnect();
                         });
                     },
-                }
+                },
             ],
         },
         {
@@ -164,89 +161,102 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
         {
             label: 'Developer',
             submenu: [
-            // DEBUG settings
-            {
-                label: "Debug Menu",
-                enabled: isDev,
-                submenu: [
-                    {
-                        label: "Malform Youtube Authentication",
-                        click: () => {
-                            youtubeOAuthProvider.DEBUG_malformedAuthentications();
+                // DEBUG settings
+                {
+                    label: 'Debug Menu',
+                    enabled: isDev,
+                    submenu: [
+                        {
+                            label: 'Malform Youtube Authentication',
+                            click: () => {
+                                youtubeOAuthProvider.DEBUG_malformedAuthentications();
+                            },
                         },
-                    },
-                    {
-                        label: "Delete Youtube Authentication",
-                        click: () => {
-                            youtubeOAuthProvider.DEBUG_deleteAuthentications();
+                        {
+                            label: 'Delete Youtube Authentication',
+                            click: () => {
+                                youtubeOAuthProvider.DEBUG_deleteAuthentications();
+                            },
                         },
-                    },
-                    // custom form to send messages to the renderer in the form of event and message. allow for js objects to be sent too
-                    {
-                        label: "Send Message",
-                        acceleratorWorksWhenHidden: true,
-                        accelerator: 'CmdOrCtrl+M',
-                        click: async () => {
-                            // open devtools
-                            win?.webContents.openDevTools();
-                            while (!win?.webContents.isDevToolsOpened()) {
-                                await new Promise((resolve) => setTimeout(resolve, 100));
-                            }
-                            event = await showInputDialog(win!, "Send Message", "Event", event ?? "");
-                            jsonMessage = await showInputDialog(win!, "Send Message", "Message", jsonMessage ?? "");
-                            const isObject = jsonMessage?.startsWith('{') && jsonMessage?.endsWith('}');
+                        // custom form to send messages to the renderer in the form of event and message. allow for js objects to be sent too
+                        {
+                            label: 'Send Message',
+                            acceleratorWorksWhenHidden: true,
+                            accelerator: 'CmdOrCtrl+M',
+                            click: async () => {
+                                // open devtools
+                                win?.webContents.openDevTools();
+                                while (!win?.webContents.isDevToolsOpened()) {
+                                    await new Promise((resolve) => setTimeout(resolve, 100));
+                                }
+                                event = await showInputDialog(win!, 'Send Message', 'Event', event ?? '');
+                                jsonMessage = await showInputDialog(win!, 'Send Message', 'Message', jsonMessage ?? '');
+                                const isObject = jsonMessage?.startsWith('{') && jsonMessage?.endsWith('}');
 
-                            // if the message is an object we need to make sure it is formated correctly for JSON parse
-                            // ensure that all properties are wrapped in double quotes
-                            if(isObject) {
-                                const regex = /(['"])?([a-zA-Z0-9_]+)(['"])?:/g;
-                                jsonMessage = jsonMessage?.replace(regex, '"$2":') ?? jsonMessage;
-                                // also replace single quotes with double quotes
-                                jsonMessage = jsonMessage?.replace(/'/g, '"') ?? jsonMessage;
-                            }
-                            try{
-                            const messageObj = isObject ? JSON.parse(jsonMessage!) : jsonMessage;
-                            if (jsonMessage && event) {
-                                win?.webContents.send(event, messageObj);
-                            }
-                        } catch (e: any) {
-                            win?.webContents.send('message', e.message);
-                        }
+                                // if the message is an object we need to make sure it is formated correctly for JSON parse
+                                // ensure that all properties are wrapped in double quotes
+                                if (isObject) {
+                                    const regex = /(['"])?([a-zA-Z0-9_]+)(['"])?:/g;
+                                    jsonMessage = jsonMessage?.replace(regex, '"$2":') ?? jsonMessage;
+                                    // also replace single quotes with double quotes
+                                    jsonMessage = jsonMessage?.replace(/'/g, '"') ?? jsonMessage;
+                                }
+                                try {
+                                    const messageObj = isObject ? JSON.parse(jsonMessage!) : jsonMessage;
+                                    if (jsonMessage && event) {
+                                        win?.webContents.send(event, messageObj);
+                                    }
+                                } catch (e: any) {
+                                    win?.webContents.send('message', e.message);
+                                }
+                            },
                         },
-                    },
-                ]
-            },
+                    ],
+                },
 
-                  {
-          label: "Select Update Channel",
-          // select menu item based on current channel
-          submenu: [
-            {
-              label: "Beta",
-              type: "radio",
-              checked: store.get("channel") === "beta",
-              click: () => {
-                setStore("channel", "beta");
-                autoUpdater.allowPrerelease = true;
-                autoUpdater.allowDowngrade = true;
-                autoUpdater.channel = "beta";
-                autoUpdater.checkForUpdates();
-              },
-            },
-            {
-              label: "Stable",
-              type: "radio",
-              checked: store.get("channel") === "latest",
-              click: () => {
-                setStore("channel", "latest");
-                autoUpdater.allowPrerelease = false;
-                autoUpdater.channel = "latest";
-                autoUpdater.checkForUpdates();
-              },
-            },
-          ],
-        },
-        {
+                {
+                    label: 'Select Update Channel',
+                    // select menu item based on current channel
+                    submenu: [
+                        {
+                            label: 'Stable',
+                            type: 'radio',
+                            checked: store.get('channel') === 'latest',
+                            click: () => {
+                                setStore('channel', 'latest');
+                                autoUpdater.allowPrerelease = false;
+                                autoUpdater.allowDowngrade = true;
+                                autoUpdater.channel = 'latest';
+                                autoUpdater.checkForUpdates();
+                            },
+                        },
+                        {
+                            label: 'Pre Release',
+                            type: 'radio',
+                            checked: store.get('channel') === 'beta',
+                            click: () => {
+                                setStore('channel', 'latest');
+                                autoUpdater.allowPrerelease = true;
+                                autoUpdater.allowDowngrade = true;
+                                autoUpdater.channel = 'latest';
+                                autoUpdater.checkForUpdates();
+                            },
+                        },
+                        {
+                            label: 'Beta',
+                            type: 'radio',
+                            checked: store.get('channel') === 'beta',
+                            click: () => {
+                                setStore('channel', 'beta');
+                                autoUpdater.allowPrerelease = true;
+                                autoUpdater.allowDowngrade = true;
+                                autoUpdater.channel = 'beta';
+                                autoUpdater.checkForUpdates();
+                            },
+                        },
+                    ],
+                },
+                {
                     label: 'Force Reload',
                     accelerator: 'CmdOrCtrl+Shift+R',
                     click: (_, focusedWindow) => {
@@ -294,15 +304,15 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                                 contextIsolation: true,
                             },
                         });
-                            if (VITE_DEV_SERVER_URL) {
-                                // #298
-                                devToolWindow.loadURL(VITE_DEV_SERVER_URL + 'devtools');
-                                // Open devTool if the app is not packaged
-                                // win.webContents.openDevTools()
-                            } else {
-                                const indexHtml = path.join(RENDERER_DIST, 'index.html/devtools');
-                                devToolWindow.loadFile(indexHtml);
-                            }
+                        if (VITE_DEV_SERVER_URL) {
+                            // #298
+                            devToolWindow.loadURL(VITE_DEV_SERVER_URL + 'devtools');
+                            // Open devTool if the app is not packaged
+                            // win.webContents.openDevTools()
+                        } else {
+                            const indexHtml = path.join(RENDERER_DIST, 'index.html/devtools');
+                            devToolWindow.loadFile(indexHtml);
+                        }
                     },
                 },
                 {
