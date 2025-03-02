@@ -60,6 +60,12 @@ fetchReleaseNotes();
   z-index: 2000;
 }
 
+@media (prefers-color-scheme: light) {
+  .modal {
+    background-color: rgba(245, 245, 245, 0.2);
+  }
+}
+
 .modal-content {
   background-color: #242424;
   padding: 20px;
@@ -71,6 +77,12 @@ fetchReleaseNotes();
   overflow-y: auto;
 }
 
+@media (prefers-color-scheme: light) {
+  .modal-content {
+    background-color: #E0E0E0;
+  }
+}
+
 .modal-content button {
   position: fixed;
   top: 10px;
@@ -78,9 +90,22 @@ fetchReleaseNotes();
   /* Additional styling if needed */
 }
 
+@media (prefers-color-scheme: light) {
+  .modal-content button {
+    background-color: #007BFF;
+    color: #FFFFFF;
+  }
+}
+
 ::v-deep h2 {
   /* your styles for h2 */
   text-align: center;
+}
+
+@media (prefers-color-scheme: light) {
+  ::v-deep h2 {
+    color: #333333;
+  }
 }
 
 ::v-deep h3 {
@@ -88,12 +113,30 @@ fetchReleaseNotes();
   text-align: left;
 }
 
+@media (prefers-color-scheme: light) {
+  ::v-deep h3 {
+    color: #333333;
+  }
+}
+
 ::v-deep h4 {
   /* your styles for h4 */
   text-align: left;
 }
 
+@media (prefers-color-scheme: light) {
+  ::v-deep h4 {
+    color: #666666;
+  }
+}
+
 ::v-deep li {
   text-align: left;
+}
+
+@media (prefers-color-scheme: light) {
+  ::v-deep li {
+    color: #666666;
+  }
 }
 </style>

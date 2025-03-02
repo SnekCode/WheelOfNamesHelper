@@ -144,6 +144,12 @@ const skip = () => {
   z-index: 1000;
 }
 
+@media (prefers-color-scheme: light) {
+  .updater {
+    background-color: #F5F5F5;
+  }
+}
+
 .updater__content {
   display: flex;
   flex-direction: column;
@@ -154,6 +160,12 @@ const skip = () => {
   font-size: 1.2rem;
   margin-bottom: 10px;
   color: black
+}
+
+@media (prefers-color-scheme: light) {
+  .updater__content__text {
+    color: #333333;
+  }
 }
 
 .updater__content__buttons {
@@ -170,6 +182,13 @@ const skip = () => {
   margin-right: 10px;
 }
 
+@media (prefers-color-scheme: light) {
+  .updater__content__buttons__update {
+    background-color: #007BFF;
+    color: #FFFFFF;
+  }
+}
+
 .updater__content__buttons__later {
   background-color: #6c757d;
   color: white;
@@ -179,12 +198,26 @@ const skip = () => {
   margin-right: 10px;
 }
 
+@media (prefers-color-scheme: light) {
+  .updater__content__buttons__later {
+    background-color: #666666;
+    color: #FFFFFF;
+  }
+}
+
 .updater__content__buttons__skip {
   color: white;
   padding: 5px 10px;
   border: none;
   border-radius: 5px;
   margin-right: 10px;
+}
+
+@media (prefers-color-scheme: light) {
+  .updater__content__buttons__skip {
+    background-color: #CCCCCC;
+    color: #FFFFFF;
+  }
 }
 
 .updater__content__progress {
@@ -203,6 +236,12 @@ const skip = () => {
   position: relative;
 }
 
+@media (prefers-color-scheme: light) {
+  .progress-bar {
+    background-color: #E0E0E0;
+  }
+}
+
 .progress-bar__fill {
   height: 100%;
   background-color: #007bff;
@@ -214,11 +253,23 @@ const skip = () => {
   transition: width 0.4s ease;
 }
 
+@media (prefers-color-scheme: light) {
+  .progress-bar__fill {
+    background-color: #007BFF;
+  }
+}
+
 .progress-bar__text {
   position: absolute;
   width: 100%;
   text-align: center;
   color: white;
+}
+
+@media (prefers-color-scheme: light) {
+  .progress-bar__text {
+    color: #FFFFFF;
+  }
 }
 
 </style>

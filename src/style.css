@@ -79,21 +79,76 @@ code {
   height: 100%;
 }
 
+/* 
+light theme 
+Background: #F5F5F5 (Very Light Gray) 
+Primary Text: #333333 (Dark Gray) 
+Secondary Text: #666666 (Medium Gray) 
+Accent: #007BFF (Blue) 
+Borders: #CCCCCC (Light Gray) 
+Buttons: Background: #007BFF (Blue) 
+Text: #FFFFFF (White) 
+Modal Background: rgba(245, 245, 245, 0.2) 
+Modal Content Background: #E0E0E0 (Very Light Gray)
+
+*/
+
 @media (prefers-color-scheme: light) {
   :root {
-    color: #1a1a1a;
-    background-color: #7DA5AA;
+    color: #333333;
+    background-color: #F5F5F5;
   }
+
+  a {
+    color: #007BFF;
+  }
+
   a:hover {
-    color: #747bff;
+    color: #0056b3;
   }
-  input, select, button {
-    background-color: #e9e7e7;
+
+  body {
+    color: #333333;
+    background-color: #F5F5F5;
   }
+
+  h1 {
+    color: #333333;
+  }
+
   button {
-    background-color: #e9e7e7;
+    background-color: #007BFF;
+    color: #FFFFFF;
+    border-color: #CCCCCC;
   }
+
+  button:hover {
+    border-color: #0056b3;
+  }
+
+  button:focus,
+  button:focus-visible {
+    outline: 4px auto #007BFF;
+  }
+
   code {
-    background-color: #f9f9f9;
+    background-color: #E0E0E0;
+    color: #333333;
+  }
+
+  .card {
+    background-color: #F5F5F5;
+    color: #333333;
+  }
+
+  #app {
+    background-color: #F5F5F5;
+    color: #333333;
+  }
+
+  input, select {
+    background-color: #FFFFFF;
+    color: #333333;
+    border-color: #CCCCCC;
   }
 }
