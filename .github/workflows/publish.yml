@@ -3,7 +3,8 @@ name: Build/Publish
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'         # Matches tags like v1.2.3
+      - 'v*.*.*-beta.*'  # Matches tags like v1.2.3-beta.0
 
 jobs:
   release:
