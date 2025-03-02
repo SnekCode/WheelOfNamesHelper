@@ -577,7 +577,6 @@ const getTime = (timestamp: number) => {
   position: absolute;
   top: 0px;
   left: 0;
-  color: white;
   margin: 5px;
   font-size: 16px;
   user-select: none;
