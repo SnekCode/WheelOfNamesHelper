@@ -50,34 +50,31 @@ contextBridge.exposeInMainWorld("store", {
   }
 });
 
-contextBridge.exposeInMainWorld("contextData", {
-  resetClaims() {
-    return ipcRenderer.invoke("resetClaims");
-  },
-  removeNotClaimed() {
-    return ipcRenderer.invoke("removeNotClaimed");
-  },
-  updateWheelUser(user: Entry) {
-    return ipcRenderer.invoke("updateWheelUser", user);
-  },
-  addWheelUser(user: Entry, override: boolean) {
-    return ipcRenderer.invoke("addWheelUser", user, override);
-  },
-  removeWheelUser(name: string) {
-    return ipcRenderer.invoke("removeWheelUser", name);
-  },
-  syncWithWheel() {
-    return ipcRenderer.invoke("syncWithWheel");
-  },
-  forceUpdate() {
-    return ipcRenderer.invoke("forceUpdate");
-  },
-  saveConfig() {
-    return ipcRenderer.invoke("saveConfig");
-  },
-  updateActivity(displayName: string, channelId: string) {
-    return ipcRenderer.invoke("updateActivity", displayName, channelId);
-  },
+contextBridge.exposeInMainWorld('contextData', {
+    resetClaims() {
+        return ipcRenderer.invoke('resetClaims');
+    },
+    removeNotClaimed() {
+        return ipcRenderer.invoke('removeNotClaimed');
+    },
+    addUpdateWheelUser(user: Entry, override: boolean) {
+        return ipcRenderer.invoke('addUpdateWheelUser', user, override);
+    },
+    removeWheelUser(name: string) {
+        return ipcRenderer.invoke('removeWheelUser', name);
+    },
+    syncWithWheel() {
+        return ipcRenderer.invoke('syncWithWheel');
+    },
+    forceUpdate() {
+        return ipcRenderer.invoke('forceUpdate');
+    },
+    saveConfig() {
+        return ipcRenderer.invoke('saveConfig');
+    },
+    updateActivity(displayName: string, channelId: string) {
+        return ipcRenderer.invoke('updateActivity', displayName, channelId);
+    },
 });
 
 contextBridge.exposeInMainWorld("electronAPI", {

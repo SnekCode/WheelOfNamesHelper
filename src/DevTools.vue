@@ -25,9 +25,9 @@ const generateRandomName = () => {
     return `${randomName}${randomNum}${randomChar}`;
 };
 
-const generateChannelId = (name: string) => {
+const generateChannelId = (name: string, service: string) => {
     const secretKey = "your-secret-key"; // Replace with your actual secret key
-    return CryptoJS.HmacSHA256(name, secretKey).toString(CryptoJS.enc.Hex);
+    return CryptoJS.HmacSHA256(name + service, secretKey).toString(CryptoJS.enc.Hex);
 };
 
     // create a simple form to allow me to select the platform so i can simulate messages from different platforms twitch and youtube
@@ -39,7 +39,7 @@ const generateChannelId = (name: string) => {
             // generate a random name
             displayName.value = generateRandomName();
         }
-        const channelId = generateChannelId(displayName.value);
+        const channelId = generateChannelId(displayName.value, service.value);
         console.log(channelId);
         
         ipcRenderer.invoke("chatService", message.value, displayName.value, channelId, service.value);

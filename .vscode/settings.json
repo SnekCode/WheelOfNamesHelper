@@ -2,5 +2,17 @@
     "cSpell.words": [
         "deconflicting",
         "sublabel"
-    ]
+    ],
+    "jest.coverageFormatter": "GutterFormatter",
+    "jest.useDashedArgs": true,
+    // "jestrunner.disableCodeLens": true,
+    // "jestrunner.jestCommand": "npm test",
+    "jest.enable": true,
+    "editor.rulers": [
+        100
+    ],
+    // "terminal.explorerKind": "both",
+    // git bash terminal
+    "jest.shell": "powershell.exe",
+    "jest.jestCommandLine": "npx jest",
 }

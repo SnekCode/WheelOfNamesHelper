@@ -77,7 +77,7 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 (btn) => btn.textContent?.trim() === 'Hide'
             );
             const closeButton = Array.from(document.querySelectorAll('button')).find(
-                (btn) => btn.textContent?.trim() === 'Hide'
+                (btn) => btn.textContent?.trim() === 'Close'
             );
 
             hideButton?.addEventListener('click', () => {
@@ -97,7 +97,7 @@ ipcRenderer.on('initListeners', async (event, value) => {
             closeButton?.addEventListener('click', () => {
                 console.log('Close Button Clicked');
                 window.data.setPause(false);
-                window.data.forceUpdate();
+                // window.data.forceUpdate();
             });
         }, spinTime * 1000 + 100);
     });

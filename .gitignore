@@ -30,3 +30,6 @@ yarn.lock
 tsconfig.node.tsbuildinfo
 tsconfig.tsbuildinfo
 electron-builder.env
+
+#jest
+coverage

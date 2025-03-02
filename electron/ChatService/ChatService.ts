@@ -2,9 +2,8 @@
 // Youtube and Twitch Chat Services utilize this service to determine what chat commands are available
 
 import { ipcMain, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
-import { handleAddWheelUser, handleRemoveWheelUser, handleUpdateActivity, handleUpdateWheelUser } from '../data/data';
 import { Entry } from 'Shared/types';
-import { win } from '../main/main';
+import { win, dataManager } from '../main/main';
 import { store } from '../main/store';
 import { EChatCommand, Service } from 'Shared/enums';
 
@@ -53,18 +52,21 @@ export const handleChatCommand = async (
             entry = entries.find((entry: Entry) => {
                 if (entry.channelId) {
                     return entry.channelId === channelId;
-                } else {
-                    return entry.text === displayname;
                 }
             });
+            const here = entry ? true : false;
 
             if (entry && !entry.claimedHere) {
-                entry.claimedHere = true;
-                entry.weight = entry.weight * 2;
-                entry['service'] = service;
-                entry.enabled = true;
-                handleUpdateWheelUser({} as IpcMainEvent, entry);
-                updateCounts(service, "add", "here");
+                entry = {
+                    text: displayname,
+                    channelId,
+                    claimedHere: true,
+                    weight: entry.weight * 2,
+                    enabled: true,
+                    message: channelId,
+                    service
+                };
+                dataManager.handleAddUpdateWheelUser({} as IpcMainEvent, entry);
             }else {
                 entry = {
                     text: displayname,
@@ -75,9 +77,9 @@ export const handleChatCommand = async (
                     message: channelId,
                     service
                 };
-                const success = handleAddWheelUser({} as IpcMainInvokeEvent, entry, false);
-                if (success) updateCounts(service, 'add', 'wheel');
+                dataManager.handleAddUpdateWheelUser({} as IpcMainInvokeEvent, entry);
             }
+            updateCounts(service, 'add', here ? 'here' : 'wheel');
             break;
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,7 +96,7 @@ export const handleChatCommand = async (
 
         case EChatCommand.REMOVE:
             // TODO update remove function to take channel ID
-            handleRemoveWheelUser({} as IpcMainEvent, displayname);
+            dataManager.handleRemoveWheelUser({} as IpcMainEvent, displayname);
             break;
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,7 +112,7 @@ export const handleChatCommand = async (
                 return entry.channelId === channelId || entry.text === displayname;
             });
 
-            if (!userEntry) {
+            if (!userEntry || !userEntry.enabled) {
                 chatCallBackFn(`@${displayname} you have not entered the wheel yet with !wheel`);
                 return;
             }
@@ -125,10 +127,9 @@ export const handleChatCommand = async (
             }
 
             chatCallBackFn(oddsMessage);
-            handleUpdateActivity({} as IpcMainEvent, displayname, channelId, service);
+            dataManager.handleAddUpdateWheelUser({} as IpcMainEvent, userEntry, false);
             break;
             default:
-                handleUpdateActivity({} as IpcMainEvent, displayname, channelId, service);
                 break;
     }
 };

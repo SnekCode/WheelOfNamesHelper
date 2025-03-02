@@ -2,6 +2,16 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.3.0
+
+### Bug update
+- Fixed an issue where the wheel could be interrupted on some user commands
+- The !wheel and !here counts now properly count up
+- Fixed an issue where the !odds command was not properly responding with correct statements if the user was "hidden"
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.2.2
 
 ### Feature update

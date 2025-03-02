@@ -46,7 +46,7 @@ const sortType = ref(SortType.DESC);
 
 const addUser = () => {
   if (newUser.value && newChances.value) {
-    contextData.addWheelUser(
+    contextData.addUpdateWheelUser(
       {
         text: newUser.value,
         weight: parseInt(newChances.value),
@@ -244,15 +244,18 @@ const resetWheelRequests = () => {
 
 const resetClaims = () => {
   contextData.resetClaims();
+  resetWheelRequests();
 };
 
 const removeNotClaimed = () => {
   contextData.removeNotClaimed();
+  resetWheelRequests();
+
 };
 
 const incrementChances = (user: Entry) => {
   user.weight = (user.weight || 0) + 1;
-  contextData.updateWheelUser({ ...user });
+  contextData.addUpdateWheelUser({ ...user });
 };
 
 const decrementChances = (user: Entry) => {
@@ -260,7 +263,7 @@ const decrementChances = (user: Entry) => {
   if (user.weight === 0) {
     contextData.removeWheelUser(user.text);
   } else {
-    contextData.updateWheelUser({ ...user });
+    contextData.addUpdateWheelUser({ ...user });
   }
 };
 
@@ -394,7 +397,7 @@ const getTime = (timestamp: number) => {
             <!-- contextData.updateWheelUser({...user, enabled:}) -->
             <!-- onclick pass the checkbox value to contextData.updateWheelUser -->
             <input type="checkbox" v-model="user.enabled"
-              @click="contextData.updateWheelUser({...user, enabled: !user.enabled})" />
+              @click="contextData.addUpdateWheelUser({...user, enabled: !user.enabled})" />
 
           </div>
           <button class="addbtn" @click="incrementChances(user)">➕</button>

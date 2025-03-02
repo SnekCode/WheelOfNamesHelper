@@ -8,6 +8,9 @@ import log from 'electron-log/main';
 import { createMenu } from './menu';
 import { YouTubeChatService } from '../YouTube/YouTubeChatService';
 import { YouTubeOAuthProvider } from '../YouTube/YouTubeOAuthProvider';
+import { DataManager } from '../data/data';
+
+export const dataManager = new DataManager();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -214,3 +217,16 @@ twitchAuthProvider.on('unauthenticated', () => {
 
     win?.webContents.send('twitch-unauthenticated');
 });
+
+
+// IPC events
+ipcMain.handle("resetClaims", dataManager.handleResetClaims);
+ipcMain.handle("removeNotClaimed", dataManager.handleNotClaimed);
+ipcMain.handle("addUpdateWheelUser", dataManager.handleAddUpdateWheelUser);
+ipcMain.handle("removeWheelUser", dataManager.handleRemoveWheelUser);
+ipcMain.handle("forceUpdate", dataManager.forceUpdate);
+ipcMain.handle("setPause", dataManager.setPause)
+ipcMain.handle("saveConfig", dataManager.saveConfig);
+ipcMain.handle("hideSelected", dataManager.hideSelected);
+ipcMain.handle("removeSelected", dataManager.removeSelected);
+ipcMain.handle("syncWithWheel", dataManager.syncWithWheel);
