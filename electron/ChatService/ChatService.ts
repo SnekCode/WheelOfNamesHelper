@@ -72,7 +72,7 @@ export const handleChatCommand = async (
                     text: displayname,
                     channelId,
                     claimedHere: true,
-                    weight: 1,
+                    weight: entry ? entry.weight : 1,
                     enabled: true,
                     message: channelId,
                     service
