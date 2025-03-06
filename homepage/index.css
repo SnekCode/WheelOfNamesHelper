@@ -30,7 +30,7 @@ body {
 
 .card-header {
     background-color: #007bff;
-    color: white;
+    color: rgb(65, 65, 65);
     font-weight: bold;
 }
 

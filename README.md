@@ -21,29 +21,26 @@
 
 ## About
 
-This application is designed to enhance the interaction between Twitch streamers and their viewers by providing a dynamic and engaging way to manage viewer participation through a wheel of names. The application offers a variety of features to streamline the process of adding, managing, and tracking viewer entries.
+This application is designed to enhance the interaction between Twitch and Youtube streamers and their viewers by providing a dynamic and engaging way to manage viewer participation through a wheel of names. The application offers a variety of features to streamline the process of adding, managing, and tracking viewer entries.
 
 ### Current Features
-* **Twitch Channel Agnostic**: Easily change the targeted Twitch channel name via the menu bar under "App".
-* **YouTube Live Chat Service**: Easily change the targeted Twitch channel name via the menu bar under "App".
-* **No Authentication Required**: No authentication is required to connect to Twitch or Youtube chat. Wheel of names auth is optional but not required.
+* **Twitch and Youtube Authentication**: Log in to either Twitch or Youtube or Both to enable chat commands
 * **Wheel Request Counter**: Keep track of the number of wheel requests.
 * **Wheel Counter Reset Button**: Reset the current count without affecting the overall state.
-* **Copy to Clipboard Button**: Copy the list of viewers and their chances, formatted for the Wheel Of Names application.
-* **New Stream Button**: Clear the slate to allow viewers to use the `!here` command to double their chances.
-* **Double Down Feature**: Viewers can use the `!here` command to double their chances for new streams.
+* **Remove Not Claimed Button**: Removes any viewer that has not used the command !wheel since resetting the double down feature. Basically a "New Stream" button
+* **Double Down Feature**: Viewers can use the `!wheel` command to double their chances for new streams.
 * **Filter User Search Bar**: Search for viewers even if they have 0 chances.
 * **Viewer Grid Layout**: Display viewers with chances in a grid layout.
 * **Increment and Decrement Buttons**: Fine control over each viewer's chances with increment and decrement buttons.
-* **Remove All Chances**: Clicking on a viewer's name will remove all their chances.
 * **Stateful**: The list of viewers and their chances is maintained even when the application closes.
 * **Manual Viewer Addition**: Manually add viewer names and chances.
 * **WheelOfNames Wrapper Window**: Integration of the Wheel of Names website into the app allows for instant updates from Twitch and Youtube Chats
 
 ### Current Chat Commands
-* **`!wheel`**: Adds the user's display name to the list with 1 chance.
-* **`!here`**: Allows viewers to "Double Down" and double their chances, intended for new streams.
+* **`!wheel`**: Adds the user's display name to the list with 1 chance or doubles when available.
 * **`!remove`**: Allows viewers to remove all their chances.
+* **`!odds`**: Sends a chat message to the correct platform with viewer's odds at winning.
+
 
 ### Technologies Used
 * **Vite**: Fast and modern build tool for web projects.
