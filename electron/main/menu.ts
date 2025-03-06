@@ -179,6 +179,14 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                                 youtubeOAuthProvider.DEBUG_deleteAuthentications();
                             },
                         },
+                        {
+                            label: "re authenticate youtube",
+                            click: () => {
+                                // youtubeOAuthProvider.refreshAccessToken();
+                                youtubeOAuthProvider.expiresTimestamp =  Date.now() + 5000;
+                                youtubeOAuthProvider.resetRefreshTimer();
+                            }
+                        },
                         // custom form to send messages to the renderer in the form of event and message. allow for js objects to be sent too
                         {
                             label: 'Send Message',

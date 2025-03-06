@@ -14,7 +14,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
     private readonly tokenExchangeEndpoint = 'https://auth.snekcode.com/WheelOfNamesGoogleAuth'
     private clientId: string = '768099663877-sbr560ag8gs1h6h99bglf5mq0v4ak72t.apps.googleusercontent.com';
     private refreshToken: string = '';
-    private expiresTimestamp: number = Date.now();
+    public expiresTimestamp: number = Date.now();
     private scope: string[] = [
         'https://www.googleapis.com/auth/youtube',
         'https://www.googleapis.com/auth/youtube.force-ssl',
@@ -83,6 +83,10 @@ export class YouTubeOAuthProvider extends EventEmitter {
     async refreshTimer() {
         if (this.timer) clearTimeout(this.timer);
         let timeLeft = this.getExpiresInMilliSeconds() - this.tokenRefreshBuffer;
+        setTimeout(() => {
+            console.log(timeLeft + 'ms left');
+        }, 1000);
+            
         if (timeLeft < 0) timeLeft = 0;
         if(!timeLeft) return;
 
@@ -93,6 +97,11 @@ export class YouTubeOAuthProvider extends EventEmitter {
             this.refreshAccessToken();
             // one minute before the token expires refresh it
         }, timeLeft);
+    }
+
+    public async resetRefreshTimer() {
+        if (this.timer) clearTimeout(this.timer);
+        this.refreshTimer();
     }
 
     async retrieveAccessToken(): Promise<string> {
@@ -133,7 +142,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
         }
     }
 
-    async refreshAccessToken() {
+    public async refreshAccessToken() {
         win?.webContents.send('main-process-message', 'Refreshing token');
 
         if (this.auth === null) {
@@ -156,7 +165,9 @@ export class YouTubeOAuthProvider extends EventEmitter {
         body.expires_in ? this.calculateExpiryTimestamp(body.expires_in) : this.calculateExpiryTimestamp('0');
 
         this.emit('authenticated');
-
+        console.log('refreshed token', this.accessToken);
+        console.log('expiresTimeStamp', this.expiresTimestamp);
+        
         this.refreshTimer();
     }
 
