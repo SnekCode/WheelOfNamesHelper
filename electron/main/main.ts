@@ -188,9 +188,12 @@ ipcMain.handle('open-win', (_, arg) => {
 
 youtubeOAuthProvider.on('authenticated', async () => {
     console.log('AUTHENTICATED EVENT');
-
-    const channelName = await youtubeOAuthProvider.getChannelName();
-    store.set('handle', channelName);
+    const manualHandle = store.get('flagManualYoutubeHandle', false);
+    const channelName = store.get('handle', '');
+    if (!manualHandle) {
+        const channelName = await youtubeOAuthProvider.getChannelName();
+        store.set('handle', channelName);
+    }
     youTubeChatService.setHandle(channelName);
     youTubeChatService.startBroadcastSearch();
     win?.webContents.send('youtube-authenticated');

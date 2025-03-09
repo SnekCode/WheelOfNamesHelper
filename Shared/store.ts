@@ -1,6 +1,5 @@
 import { Entry, WheelConfig } from "./types";
 
-
 // enums for key names
 export enum StoreKeys {
     data = "entries",
@@ -9,11 +8,12 @@ export enum StoreKeys {
     searching = "searching",
     channelId = "channelId",
     handle = "handle",
+    flagManualYoutubeHandle = "flagManualYoutubeHandle",
     videoId = "videoId",
     channel = "channel",
 }
 
-export interface IStore {
+interface IStoreBase {
     entries: Entry[];
     lastconfig: WheelConfig;
     twitchChannelName: string;
@@ -26,6 +26,11 @@ export interface IStore {
     changeLogViewed: boolean;
     releaseNotes: string;
     channel: string;
+    flagManualYoutubeHandle: boolean;
 }
+
+export type IStore = {
+    [K in StoreKeys]: K extends keyof IStoreBase ? IStoreBase[K] : never;
+};
 
 export type IStoreKeys = keyof IStore;

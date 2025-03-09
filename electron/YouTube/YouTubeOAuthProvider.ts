@@ -16,6 +16,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
     private refreshToken: string = '';
     public expiresTimestamp: number = Date.now();
     private scope: string[] = [
+        'https://www.googleapis.com/auth/youtube.readonly',
         'https://www.googleapis.com/auth/youtube',
         'https://www.googleapis.com/auth/youtube.force-ssl',
     ];
@@ -267,6 +268,9 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 Authorization: `Bearer ${this.accessToken}`,
             },
         });
+        debugger
+        console.log('channelname response', response.data);
+        
         const channelName = response.data.items[0].snippet.customUrl;
         console.log(JSON.stringify(response.data));
         

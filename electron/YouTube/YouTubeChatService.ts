@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { store } from '../main/store';
 import { chatStore } from './store';
 import { LiveChat } from 'youtube-chat';
@@ -7,6 +7,7 @@ import { youtubeOAuthProvider, win } from '../main/main';
 import { handleChatCommand } from '../ChatService/ChatService';
 import EventEmitter from 'node:events';
 import { Service } from 'Shared/enums';
+import { trace } from 'node:console';
 
 export class YouTubeChatService extends EventEmitter {
     public liveChatId: string = '';
@@ -59,8 +60,13 @@ export class YouTubeChatService extends EventEmitter {
         this.videoId = videoId;
     }
 
-    setHandle(handle: string) {
-        this.handle = handle;
+    public setHandle(handle: string) {
+        const manualHandle = store.get('flagManualYoutubeHandle', false);
+        if(!manualHandle){
+            this.handle = handle;
+        }else{
+            this.handle = store.get('handle', '');
+        }
     }
 
     setIsLiveBroadCast(isLiveBroadCast: boolean) {
@@ -88,42 +94,137 @@ export class YouTubeChatService extends EventEmitter {
         clearInterval(this.searchTimer!);
     }
 
-    getLiveChatId = async () => {
-        if (this.liveChatId) return;
-        console.log('Getting Live Chat Id');
+    getLiveChatIdManualHandle = async () => {
         const accessToken = youtubeOAuthProvider.accessToken;
-        const response = await axios.get(
-            `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active`,
-            {
+
+        // step one get channel id of the youtube handle
+        // GET https://www.googleapis.com/youtube/v3/channels?part=id&forUsername=snekcode&key=YOUR_API_KEY
+        // https://youtube.googleapis.com/youtube/v3/channels?part=snippet%2CcontentDetails%2Cstatistics&forHandle=%40GoogleDevelopers&key=[YOUR_API_KEY]
+        console.log('Getting Channel Id for handle', this.handle);
+        console.log('accessToken', accessToken);
+        axios
+            .get(`https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${this.handle}`, {
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${accessToken}`,
                 },
-            }
-        );
+            })
+            .catch((error) => {
+                console.error('GET channelId error ', error.response.status, error.response.statusText);
+                // TODO
+                // youtubeOAuthProvider.emit('unauthenticated');
+            })
+            .then((response) => {
+                const channelId = response.data.items[0].id;
+                console.log('channelId', channelId);
 
-        if (response) {
-            // check if response.data.items[0].snippet.liveChatId exists
-            if (!response.data.items[0]?.snippet?.liveChatId) {
-                return;
-            } else {
-                this.setLiveChatId(response.data.items[0].snippet.liveChatId);
-                console.log('liveChatId', this.liveChatId);
-                this.setIsLiveBroadCast(true);
+                // step two get broadcast id
+                // GET https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=CHANNEL_ID&eventType=live&type=video&key=YOUR_API_KEY
+
+                axios
+                    .get(
+                        `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=UCRkJJBeASSowsVe5jnHOcrw&onBehalfOfContentOwner=true`,
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${accessToken}`,
+                            },
+                        }
+                    )
+                    .catch((error) => {
+                        console.error('GET Broadcast error', error.response.status, error.response.statusText);
+                        // TODO
+                        // youtubeOAuthProvider.emit('unauthenticated');
+                    })
+                    .then((response) => {
+                        const broadcastID = response.data.items[0].id.videoId;
+
+                        //step 3 get live id
+                        // GET https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=VIDEO_ID&key=YOUR_API_KEY
+                        axios
+                            .get(
+                                `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${broadcastID}`,
+                                {
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        Authorization: `Bearer ${accessToken}`,
+                                    },
+                                }
+                            )
+                            .catch((error) => {
+                                console.error('GET liveChatId error', error.response.status);
+                                // TODO
+                                // youtubeOAuthProvider.emit('unauthenticated');
+                            })
+                            .then((response) => {
+                                if (response) {
+                                    // check if response.data.items[0].snippet.liveChatId exists
+                                    const liveChatId = response.data.items[0].liveStreamingDetails.activeLiveChatId;
+
+                                    if (!liveChatId) {
+                                        console.log('No liveChatId found');
+
+                                        return;
+                                    } else {
+                                        this.setLiveChatId(liveChatId);
+                                        console.log('liveChatId', this.liveChatId);
+                                        this.setIsLiveBroadCast(true);
+                                    }
+                                }
+                            });
+                    });
+            });
+    }
+
+    getLiveChatIdAuto = async () => {
+        const accessToken = youtubeOAuthProvider.accessToken;
+                const response = await axios.get(
+                    `https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true`,
+                    {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                if (response) {
+                    // check if response.data.items[0].snippet.liveChatId exists
+                    if (!response.data.items[0]?.snippet?.liveChatId) {
+                        return;
+                    } else {
+                        this.setLiveChatId(response.data.items[0].snippet.liveChatId);
+                        console.log('liveChatId', this.liveChatId);
+                        this.setIsLiveBroadCast(true);
+                    }
+                }
             }
+
+    getLiveChatId = async () => {
+        if (this.liveChatId) return;
+        console.log('Getting Live Chat Id for videoId', this.videoId);
+        const flagManualYoutubeHandle = store.get('flagManualYoutubeHandle', false);
+        if(flagManualYoutubeHandle){
+            this.getLiveChatIdManualHandle();
+            return;
+        }else{
+            this.getLiveChatIdAuto();
         }
     };
 
     getStatus = async () => {
         // search is expensive, use regex to find videoId on the returned page using the customURL
-        const handle = store.get('handle', '');
-        console.log('Checking Status', handle);
-        if (!handle) {
+        const manualHandle = store.get('flagManualYoutubeHandle', false);
+        if(!manualHandle){
+            this.handle = store.get('handle', '');
+        }
+        console.log('Checking Status', this.handle);
+        if (!this.handle) {
             console.error('No handle found');
             return;
         }
         axios
-            .get(`https://www.youtube.com/${handle}/live`)
+            .get(`https://www.youtube.com/${this.handle}/live`)
             .then((response) => {
                 this.setVideoId(response.data.match(/"videoId":"(.+?)"/)[1]);
                 const islive = response.data.includes('<meta itemprop="isLiveBroadcast"') 
@@ -245,8 +346,9 @@ export class YouTubeChatService extends EventEmitter {
                 },
             })
             .catch((error) => {
-                console.error('error', error);
-                youtubeOAuthProvider.emit('unauthenticated');
+                console.error('error', error.response.status, error.response.statusText);
+                // TODO
+                // youtubeOAuthProvider.emit('unauthenticated');
             });
     };
 }

@@ -3,19 +3,27 @@ import path from 'node:path';
 import { store } from './store';
 import { setStore } from '../data/data';
 import prompt from 'electron-prompt';
-import { youtubeOAuthProvider, win, youTubeChatService, twitchAuthProvider, RENDERER_DIST, VITE_DEV_SERVER_URL, preload } from './main';
+import {
+    youtubeOAuthProvider,
+    win,
+    youTubeChatService,
+    twitchAuthProvider,
+    RENDERER_DIST,
+    VITE_DEV_SERVER_URL,
+    preload,
+} from './main';
 import { getReleaseNotes } from '../updater/releaseNotes';
 import { setUpClient } from '../Twitch/TwitchChatService';
 
 import { autoUpdater } from '../updater/updater';
 import { EChannels } from '~/Shared/channels';
-
+import { StoreKeys } from '~/Shared/store';
 
 const appData = process.env.LOCALAPPDATA ?? '';
 const isDev = import.meta.env.DEV;
 
 let jsonMessage: string | null = "{test: 'test'}";
-let event: string | null = "message";
+let event: string | null = 'message';
 
 // Function to show input dialog and get user input
 async function showInputDialog(
@@ -109,6 +117,23 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
             label: 'YouTube',
             submenu: [
                 {
+                    label: 'Manual YouTube Handle',
+                    type: 'checkbox',
+                    checked: store.get(StoreKeys.flagManualYoutubeHandle, false),
+                    click: async (_, focusedWindow, event) => {
+                        let handle = store.get(StoreKeys.handle, '');
+                        if (_.checked) {
+                            handle = (await showInputDialog(win!, 'Set YouTube Handle', 'Handle', handle)) ?? '';
+                            store.set('handle', handle);
+                            youTubeChatService.setHandle(handle);
+                            youTubeChatService.sendRendererStatus();
+                        }
+                        store.set(StoreKeys.flagManualYoutubeHandle, _.checked);
+
+                        rebuildMenu();
+                    },
+                },
+                {
                     label: 'Sign In To YouTube',
                     click: async (_, focusedWindow) => {
                         const authorizeUrl = await youtubeOAuthProvider.getAuthenticationUrl();
@@ -180,12 +205,12 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             },
                         },
                         {
-                            label: "re authenticate youtube",
+                            label: 're authenticate youtube',
                             click: () => {
                                 // youtubeOAuthProvider.refreshAccessToken();
-                                youtubeOAuthProvider.expiresTimestamp =  Date.now() + 5000;
+                                youtubeOAuthProvider.expiresTimestamp = Date.now() + 5000;
                                 youtubeOAuthProvider.resetRefreshTimer();
-                            }
+                            },
                         },
                         // custom form to send messages to the renderer in the form of event and message. allow for js objects to be sent too
                         {
