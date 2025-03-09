@@ -3,7 +3,7 @@ import path from 'node:path';
 import { store } from './store';
 import { setStore } from '../data/data';
 import prompt from 'electron-prompt';
-import { youtubeOAuthProvider, win, youTubeChatService, twitchAuthProvider, RENDERER_DIST, VITE_DEV_SERVER_URL, preload } from './main';
+import { discordAuthProvider, youtubeOAuthProvider, win, youTubeChatService, twitchAuthProvider, RENDERER_DIST, VITE_DEV_SERVER_URL, preload } from './main';
 import { getReleaseNotes } from '../updater/releaseNotes';
 import { setUpClient } from '../Twitch/TwitchChatService';
 
@@ -106,6 +106,27 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
             ],
         },
         {
+            label: 'Discord',
+            submenu: [
+                {
+                    label: 'Sign In To Discord',
+                    click: async (_, focusedWindow) => {
+                        discordAuthProvider.authenticate()
+                    },
+                },
+                // {
+                //     label: 'Sign Out of Discord',
+                //     checked: store.get('twitchAuth') ? true : false,
+                //     click: async (_, focusedWindow) => {
+                //         discordAuthProvider.revokeAccessToken().then(() => {
+                //             store.delete('twitchAuth');
+                //             win?.webContents.send('twitch-chat-connect', false);
+                //         });
+                //     },
+                // },
+            ],
+        },
+        {
             label: 'YouTube',
             submenu: [
                 {
@@ -180,12 +201,12 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             },
                         },
                         {
-                            label: "re authenticate youtube",
+                            label: 're authenticate youtube',
                             click: () => {
                                 // youtubeOAuthProvider.refreshAccessToken();
-                                youtubeOAuthProvider.expiresTimestamp =  Date.now() + 5000;
+                                youtubeOAuthProvider.expiresTimestamp = Date.now() + 5000;
                                 youtubeOAuthProvider.resetRefreshTimer();
-                            }
+                            },
                         },
                         // custom form to send messages to the renderer in the form of event and message. allow for js objects to be sent too
                         {

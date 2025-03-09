@@ -10,6 +10,9 @@ import { YouTubeChatService } from '../YouTube/YouTubeChatService';
 import { YouTubeOAuthProvider } from '../YouTube/YouTubeOAuthProvider';
 import { DataManager } from '../data/data';
 
+import '../Discord/discord';
+import {DiscordOAuthProvider} from "../Discord/DiscordOAuthProvider"
+
 export const dataManager = new DataManager();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -22,6 +25,7 @@ export const youtubeOAuthProvider = new YouTubeOAuthProvider();
 export const youTubeChatService = new YouTubeChatService();
 // Twitch Auth Provider
 export const twitchAuthProvider = new TwitchOAuthProvider();
+export const discordAuthProvider = new DiscordOAuthProvider();
 
 // logging
 log.initialize({ preload: true });
@@ -130,6 +134,7 @@ async function createWindow() {
         win?.webContents.send('main-process-message', new Date().toLocaleString());
         youtubeOAuthProvider.retrieveAccessToken();
         twitchAuthProvider.retrieveAccessToken();
+        
     });
 
     // Make all links open with the browser, not with the application

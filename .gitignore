@@ -33,3 +33,6 @@ electron-builder.env
 
 #jest
 coverage
+
+# Envs
+.env
