@@ -4,13 +4,20 @@ import EventEmitter from 'node:events';
 import keytar from 'keytar';
 import { setUpClient } from './discord';
 
+enum Times {
+    SECOND = 1000,
+    MINUTE = 60 * Times.SECOND,
+    HOUR = 60 * Times.MINUTE,
+    DAY = 24 * Times.HOUR,
+}
+
 export class DiscordOAuthProvider extends EventEmitter {
     private clientId: string = '1348170053509447800';
     private redirectUri: string = 'http://localhost:5173';
     private scope: string[] = ['identify'];
     private authWindow: BrowserWindow | null = null;
-    private authCode: string | null = null;
     public accessToken: string | null = null;
+    botToken: string | null = null;
     public refreshToken: string | null = null;
     public expiryTime: string | null = null;
     private readonly tokenExchangeEndpoint = 'https://auth.snekcode.com/discord/auth';
@@ -19,18 +26,41 @@ export class DiscordOAuthProvider extends EventEmitter {
         super();
     }
 
+    private async saveTokens(accessToken: string, botToken: string, refreshToken: string, expiryTime: string) {
+        keytar.setPassword('discord', 'access_token', accessToken);
+        keytar.setPassword('discord', 'refresh_token', refreshToken);
+        keytar.setPassword('discord', 'expiry_time', expiryTime);
+        keytar.setPassword('discord', 'bot_token', botToken);
+
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.expiryTime = expiryTime;
+        this.botToken = botToken;
+    }
+
     private async retrieveTokens() {
         this.accessToken = await keytar.getPassword('discord', 'access_token');
         this.refreshToken = await keytar.getPassword('discord', 'refresh_token');
         this.expiryTime = await keytar.getPassword('discord', 'expiry_time');
+        this.botToken = await keytar.getPassword('discord', 'bot_token');
         console.log('accessToken', this.accessToken);
         console.log('refreshToken', this.refreshToken);
         console.log('expiryTime', this.expiryTime);
+        console.log('botToken', this.botToken);
+        if (this.expiryTime) {
+            // 1 day window to refresh token
+            if (new Date().getTime() > parseInt(this.expiryTime) - Times.DAY * 2) {
+                console.log('Token expired');
+                await this.refreshAccessToken();
+            }
+        }
     }
 
-    // handle refresh token at aws lambda auth.snekcode.com/discord/auth
+    // TODO handle refresh token at aws lambda auth.snekcode.com/discord/auth
     // https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-refresh-token-exchange-example
     private async refreshAccessToken() {
+        // TODO Implement refresh token in the lambda function
+        return;
         const response = await axios.post(this.tokenExchangeEndpoint, {
             refresh_token: this.refreshToken,
         });
@@ -46,8 +76,8 @@ export class DiscordOAuthProvider extends EventEmitter {
         console.log('expiryTime', new Date(expiryTime).toString());
     }
 
-    public async login() {
-        this.retrieveTokens();
+    public async retrieveAccessToken() {
+        await this.retrieveTokens();
         // check if access token is present
         if (this.accessToken) {
             const userUrl = 'https://discord.com/api/users/@me';
@@ -109,15 +139,12 @@ export class DiscordOAuthProvider extends EventEmitter {
                     botToken: '######'
                          */
                 // save access token, refresh token and expiry time
-                keytar.setPassword('discord', 'access_token', data.access_token);
-                keytar.setPassword('discord', 'refresh_token', data.refresh_token);
                 // calculate expiry time
                 const expiryTime = new Date().getTime() + data.expires_in * 1000;
-                keytar.setPassword('discord', 'expiry_time', expiryTime.toString());
+                this.saveTokens(data.access_token, data.botToken, data.refresh_token, expiryTime.toString());
 
                 // log expiry time in human readable format
                 console.log('expiryTime', new Date(expiryTime).toString());
-
                 this.authWindow?.close();
                 setUpClient();
             }

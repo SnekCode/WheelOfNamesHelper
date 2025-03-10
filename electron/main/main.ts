@@ -134,6 +134,7 @@ async function createWindow() {
         win?.webContents.send('main-process-message', new Date().toLocaleString());
         youtubeOAuthProvider.retrieveAccessToken();
         twitchAuthProvider.retrieveAccessToken();
+        discordAuthProvider.retrieveAccessToken();
         
     });
 
