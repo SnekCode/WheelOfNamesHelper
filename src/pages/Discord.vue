@@ -10,7 +10,10 @@ const channels = ref<any[]>([]);
 const userVoiceChannel = ref<string | null>(null);
 const viewersChannel = ref<string | null>(null);
 const userToggleDiscord = ref<boolean>(false);
+const discordEnabled = ref<boolean>(false);
 const followMode = ref<boolean>(false);
+const discord_weights = ref<number>(1);
+const discord_bot_ready = ref<boolean>(false);
 
 // getters
 ipcRenderer.invoke('getStore', 'discord_userGuilds').then((guilds) => {
@@ -33,6 +36,7 @@ ipcRenderer.invoke('getStore', 'discord_viewersChannel').then((channel) => {
 });
 
 ipcRenderer.invoke('getStore', 'discord_toggle').then((toggle) => {
+    discordEnabled.value = toggle;
     userToggleDiscord.value = toggle;
 });
 
@@ -40,11 +44,35 @@ ipcRenderer.invoke('getStore', 'discord_followMode').then((mode) => {
     followMode.value = mode;
 });
 
+ipcRenderer.invoke('getStore', 'discord_weights').then((weights) => {
+    if (weights) {
+        discord_weights.value = weights;
+    }
+});
+
+ipcRenderer.invoke('getStore', 'discord_bot_ready').then((bot_ready) => {
+    discord_bot_ready.value = bot_ready;
+});
+
 // updater / listener
 ipcRenderer.on('storeUpdate', (event, storeName, data) => {
-    if (storeName === 'discord_userVoiceChannel') {
+    console.log(storeName);
+    if(storeName.includes('discord_channels')) {
+        channels.value = channels.value.splice(0, channels.value.length, ...data);
+    }
+    if(storeName === 'discord_userVoiceChannel') {
         userVoiceChannel.value = data;
     }
+    if(storeName === "discore_enable") {
+        discordEnabled.value = data;
+    }
+    if(storeName === "discord_userGuilds") {
+        console.log(data[0]);
+        
+        // userguilds is a Map
+        userGuilds.value = Array.from(data[0].values());
+    }
+    
 });
 
 // handle functions
@@ -80,61 +108,103 @@ const handleFollowMode = () => {
     followMode.value = !followMode.value;
     ipcRenderer.invoke('setStore', 'discord_followMode', followMode.value);
 };
+
+const handleWeights = (value: number) => {
+    discord_weights.value = value;
+    ipcRenderer.invoke('setStore', 'discord_weights', value);
+};
 </script>
 
 <template>
-    <!-- close button top right as a X that navigates to the root path -->
-    <router-link to="/">
-        <button class="close-button">Close</button>
-    </router-link>
     <div class="container">
-        <!-- enabled? -->
-        <div class="option">
-            <input type="checkbox" :checked="userToggleDiscord" @change="handleToggleDiscord" />
-            <!-- display inline this label only -->
-            <label style="display: inline-block">Enables the Discord integration</label>
-        </div>
-        <div class="option">
-            <label>Select the Guild you are using:</label>
-            <!-- select a guild -->
-            <select :value="selectedGuild" @change="handleSelectGuild(($event.target as HTMLSelectElement).value)">
-                <option value="" disabled selected>Select a guild</option>
-                <option v-for="guild in userGuilds" :key="guild.id" :value="guild.id">{{ guild.name }}</option>
-            </select>
-        </div>
+        <!-- show install link to the bot -->
+        <a
+            href="https://discord.com/oauth2/authorize?client_id=1348170053509447800&scope=bot&permissions=8"
+            target="_blank"
+            rel="noopener noreferrer"
+            @click="() => ipcRenderer.send('discord_install')"
+            >{{discord_bot_ready ? "Install to another server": "Install the Discord Bot"}}</a>
+        <!-- close button top right as a X that navigates to the root path -->
+        <router-link to="/">
+            <button class="close-button">Close</button>
+        </router-link>
+        <div v-if="discord_bot_ready" class="options_container">
+            <!-- enabled? -->
+            <div class="option">
+                <input type="checkbox" :checked="userToggleDiscord" @change="handleToggleDiscord" />
+                <!-- display inline this label only -->
+                <label style="display: inline-block">Enables the Discord integration</label>
+            </div>
+            <div v-if="userToggleDiscord" class="option">
+                <label>Select the Guild you are using:</label>
+                <!-- select a guild -->
+                <select :value="selectedGuild" @change="handleSelectGuild(($event.target as HTMLSelectElement).value)">
+                    <option value="" selected>Select a guild</option>
+                    <option v-for="guild in userGuilds" :key="guild.id" :value="guild.id">{{ guild.name }}</option>
+                </select>
+            </div>
 
-        <!-- display channels -->
-        <div v-if="channels.length > 0" class="option">
-            <!-- select with channels as options -->
-            <div>
-                <label>Select the Voice Channel you play in:</label>
-                <small>This is the channel viewers will be moved to upon a win</small>
+            <!-- display channels -->
+            <div v-if="channels.length > 0 && selectedGuild && userToggleDiscord" class="option">
+                <!-- select with channels as options -->
+                <div>
+                    <label>Select the Voice Channel you play in:</label>
+                    <small>This is the channel viewers will be moved to upon a win</small>
+                </div>
+                <select
+                    :value="userVoiceChannel"
+                    @change="handleSelectPlayChannel(($event.target as HTMLSelectElement).value)"
+                >
+                    <option value="" selected>Select a channel</option>
+                    <option v-for="channel in channels" :key="channel.id" :value="channel.id">
+                        {{ channel.name }}
+                    </option>
+                </select>
+                <div style="margin-top: 10px; margin-left: 30px">
+                    <label>Follow Mode</label>
+                    <input :checked="followMode" @change="handleFollowMode" type="checkbox" />
+                    <small>When enabled, the above channel will update automatically</small>
+                </div>
             </div>
-            <select
-                :value="userVoiceChannel"
-                @change="handleSelectPlayChannel(($event.target as HTMLSelectElement).value)"
-            >
-                <option value="" disabled selected>Select a channel</option>
-                <option v-for="channel in channels" :key="channel.id" :value="channel.id">{{ channel.name }}</option>
-            </select>
-            <div style="margin-top: 10px; margin-left: 30px">
-                <label>Follow Mode</label>
-                <input :checked="followMode" @change="handleFollowMode" type="checkbox" />
-                <small>When enabled, the above channel will update automatically</small>
+            <div v-if="channels.length > 0 && selectedGuild && userToggleDiscord" class="option">
+                <div>
+                    <label>Select the Voice Channel your viewers join:</label>
+                    <small>This is the channel viewers will join to be added to the Wheel</small>
+                </div>
+                <select
+                    :value="viewersChannel"
+                    @change="handleSelectViewersChannel(($event.target as HTMLSelectElement).value)"
+                >
+                    <option value="" selected>Select a channel</option>
+                    <option v-for="channel in channels" :key="channel.id" :value="channel.id">
+                        {{ channel.name }}
+                    </option>
+                </select>
             </div>
-        </div>
-        <div v-if="channels.length > 0" class="option">
-            <div>
-                <label>Select the Voice Channel your viewers join:</label>
-                <small>This is the channel viewers will join to be added to the Wheel</small>
+            <div v-if="selectedGuild && userToggleDiscord" class="option">
+                <label>Discord Weights</label>
+                <small>Adjust the weight of Discord in the Wheel</small>
+                <div>
+                    <small style="color: aquamarine; padding-left: 5px; padding-right: 5px"
+                        >{{ discord_weights }}
+                    </small>
+                    <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        :value="discord_weights"
+                        @input="(event) => {
+                    discord_weights = parseInt((event.target as HTMLInputElement).value);
+                }"
+                        @change="(event)=> {
+                    console.log(event);
+                    
+                    handleWeights(parseInt((event.target as HTMLInputElement).value))
+                    }"
+                    />
+                </div>
             </div>
-            <select
-                :value="viewersChannel"
-                @change="handleSelectViewersChannel(($event.target as HTMLSelectElement).value)"
-            >
-                <option value="" disabled selected>Select a channel</option>
-                <option v-for="channel in channels" :key="channel.id" :value="channel.id">{{ channel.name }}</option>
-            </select>
         </div>
     </div>
 </template>

@@ -34,6 +34,9 @@ export interface IStore {
     discord_enabled: boolean;
     discord_toggle: boolean;
     discord_followMode: boolean;
+    discord_weights: number;
+    discord_authenticated: boolean;
+    discord_bot_ready: boolean;
 }
 
 export type IStoreKeys = keyof IStore;

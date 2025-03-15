@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import Discord from './pages/Discord.vue';
 import packageJson from "../package.json";
 
 import './style.css'
@@ -13,7 +14,7 @@ const { ipcRenderer } = window;
 // If you want use Node.js, the`nodeIntegration` needs to be enabled in the Main process.
 // import './demos/node'
 
-const app = createApp(Route)
+const app = createApp(Discord)
 app.use(router)
 app.mount('#app')
   .$nextTick(() => {

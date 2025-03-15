@@ -118,6 +118,7 @@ async function createWindow() {
 
     win.on('close', async () => {
         store.set('windowBounds', win?.getBounds());
+        store.set('discord_bot_ready', false);
     });
 
     if (VITE_DEV_SERVER_URL) {

@@ -38,6 +38,7 @@ const messagesCount = ref(0); // Add a ref for the messages count
 const isLiveBroadCast = ref(false);
 const isYoutubeAuthenticated = ref(false);
 const isTwitchConnected = ref(false);
+const isDiscordConnected = ref(false);
 const youtubeHandle = ref("");
 const videoId = ref("");
 const searching = ref(false);
@@ -58,6 +59,13 @@ const addUser = () => {
     // contextData.forceUpdate();
   }
 };
+
+// updater / listener
+ipcRenderer.on('storeUpdate', (event, storeName, data) => {
+    if (storeName === 'discord_enabled') {
+        isDiscordConnected.value = data;
+    }
+});
 
 ipcRenderer.on(`${Service.YouTube}-add-wheel`, () => {
   youtubeWheelCount.value += 1;
@@ -159,6 +167,11 @@ ipcRenderer.invoke("getStore", "entries").then((data) => {
     users.value = data;
   }
 });
+
+ipcRenderer.invoke("getStore", "discord_enabled").then((value) => {
+  isDiscordConnected.value = value;
+});
+
 
 // Twitch chat services setup
 ipcRenderer.send("did-finish-load");
@@ -284,6 +297,10 @@ const getTime = (timestamp: number) => {
   return `${minutes}m ${seconds}s`;
 };
 
+const clearDiscordChannel = () => {
+  ipcRenderer.send("clear_voice_channel");
+};
+
 
 </script>
 
@@ -318,9 +335,8 @@ const getTime = (timestamp: number) => {
           <span v-else class="check-mark" style="color: pink">Sign in for !odds</span>
         </div>
       </div>
-      <button :class="`youtube-button ${searching ? 'youtube-button-searching' : ''
-        } ${isLiveBroadCast ? 'hide' : ''}`">
-        {{ searching ? "Waiting..." : "Check Status" }}
+      <button :class="`youtube-button ${isYoutubeAuthenticated ? '': 'hide'} ${searching ? 'youtube-button-searching' : ''}`">
+        {{ isLiveBroadCast ? "Live" : "Waiting" }}
       </button>
     </div>
   </div>
@@ -336,8 +352,8 @@ const getTime = (timestamp: number) => {
         Remove Not Claimed
       </button>
       <button @click="resetClaims" class="resetClaimed">Reset !here</button>
+      <button v-if="isDiscordConnected" @click="clearDiscordChannel" class="resetClaimed">Clear Discord Channel</button>
     </div>
-
     <div class="container">
       <div class="flex-center">
         <div style="margin: 10px">Twitch !wheel: {{ twitchWheelCount }}</div>

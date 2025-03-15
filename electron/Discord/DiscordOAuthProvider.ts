@@ -3,6 +3,7 @@ import { BrowserWindow } from 'electron';
 import EventEmitter from 'node:events';
 import keytar from 'keytar';
 import { setUpClient } from './discord';
+import { setStore } from '../data/data';
 
 enum Times {
     SECOND = 1000,
@@ -47,10 +48,10 @@ export class DiscordOAuthProvider extends EventEmitter {
         console.log('refreshToken', this.refreshToken);
         console.log('expiryTime', this.expiryTime);
         console.log('botToken', this.botToken);
+
         if (this.expiryTime) {
             // 1 day window to refresh token
             if (new Date().getTime() > parseInt(this.expiryTime) - Times.DAY * 2) {
-                console.log('Token expired');
                 await this.refreshAccessToken();
             }
         }
@@ -60,6 +61,7 @@ export class DiscordOAuthProvider extends EventEmitter {
     // https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-refresh-token-exchange-example
     private async refreshAccessToken() {
         // TODO Implement refresh token in the lambda function
+        setStore('discord_authenticated', false);
         return;
         const response = await axios.post(this.tokenExchangeEndpoint, {
             refresh_token: this.refreshToken,
@@ -83,10 +85,47 @@ export class DiscordOAuthProvider extends EventEmitter {
             const userUrl = 'https://discord.com/api/users/@me';
             const userResponse = await axios.get(userUrl, {
                 headers: { Authorization: `Bearer ${this.accessToken}` },
+            }).catch((error) => {
+                console.log('DISCORD AUTH ERROR');
+                setStore('discord_authenticated', false);
             });
-            this.user = userResponse.data;
+            this.user = userResponse?.data;
+            setStore('discord_authenticated', true);
             setUpClient();
         }
+    }
+
+    public async logout() {
+        // auth.snekcode.com/discord/logout takes accessToken in the body
+        const response = await axios.post(`https://auth.snekcode.com/discord/logout`, {
+            accessToken: this.accessToken,
+        });
+
+        keytar.deletePassword('discord', 'access_token');
+        keytar.deletePassword('discord', 'refresh_token');
+        keytar.deletePassword('discord', 'expiry_time');
+        keytar.deletePassword('discord', 'bot_token');
+        this.accessToken = null;
+        this.refreshToken = null;
+        this.expiryTime = null;
+        this.botToken = null;
+
+        setStore('discord_authenticated', false);
+        setStore('discord_bot_ready', false);
+    }
+
+    public isAuthenticated() {
+        console.log('isAuthenticated', this.accessToken, this.expiryTime);
+        
+        if(!this.accessToken) {
+            return false;
+        }
+
+        // check if expiry time is in the past
+        if (this.expiryTime && new Date().getTime() > parseInt(this.expiryTime)) {
+            return false;
+        }
+        return true;
     }
 
     public async authenticate(): Promise<void> {
@@ -146,6 +185,7 @@ export class DiscordOAuthProvider extends EventEmitter {
                 // log expiry time in human readable format
                 console.log('expiryTime', new Date(expiryTime).toString());
                 this.authWindow?.close();
+                setStore('discord_authenticated', true);
                 setUpClient();
             }
         });

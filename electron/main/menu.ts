@@ -41,7 +41,7 @@ async function showInputDialog(
     return result;
 }
 
-function rebuildMenu() {
+export function rebuildMenu() {
     // Rebuild the menu to update the sublabel
     const menu = Menu.buildFromTemplate(createMenuTemplate());
     Menu.setApplicationMenu(menu);
@@ -113,6 +113,12 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                     click: async (_, focusedWindow) => {
                         discordAuthProvider.authenticate()
                     },
+                },
+                {
+                    label: 'Sign Out of Discord',
+                    click: async (_, focusedWindow) => {
+                        discordAuthProvider.logout();
+                    },   
                 },
                 {
                     label: 'Setup Discord',
