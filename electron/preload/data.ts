@@ -1,5 +1,6 @@
 import { log } from 'console';
 import { ipcRenderer } from 'electron';
+import { Service } from '~/Shared/enums';
 import { Entry } from '~/Shared/types';
 
 console.log('data.ts loaded');
@@ -18,6 +19,9 @@ window.data = {
     removeSelected(id: string) {
         return ipcRenderer.invoke('removeSelected', id);
     },
+    handleDiscordWinner(entry: Entry) {
+        return ipcRenderer.invoke('discord_winner', entry);
+    }
 };
 
 // set up a ipc on the renderer side to listen for a message and execute a function on recieve
@@ -58,7 +62,7 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 const differenceInSeconds = differenceMilliseconds / 1000;
                 const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
                 const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
-
+                debugger
                 // if NAN set to 0
                 if (isNaN(minutes) || isNaN(seconds)) {
                     messageBox.textContent = `Not sure if they are here...`;
@@ -66,6 +70,11 @@ ipcRenderer.on('initListeners', async (event, value) => {
                     messageBox.textContent = `Last Seen: ${minutes} Minutes and ${seconds}s ago ${
                         entry.service ? `on ${entry.service}` : ''
                     }`;
+                }
+
+                if (entry?.service === Service.Discord) {
+                    console.log('Discord Winner');
+                    window.data.handleDiscordWinner(entry);
                 }
             }
 

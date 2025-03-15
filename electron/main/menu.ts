@@ -114,6 +114,13 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         discordAuthProvider.authenticate()
                     },
                 },
+                {
+                    label: 'Setup Discord',
+                    click: async (_, focusedWindow) => {
+                        // navigate to the /discord route
+                        win?.webContents.send('navigate', '/discord');
+                    }
+                }
                 // {
                 //     label: 'Sign Out of Discord',
                 //     checked: store.get('twitchAuth') ? true : false,

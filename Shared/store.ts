@@ -1,3 +1,4 @@
+import { Collection, Guild } from "discord.js";
 import { Entry, WheelConfig } from "./types";
 
 
@@ -26,6 +27,13 @@ export interface IStore {
     changeLogViewed: boolean;
     releaseNotes: string;
     channel: string;
+    discord_userGuilds: Collection<string, Guild> | null;
+    discord_userVoiceChannel: string;
+    discord_viewersChannel: string;
+    discord_selectedGuild: string;
+    discord_enabled: boolean;
+    discord_toggle: boolean;
+    discord_followMode: boolean;
 }
 
 export type IStoreKeys = keyof IStore;

@@ -236,3 +236,5 @@ ipcMain.handle("saveConfig", dataManager.saveConfig);
 ipcMain.handle("hideSelected", dataManager.hideSelected);
 ipcMain.handle("removeSelected", dataManager.removeSelected);
 ipcMain.handle("syncWithWheel", dataManager.syncWithWheel);
+
+// discord ipc events

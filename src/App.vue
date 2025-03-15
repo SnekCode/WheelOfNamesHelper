@@ -261,7 +261,7 @@ const incrementChances = (user: Entry) => {
 const decrementChances = (user: Entry) => {
   user.weight = Math.max((user.weight || 0) - 1, 0);
   if (user.weight === 0) {
-    contextData.removeWheelUser(user.text);
+    contextData.removeWheelUser(user.id);
   } else {
     contextData.addUpdateWheelUser({ ...user });
   }

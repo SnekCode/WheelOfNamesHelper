@@ -79,6 +79,7 @@
         "twitch-auth": "^4.6.7",
         "twitch-chat-client": "^4.6.7",
         "url": "^0.11.4",
+        "utf8": "^3.0.0",
         "vite-tsconfig-paths": "^5.0.1",
         "vue-router": "^4.5.0",
         "youtube-chat": "^2.2.0"

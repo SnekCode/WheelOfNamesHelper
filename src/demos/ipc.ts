@@ -7,6 +7,7 @@ window.ipcRenderer.on('message', (_event, ...args) => {
   console.log('[Receive Message]:', ...args)
 })
 
-// window.ipcRenderer.on('storeUpdate', (_event, data) => {
-//   console.log('[Receive Store Update]:', data)
-// })
+window.ipcRenderer.on('navigate', (_event, data) => {
+  console.log('[Receive Navigate]:', data)
+  window.location.href = data
+})

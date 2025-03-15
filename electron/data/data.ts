@@ -17,12 +17,14 @@ const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
 
+const logFilterListOfStoreKeyNames = ["lastconfig"];
 export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
-  console.log("setting store", name, data);
+  if(!logFilterListOfStoreKeyNames.includes(name)){
+    console.log("setting store", name, data);
+  }
   store.set(name, data);
   broadcastUpdate(name, data);
 };
-
 
 ipcMain.handle(
   "getStore",
@@ -126,15 +128,15 @@ export class DataManager{
 
   }
 
-  public handleRemoveWheelUser = async (_: IpcMainInvokeEvent, name: string) => {
-    console.log("removeWheelUser", this.pause);
+  public handleRemoveWheelUser = async (_: IpcMainInvokeEvent, id: string) => {
+    console.log("removeWheelUser", this.pause, id);
     if (this.pause) {
-      this.removeQueueEntry(name);
+      this.removeQueueEntry(id);
       return true;
     }
 
     let data = store.get(StoreKeys.data, []);
-    data = data.filter((entry) => entry.text !== name);
+    data = data.filter((entry) => entry.id !== id);
     setStore(StoreKeys.data, data);
     this.forceUpdate();
     return true;

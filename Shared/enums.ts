@@ -8,4 +8,5 @@ export enum EChatCommand {
 export enum Service {
     YouTube = 'YouTube',
     Twitch = 'Twitch',
+    Discord = 'Discord',
 }
