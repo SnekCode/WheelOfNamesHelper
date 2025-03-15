@@ -95,8 +95,16 @@ export const handleChatCommand = async (
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         case EChatCommand.REMOVE:
-            // TODO update remove function to take channel ID
-            dataManager.handleRemoveWheelUser({} as IpcMainEvent, displayname);
+            // remove command should hide user from wheel
+            entry = entries.find((entry: Entry) => {
+                if (entry.channelId) {
+                    return entry.channelId === channelId;
+                }
+            });
+            if(entry) {
+                entry.enabled = false
+                dataManager.handleAddUpdateWheelUser({} as IpcMainEvent, entry);
+            }
             break;
 
         // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
