@@ -4,6 +4,7 @@ import { Service } from "~/Shared/enums";
 import { store } from "../main/store";
 import { IpcMainInvokeEvent } from "electron";
 import { wheelWindow } from "../main/wheelOfNames";
+import { StoreKeys } from "~/Shared/store";
 
 // mock electron
 jest.mock('electron', () => ({
@@ -93,17 +94,18 @@ describe('data tests', () => {
     it('should remove user from store', () => {
         const event = {} as IpcMainInvokeEvent
         const entry: Entry = {
+            id: '123',
             text: 'test',
             weight: 1,
             claimedHere: false,
             channelId: '123',
             service: Service.Twitch
          };
-         store.set('entries', [entry]);
+         store.set(StoreKeys.data, [entry]);
         const dataManager = new DataManager();
-        dataManager.handleRemoveWheelUser(event, entry.text);
+        dataManager.handleRemoveWheelUser(event, entry.id!);
 
-        const storeData = store.get('entries', []);
+        const storeData = store.get(StoreKeys.data, []);
         expect(storeData.length).toBe(0);
     });
 
