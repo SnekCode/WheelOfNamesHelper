@@ -11,6 +11,7 @@ const userVoiceChannel = ref<string | null>(null);
 const viewersChannel = ref<string | null>(null);
 const userToggleDiscord = ref<boolean>(false);
 const discordEnabled = ref<boolean>(false);
+const discordAuthenticated = ref<boolean>(false);
 const followMode = ref<boolean>(false);
 const discord_weights = ref<number>(1);
 const discord_bot_ready = ref<boolean>(false);
@@ -54,6 +55,10 @@ ipcRenderer.invoke('getStore', 'discord_bot_ready').then((bot_ready) => {
     discord_bot_ready.value = bot_ready;
 });
 
+ipcRenderer.invoke('getStore', 'discord_authenticated').then((value) => {
+    discordAuthenticated.value = value;
+});
+
 // updater / listener
 ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     console.log(storeName);
@@ -63,14 +68,15 @@ ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     if(storeName === 'discord_userVoiceChannel') {
         userVoiceChannel.value = data;
     }
-    if(storeName === "discore_enable") {
-        discordEnabled.value = data;
+    if(storeName === "discord_authenticated") {
+        console.log("discord_authenticated", data);
+        
+        discordAuthenticated.value = data;
     }
     if(storeName === "discord_userGuilds") {
-        console.log(data[0]);
-        
-        // userguilds is a Map
-        userGuilds.value = Array.from(data[0].values());
+        if(data && data[0]){
+            userGuilds.value = Array.from(data[0].values());
+        }
     }
     
 });
@@ -113,25 +119,37 @@ const handleWeights = (value: number) => {
     discord_weights.value = value;
     ipcRenderer.invoke('setStore', 'discord_weights', value);
 };
+
+const reloadPage = () => {
+    window.location.reload();
+};
 </script>
 
 <template>
     <div class="container">
         <!-- show install link to the bot -->
-        <a
+        <div v-if="discordAuthenticated">
+            <a
             href="https://discord.com/oauth2/authorize?client_id=1348170053509447800&scope=bot&permissions=8"
             target="_blank"
             rel="noopener noreferrer"
-            @click="() => ipcRenderer.send('discord_install')"
+            @click="() => {
+                ipcRenderer.send('discord_install')}"
             >{{discord_bot_ready ? "Install to another server": "Install the Discord Bot"}}</a>
+        <!-- add refresh page button -->
+        <button style="margin-left:20px;" v-if="!discord_bot_ready" @click="reloadPage">Refresh</button>
+        </div>
+        <div v-else>
+            Log in to Discord to continue
+        </div>
         <!-- close button top right as a X that navigates to the root path -->
         <router-link to="/">
             <button class="close-button">Close</button>
         </router-link>
-        <div v-if="discord_bot_ready" class="options_container">
+        <div v-if="discord_bot_ready && discordAuthenticated" class="options_container">
             <!-- enabled? -->
-            <div class="option">
-                <input type="checkbox" :checked="userToggleDiscord" @change="handleToggleDiscord" />
+            <div class="option" @click="handleToggleDiscord">
+                <input type="checkbox" :checked="userToggleDiscord" />
                 <!-- display inline this label only -->
                 <label style="display: inline-block">Enables the Discord integration</label>
             </div>
@@ -160,7 +178,7 @@ const handleWeights = (value: number) => {
                         {{ channel.name }}
                     </option>
                 </select>
-                <div style="margin-top: 10px; margin-left: 30px">
+                <div @click="handleFollowMode" style="margin-top: 10px; margin-left: 30px">
                     <label>Follow Mode</label>
                     <input :checked="followMode" @change="handleFollowMode" type="checkbox" />
                     <small>When enabled, the above channel will update automatically</small>

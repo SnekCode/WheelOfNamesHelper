@@ -114,10 +114,9 @@ export const setUpClient = () => {
         // follow me feature
         if (newState.member?.id === user?.id) {
             if (newState.channel?.id && followMode) {
-                console.log('follow me');
                 setStore('discord_userVoiceChannel', newState.channel?.id);
             }
-            return;
+            // return;
         }
 
         if (newState.channel?.id === viewerVoiceChannel) {
