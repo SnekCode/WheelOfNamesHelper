@@ -16,6 +16,8 @@ const followMode = ref<boolean>(false);
 const discord_weights = ref<number>(1);
 const discord_bot_ready = ref<boolean>(false);
 
+const discordInviteLink = "https://discord.gg/qcffQKmYTV"
+
 // getters
 ipcRenderer.invoke('getStore', 'discord_userGuilds').then((guilds) => {
     userGuilds.value = guilds;
@@ -233,14 +235,14 @@ const reloadPage = () => {
         <div v-else>
             Log in to Discord to continue
             <label
-                >If you still see this message
-                <a href="https://discord.gg/VU4zTuns" target="_blank" rel="noopener noreferrer">Join My Discord</a> for
-                access</label
+            >If you still see this message
+            <a :href="discordInviteLink" target="_blank" rel="noopener noreferrer">Join My Discord</a> for
+            access</label
             >
         </div>
         <div v-if="discordAuthenticated" style="margin-top: 1rem">
             <label>Join my Discord for support and updates</label>
-            <a href="https://discord.gg/VU4zTuns" target="_blank" rel="noopener noreferrer">Join Discord</a>
+            <a :href="discordInviteLink" target="_blank" rel="noopener noreferrer">Join Discord</a>
         </div>
     </div>
 </template>

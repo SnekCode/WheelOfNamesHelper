@@ -80,7 +80,6 @@ export class DiscordOAuthProvider extends EventEmitter {
             const userResponse = await axios.get(userUrl, {
                 headers: { Authorization: `Bearer ${this.accessToken}` },
             }).catch((error) => {
-                console.log('DISCORD AUTH ERROR');
                 setStore('discord_authenticated', false);
             });
             this.user = userResponse?.data;
@@ -109,7 +108,6 @@ export class DiscordOAuthProvider extends EventEmitter {
     }
 
     public isAuthenticated() {
-        console.log('isAuthenticated', this.accessToken, this.expiryTime);
         
         if(!this.accessToken) {
             return false;
@@ -168,7 +166,6 @@ export class DiscordOAuthProvider extends EventEmitter {
 
                 const data = JSON.parse(response.data.body);
                 this.user = data.user;
-                // console.log('user', this.user);
                 // schema
                 /**
                  *  access_token: '#####',
@@ -183,7 +180,6 @@ export class DiscordOAuthProvider extends EventEmitter {
                 this.saveTokens(data.access_token, data.botToken, data.refresh_token, expiryTime.toString());
 
                 // log expiry time in human readable format
-                console.log('expiryTime', new Date(expiryTime).toString());
                 this.authWindow?.close();
                 setStore('discord_authenticated', true);
                 setUpClient();

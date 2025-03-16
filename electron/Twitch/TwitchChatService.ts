@@ -32,7 +32,6 @@ export const killTwitchClient = () => {
 export const setUpClient = () => {
     client?.disconnect();
     const twitchAuthToken = store.get('twitchAuth', '');
-    console.log(`oauth:${twitchAuthToken}`);
     
 
     client = new tmi.Client({

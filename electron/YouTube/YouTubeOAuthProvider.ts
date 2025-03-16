@@ -92,7 +92,6 @@ export class YouTubeOAuthProvider extends EventEmitter {
 
         this.timer = setTimeout(() => {
             win?.webContents.send('main-process-message', `Starting refresh timer ${timeLeft}`);
-            console.log('refreshing token timer');
             this.emit('refreshToken');
             this.refreshAccessToken();
             // one minute before the token expires refresh it
@@ -117,12 +116,7 @@ export class YouTubeOAuthProvider extends EventEmitter {
             (await keytar.getPassword(this.serviceName, this.expiresInSecondsName)) ?? Date.now().toString()
         );
 
-        console.log('accessToken', this.accessToken);
-        console.log('refreshToken', this.refreshToken);
-        console.log('expiresTimeStamp', this.expiresTimestamp);
-
         if (this.accessToken !== '' && this.refreshToken !== '' && this.getExpiresInMilliSeconds() > 1800) {
-            console.log('TOKEN VALID');
             // send window message how long untile token expires in minutes
             win?.webContents.send(
                 'main-process-message',
@@ -133,7 +127,6 @@ export class YouTubeOAuthProvider extends EventEmitter {
             this.emit('authenticated');
             return this.accessToken;
         } else if (this.accessToken !== '' && this.refreshToken !== '') {
-            console.log('REFRESHING TOKEN');
             await this.refreshAccessToken();
             return this.accessToken;
         } else {
@@ -165,9 +158,6 @@ export class YouTubeOAuthProvider extends EventEmitter {
         body.expires_in ? this.calculateExpiryTimestamp(body.expires_in) : this.calculateExpiryTimestamp('0');
 
         this.emit('authenticated');
-        console.log('refreshed token', this.accessToken);
-        console.log('expiresTimeStamp', this.expiresTimestamp);
-        
         this.refreshTimer();
     }
 
@@ -198,11 +188,6 @@ export class YouTubeOAuthProvider extends EventEmitter {
                 this.accessToken = body.access_token;
                 this.refreshToken = body.refresh_token;
                 this.expiresTimestamp = this.calculateExpiryTimestamp(body.expiry_date);
-                console.log(body.access_token);
-
-                console.log('accessToken', this.accessToken);
-                console.log('refreshToken', this.refreshToken);
-                console.log('expiresTimeStamp', this.expiresTimestamp);
 
                 await keytar.setPassword(this.serviceName, this.accountName, this.accessToken);
                 await keytar.setPassword(this.serviceName, this.refreshTokenName, this.refreshToken);

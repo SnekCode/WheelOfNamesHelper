@@ -6,6 +6,7 @@ import { Entry } from 'Shared/types';
 import { win, dataManager } from '../main/main';
 import { store } from '../main/store';
 import { EChatCommand, Service } from 'Shared/enums';
+import { debugLog } from '../utils';
 
 
 const updateCounts = (service: Service, type: "add" | "remove", resource: "count" | "here" | "wheel") => {
@@ -21,9 +22,10 @@ export const handleIPCMainChatCommand = async (
     service: Service
 ) => {
     const chatCallBackFn = (message: string) => {
-        setTimeout(() => {
-        console.log('chatCallBackFn', message);
-        }, 500);
+        // setTimeout(() => {
+        // console.log('chatCallBackFn', message);
+        // }, 500);
+        debugLog('chatCallBackFn', message);
     };
         
     handleChatCommand(message, displayname, channelId, service, chatCallBackFn);

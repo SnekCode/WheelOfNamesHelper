@@ -33,7 +33,6 @@ export class TwitchOAuthProvider extends EventEmitter {
                 this.login = response.data.login;
                 this.expiresInSeconds = response.data.expires_in;
                 this.login = response.data.login;
-                console.log('Twitch Validated Access Token');
                 store.set('twitchChannelName', this.login);
             })
             .catch(() => {
@@ -48,7 +47,6 @@ export class TwitchOAuthProvider extends EventEmitter {
 
     async retrieveAccessToken(): Promise<string> {
         this.accessToken = await keytar.getPassword(this.serviceName, this.accountName);
-        console.log('accessToken', this.accessToken);
 
         if (this.accessToken && (await this.validateAccessToken())) {
             this.emit('authenticated');
@@ -62,7 +60,6 @@ export class TwitchOAuthProvider extends EventEmitter {
         const match = url.match(/access_token=([^&]*)/);
         if (match) {
             const accessToken = match[1];
-            console.log('access_token', accessToken);
             this.accessToken = accessToken;
             await this.validateAccessToken();
             await keytar.setPassword(this.serviceName, this.accountName, accessToken);
