@@ -2,6 +2,28 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.4.0
+
+## Shameless Plug
+Join my new discord community server for my software services updates and discussions!
+
+Link under the discord settings page
+
+### New Feature!
+- Discord bot integration.  Optional install Menus > Discord > Settings
+  - Select Server
+  - Designate the channel you play in
+  - Designate the channel viewers join to be added to the wheel
+  - If a discord user wins they will automatically be moved to your channel
+  
+  ### Future implementations
+  - viewer bot slash commands to sync discord users with either youtube or twitch accounts
+  - ping or DM winners with details like channel to join and maybe a custom message?
+
+<br/>
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.3.3
 
 ### Bug fix
