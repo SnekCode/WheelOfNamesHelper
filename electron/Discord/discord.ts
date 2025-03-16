@@ -16,17 +16,14 @@ import { setStore } from '../data/data';
 import { Entry } from '~/Shared/types';
 import { ipcMain } from 'electron';
 import { Service } from '~/Shared/enums';
-import { get } from 'http';
 dotenv.config();
 
-const targetRoles = ['Wheel Bot'];
+const targetRoles = ['Wheel Bot User'];
 let user: User | null;
 let userGuilds: Collection<string, Guild> | undefined;
 let client: Client | null;
 
 store.onDidAnyChange((values, key) => {
-    console.log(values?.discord_enabled);
-
     if (typeof key === 'string' && key === 'discord_enabled') {
         return;
     } else if (
@@ -54,10 +51,9 @@ const getUserGuilds = async () => {
     }
     // build list of guilds where the user has the role "Wheel Bot"
         userGuilds = client.guilds.cache.filter((guild) => {
-            const member = guild.members.cache.get(user!.id);
+            const member = guild.members.cache.get(user!.id);    
             return member?.roles.cache.some((role) => targetRoles.includes(role.name));
         });
-        console.log('discord_userGuilds', userGuilds.size);
         setStore('discord_userGuilds', userGuilds);
 
         // for each guild, get the list of voice channels
@@ -69,11 +65,9 @@ const getUserGuilds = async () => {
         });
                 
         setStore('discord_bot_ready', !!userGuilds && userGuilds?.size > 0);
-        console.log(!!userGuilds && userGuilds.size > 0 ? 'DISCORD Bot is ready' : 'DISCORD Bot is not ready');
     };
 
 export const setUpClient = () => {
-    console.log('LOGGING INTO THE DISCORD BOT');
     client = new Client({
         intents: [
             GatewayIntentBits.Guilds,
@@ -85,9 +79,13 @@ export const setUpClient = () => {
             'GuildMessageTyping',
         ],
     });
+
+    if(!discordAuthProvider.botToken) {
+        return;
+    }
     
     client.login(discordAuthProvider.botToken ?? '').catch((error) => {
-        console.error('Error logging in to discord', error);
+        console.error('Error logging in to discord', error.message);
     });
 
     client.once(Events.ClientReady, (readyClient) => {
@@ -96,16 +94,12 @@ export const setUpClient = () => {
 
     // when a user joins a voice channel, update the store
     client.on(Events.VoiceStateUpdate, (oldState, newState) => {
-        console.log('VoiceStateUpdate', newState.member?.displayName);
         const selectedGuildId = store.get('discord_selectedGuild', '');
         const viewerVoiceChannel = store.get('discord_viewersChannel', '');
         if (!selectedGuildId) {
-            console.log('no guild selected');
-
             return;
         }
         if (oldState.guild.id !== selectedGuildId || newState.guild.id !== selectedGuildId) {
-            console.log('not the selected guild');
             return;
         }
 
@@ -140,17 +134,13 @@ export const setUpClient = () => {
             //     setStore('entries', entries);
             // }
             // remove method
-            console.log('remove entry', oldState.member?.id);
-
             dataManager.handleRemoveWheelUser({} as any, oldState.member?.id ?? '');
         }
-        // console.log('VoiceStateUpdate', oldState, newState);
     });
 };
 
 // handle functions for the wheel of names to effect the discord bot
 ipcMain.handle('discord_winner', async (_, winner: Entry) => {
-    console.log('discord_winner', winner);
     const selectedGuildId = store.get('discord_selectedGuild', '');
     const userVoiceChannel = store.get('discord_userVoiceChannel', '');
     const userGuilds = store.get('discord_userGuilds', null);
@@ -158,23 +148,19 @@ ipcMain.handle('discord_winner', async (_, winner: Entry) => {
         return;
     }
     if (!selectedGuildId || !userGuilds || !client) {
-        console.log('discord not configured');
         return;
     }
     // const guild = userGuilds?.get(selectedGuildId);
     const guild = client.guilds.cache.get(selectedGuildId);
     if (!guild) {
-        console.log('no guild found');
         return;
     }
     const channel = guild.channels.cache.get(userVoiceChannel) as VoiceChannel;
     if (!channel) {
-        console.log('no channel found');
         return;
     }
     const member = guild.members.cache.get(winner.id!);
     if (!member) {
-        console.log('no member found');
         return;
     }
     if (channel) {
@@ -188,18 +174,15 @@ ipcMain.on('clear_voice_channel', async () => {
     const viewerVoiceChannel = store.get('discord_viewersChannel', '');
     const userVoiceChannel = store.get('discord_userVoiceChannel', '');
     if (!selectedGuildId || !client) {
-        console.log('discord not configured');
         return;
     }
     const guild = client.guilds.cache.get(selectedGuildId);
     if (!guild) {
-        console.log('no guild found');
         return;
     }
     const channel1 = guild.channels.cache.get(viewerVoiceChannel) as VoiceChannel;
     const channel2 = guild.channels.cache.get(userVoiceChannel) as VoiceChannel;
     if (!channel1 || !channel2) {
-        console.log('no channel found');
         return;
     }
 

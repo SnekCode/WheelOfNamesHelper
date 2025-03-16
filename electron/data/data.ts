@@ -79,7 +79,6 @@ export class DataManager{
     this.pause = value;
     // reset the sync flag if value is false
     if(!value) {
-      console.log("syncing with wheel");
       this.syncWithWheel();
     }
   }
@@ -107,7 +106,6 @@ export class DataManager{
 
     entry.timestamp = Date.now();
     entry.message = entry.channelId;
-    setTimeout(()=> console.log("addWheelUser", this.pause), 500);
     
     if (this.pause) {
       this.addQueueEntry(entry);
@@ -129,7 +127,6 @@ export class DataManager{
   }
 
   public handleRemoveWheelUser = async (_: IpcMainInvokeEvent, id: string) => {
-    console.log("removeWheelUser", this.pause, id);
     if (this.pause) {
       this.removeQueueEntry(id);
       return true;
@@ -149,11 +146,6 @@ export class DataManager{
     entries = entries.map((entry) =>
       entry.channelId === id ? { ...entry, enabled: false } : entry
     );
-      setTimeout(() => {
-          console.log('hiding ', id);
-          console.log(entries);
-          
-      }, 500);
     setStore(StoreKeys.data, entries);
   }
 

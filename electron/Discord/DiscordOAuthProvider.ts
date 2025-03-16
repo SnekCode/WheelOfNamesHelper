@@ -44,10 +44,6 @@ export class DiscordOAuthProvider extends EventEmitter {
         this.refreshToken = await keytar.getPassword('discord', 'refresh_token');
         this.expiryTime = await keytar.getPassword('discord', 'expiry_time');
         this.botToken = await keytar.getPassword('discord', 'bot_token');
-        console.log('accessToken', this.accessToken);
-        console.log('refreshToken', this.refreshToken);
-        console.log('expiryTime', this.expiryTime);
-        console.log('botToken', this.botToken);
 
         if (this.expiryTime) {
             // 1 day window to refresh token
@@ -67,7 +63,6 @@ export class DiscordOAuthProvider extends EventEmitter {
             refresh_token: this.refreshToken,
         });
         const data = JSON.parse(response.data.body);
-        console.log('response', data);
         this.accessToken = data.access_token;
         this.refreshToken = data.refresh_token;
         // calculate expiry time
@@ -75,7 +70,6 @@ export class DiscordOAuthProvider extends EventEmitter {
         keytar.setPassword('discord', 'access_token', data.access_token);
         keytar.setPassword('discord', 'refresh_token', data.refresh_token);
         keytar.setPassword('discord', 'expiry_time', expiryTime.toString());
-        console.log('expiryTime', new Date(expiryTime).toString());
     }
 
     public async retrieveAccessToken() {
@@ -150,7 +144,6 @@ export class DiscordOAuthProvider extends EventEmitter {
     private listenForRedirects(): void {
         const filter = { urls: [`${this.redirectUri}*`] };
         // this.authWindow?.webContents.openDevTools({mode: 'detach', activate: true});
-        console.log('AUTH WINDOW', this.authWindow);
 
         this.authWindow?.webContents.on('will-navigate', async (event, url) => {
             console.log('did-redirect-navigation', url);
@@ -161,12 +154,19 @@ export class DiscordOAuthProvider extends EventEmitter {
 
             if (codeMatch) {
                 const code = codeMatch[1];
-                console.log('authCode', code);
                 const response = await axios.post(this.tokenExchangeEndpoint, {
                     code,
                 });
+
+                console.log('response', response.data);
+                
+                if(response.data.statusCode === 401) {
+                    console.log('Unauthorized');
+                    this.authWindow?.close();
+                    return;
+                }
+
                 const data = JSON.parse(response.data.body);
-                console.log('response', data);
                 this.user = data.user;
                 // console.log('user', this.user);
                 // schema

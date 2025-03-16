@@ -20,7 +20,6 @@ export const handleIPCMainChatCommand = async (
     channelId: string,
     service: Service
 ) => {
-    console.log('handleIPCMainChatCommand', message, displayname, channelId, service);
     const chatCallBackFn = (message: string) => {
         setTimeout(() => {
         console.log('chatCallBackFn', message);
