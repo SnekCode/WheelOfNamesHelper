@@ -121,7 +121,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                     },   
                 },
                 {
-                    label: 'Setup Discord',
+                    label: 'Settings',
                     click: async (_, focusedWindow) => {
                         // navigate to the /discord route
                         win?.webContents.send('navigate', '/discord');
