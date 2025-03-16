@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 
 // get userGuilds from the store
-const { store, ipcRenderer, contextData } = window;
+const { ipcRenderer } = window;
 
 const selectedGuild = ref<string | null>(null);
 const userGuilds = ref<any[]>([]);
@@ -62,23 +62,22 @@ ipcRenderer.invoke('getStore', 'discord_authenticated').then((value) => {
 // updater / listener
 ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     console.log(storeName);
-    if(storeName.includes('discord_channels')) {
+    if (storeName.includes('discord_channels')) {
         channels.value = channels.value.splice(0, channels.value.length, ...data);
     }
-    if(storeName === 'discord_userVoiceChannel') {
+    if (storeName === 'discord_userVoiceChannel') {
         userVoiceChannel.value = data;
     }
-    if(storeName === "discord_authenticated") {
-        console.log("discord_authenticated", data);
-        
+    if (storeName === 'discord_authenticated') {
+        console.log('discord_authenticated', data);
+
         discordAuthenticated.value = data;
     }
-    if(storeName === "discord_userGuilds") {
-        if(data && data[0]){
+    if (storeName === 'discord_userGuilds') {
+        if (data && data[0]) {
             userGuilds.value = Array.from(data[0].values());
         }
     }
-    
 });
 
 // handle functions
@@ -97,11 +96,13 @@ const handleGetChannels = (guildId: string) => {
 
 const handleSelectPlayChannel = (channelId: string) => {
     ipcRenderer.invoke('setStore', 'discord_userVoiceChannel', channelId);
+    userVoiceChannel.value = channelId;
     console.log(channelId);
 };
 
 const handleSelectViewersChannel = (channelId: string) => {
     ipcRenderer.invoke('setStore', 'discord_viewersChannel', channelId);
+    viewersChannel.value = channelId;
     console.log(channelId);
 };
 
@@ -128,20 +129,6 @@ const reloadPage = () => {
 <template>
     <div class="container">
         <!-- show install link to the bot -->
-        <div v-if="discordAuthenticated">
-            <a
-            href="https://discord.com/oauth2/authorize?client_id=1348170053509447800&scope=bot&permissions=8"
-            target="_blank"
-            rel="noopener noreferrer"
-            @click="() => {
-                ipcRenderer.send('discord_install')}"
-            >{{discord_bot_ready ? "Install to another server": "Install the Discord Bot"}}</a>
-        <!-- add refresh page button -->
-        <button style="margin-left:20px;" v-if="!discord_bot_ready" @click="reloadPage">Refresh</button>
-        </div>
-        <div v-else>
-            Log in to Discord to continue
-        </div>
         <!-- close button top right as a X that navigates to the root path -->
         <router-link to="/">
             <button class="close-button">Close</button>
@@ -223,6 +210,37 @@ const reloadPage = () => {
                     />
                 </div>
             </div>
+        </div>
+        <div v-if="discordAuthenticated">
+            <a
+                href="https://discord.com/oauth2/authorize?client_id=1348170053509447800&scope=bot&permissions=8"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click="
+                    () => {
+                        ipcRenderer.send('discord_install');
+                    }
+                "
+                >{{ discord_bot_ready ? 'Install to another server' : 'Install the Discord Bot' }}</a
+            >
+            <!-- add refresh page button -->
+            <button style="margin-left: 20px" v-if="!discord_bot_ready" @click="reloadPage">Refresh</button>
+            <div v-if="channels.length === 0">
+                <small>Ensure you have a role named "Wheel Bot User"</small>
+                <label>If you need a custom role reach out to @snekcode discord -- link below</label>
+            </div>
+        </div>
+        <div v-else>
+            Log in to Discord to continue
+            <label
+                >If you still see this message
+                <a href="https://discord.gg/VU4zTuns" target="_blank" rel="noopener noreferrer">Join My Discord</a> for
+                access</label
+            >
+        </div>
+        <div v-if="discordAuthenticated" style="margin-top: 1rem">
+            <label>Join my Discord for support and updates</label>
+            <a href="https://discord.gg/VU4zTuns" target="_blank" rel="noopener noreferrer">Join Discord</a>
         </div>
     </div>
 </template>
