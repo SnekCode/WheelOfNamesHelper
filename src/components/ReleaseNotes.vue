@@ -70,7 +70,7 @@ fetchReleaseNotes();
   background-color: #242424;
   padding: 20px;
   border-radius: 5px;
-  max-width: 500px;
+  max-width: 90%;
   width: 100%;
   position: relative;
   max-height: 80vh; /* Adjust the value as needed */

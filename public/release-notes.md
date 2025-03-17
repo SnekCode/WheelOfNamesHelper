@@ -16,11 +16,13 @@ Link under the discord settings page
   - Designate the channel viewers join to be added to the wheel
   - If a discord user wins they will automatically be moved to your channel
   
-  ### Future implementations
-  - viewer bot slash commands to sync discord users with either youtube or twitch accounts
-  - ping or DM winners with details like channel to join and maybe a custom message?
+### Future implementations
+- Viewer bot slash commands to sync discord users with either youtube or twitch accounts
+- Ping or DM winners with details like channel to join and maybe a custom message?
 
-<br/>
+#### Miscellaneous
+- The release notes now scale with the screen size!
+
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
@@ -68,7 +70,6 @@ If you so choose to be brave:
 
 ![alt text](channels.png)
 
-<br/>
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
