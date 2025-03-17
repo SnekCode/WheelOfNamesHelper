@@ -21,7 +21,7 @@ const routes = [
     },
 ];
 
-const isElectron = window.location. origin === "file://"
+const isElectron = window.location.origin === "file://"
 console.log("isElectron", isElectron);
 
 

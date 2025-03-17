@@ -356,7 +356,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                             // Open devTool if the app is not packaged
                             // win.webContents.openDevTools()
                         } else {
-                            const indexHtml = path.join(RENDERER_DIST, 'index.html/devtools');
+                            const indexHtml = path.join(RENDERER_DIST, 'index.html#/devtools');
                             devToolWindow.loadFile(indexHtml);
                         }
                     },

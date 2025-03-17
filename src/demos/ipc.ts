@@ -1,3 +1,4 @@
+import router from "@/router"
 
 window.ipcRenderer.on('main-process-message', (_event, ...args) => {
   console.log('[Receive Main-process message]:', ...args)
@@ -9,5 +10,5 @@ window.ipcRenderer.on('message', (_event, ...args) => {
 
 window.ipcRenderer.on('navigate', (_event, data) => {
   console.log('[Receive Navigate]:', data)
-  window.location.href = data
+  router.push(data)
 })
