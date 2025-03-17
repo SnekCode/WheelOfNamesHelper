@@ -32,9 +32,11 @@ export interface IStore {
     discord_viewersChannel: string;
     discord_selectedGuild: string;
     discord_enabled: boolean;
+    discord_bot_ready: boolean;
     discord_toggle: boolean;
     discord_followMode: boolean;
     discord_weights: number;
+    discord_authenticated: boolean;
 }
 
 export type IStoreKeys = keyof IStore;
