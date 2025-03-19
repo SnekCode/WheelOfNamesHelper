@@ -192,7 +192,7 @@ const reloadPage = () => {
                 <label>Discord Weights</label>
                 <small>Adjust the weight of Discord in the Wheel</small>
                 <div>
-                    <small style="color: aquamarine; padding-left: 5px; padding-right: 5px"
+                    <small style="padding-left: 5px; padding-right: 5px"
                         >{{ discord_weights }}
                     </small>
                     <input
@@ -304,5 +304,84 @@ input[type='checkbox']:focus {
 
 .close-button:hover {
     background-color: #007acc;
+}
+
+@media (prefers-color-scheme: light){
+    .option:hover {
+        background-color: #f0f0f0;
+        border-radius: 3px;
+        border: 1px solid #3c3c3c;
+    }
+
+    .container {
+        /* background-color: #f0f0f0; */
+        color: #3c3c3c;
+    }
+
+    select, input[type='checkbox'] {
+        background-color: #f0f0f0;
+        color: #3c3c3c;
+        border: 1px solid #3c3c3c;
+    }
+
+    .close-button {
+        background-color: #007ACC86;
+        color: #000000;
+    }
+
+    .close-button:hover {
+        background-color: #007acc;
+    }
+
+    .option {
+        /* background-color: #f0f0f0; */
+        border-radius: 3px;
+        border: 1px solid transparent;
+    }
+
+    label {
+        color: #3c3c3c;
+    }
+
+    select:focus, input[type='checkbox']:focus {
+        outline: none;
+        border-color: #007acc;
+    }
+
+    a {
+        color: #007acc;
+    }
+
+    a:hover {
+        color: #0056b3;
+    }
+
+    small {
+        color: #3c3c3c;
+    }
+
+    input[type='range'] {
+        background-color: #f0f0f0;
+        color: #3c3c3c;
+        border: 1px solid #3c3c3c;
+    }
+
+    input[type='range']:focus {
+        outline: none;
+        border-color: #007acc;
+    }
+
+    input[type='range']::-webkit-slider-thumb {
+        background-color: #007acc;
+    }
+
+    input[type='range']::-webkit-slider-thumb:hover {
+        background-color: #0056b3;
+    }
+
+    input[type='range']::-webkit-slider-thumb:active {
+        background-color: #003d80;
+    }
+    
 }
 </style>
