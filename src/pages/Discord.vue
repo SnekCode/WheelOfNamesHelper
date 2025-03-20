@@ -201,10 +201,10 @@ const reloadPage = () => {
                         max="10"
                         step="1"
                         :value="discord_weights"
-                        @input="(event) => {
+                        @input="(event: Event) => {
                     discord_weights = parseInt((event.target as HTMLInputElement).value);
                 }"
-                        @change="(event)=> {
+                        @change="(event: Event)=> {
                     console.log(event);
                     
                     handleWeights(parseInt((event.target as HTMLInputElement).value))
