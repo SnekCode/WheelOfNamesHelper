@@ -82,7 +82,8 @@ export const setUpClient = () => {
 
     if(!discordAuthProvider.botToken) {
         return;
-    }
+    }   
+
     
     client.login(discordAuthProvider.botToken ?? '').catch((error) => {
         console.error('Error logging in to discord', error.message);
@@ -110,11 +111,12 @@ export const setUpClient = () => {
             if (newState.channel?.id && followMode) {
                 setStore('discord_userVoiceChannel', newState.channel?.id);
             }
-            // return;
+            return;
         }
 
         if (newState.channel?.id === viewerVoiceChannel) {
             const discord_weights = store.get('discord_weights', 1);
+            const mobile = newState.member?.presence?.clientStatus?.mobile     
             const newEntry: Entry = {
                 weight: discord_weights,
                 claimedHere: true,
@@ -122,6 +124,7 @@ export const setUpClient = () => {
                 id: newState.member?.id,
                 text: newState.member?.displayName ?? newState.member?.user.username ?? 'Unknown',
                 enabled: true,
+                mobile: !!mobile,
                 service: Service.Discord,
             };
             dataManager.handleAddUpdateWheelUser({} as any, newEntry);
@@ -150,7 +153,7 @@ ipcMain.handle('discord_winner', async (_, winner: Entry) => {
     if (!selectedGuildId || !userGuilds || !client) {
         return;
     }
-    // const guild = userGuilds?.get(selectedGuildId);
+
     const guild = client.guilds.cache.get(selectedGuildId);
     if (!guild) {
         return;
@@ -186,12 +189,12 @@ ipcMain.on('clear_voice_channel', async () => {
         return;
     }
 
-    const clear = async (member: GuildMember) => {
+    const clear = (member: GuildMember) => {
         // except the user who is logged in
         if (member.id === user?.id) {
             return;
         }
-        await member.voice.setChannel(null);
+        member.voice.setChannel(null);
     };
 
     const channel1members = channel1.members;

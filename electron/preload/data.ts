@@ -21,6 +21,9 @@ window.data = {
     },
     handleDiscordWinner(entry: Entry) {
         return ipcRenderer.invoke('discord_winner', entry);
+    },
+    forceUpdate() {
+        return ipcRenderer.invoke('forceUpdate');
     }
 };
 
@@ -62,7 +65,13 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 const differenceInSeconds = differenceMilliseconds / 1000;
                 const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
                 const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
-                debugger
+
+                if (entry?.service === Service.Discord && entry?.mobile === false) {
+                    console.log('Discord Winner');
+                    // auto move
+                    window.data.handleDiscordWinner(entry);
+                }
+
                 // if NAN set to 0
                 if (isNaN(minutes) || isNaN(seconds)) {
                     messageBox.textContent = `Not sure if they are here...`;
@@ -72,42 +81,39 @@ ipcRenderer.on('initListeners', async (event, value) => {
                     }`;
                 }
 
-                if (entry?.service === Service.Discord) {
-                    console.log('Discord Winner');
-                    window.data.handleDiscordWinner(entry);
+                if (entry.service === Service.Discord) {
+                    messageBox.textContent = `${messageBox.textContent} - ${entry?.mobile ? 'Mobile' : 'Desktop'}`;
                 }
+
+                // find button with text "Remove"
+                const removeButton = Array.from(document.querySelectorAll('button')).find(
+                    (btn) => btn.textContent?.trim() === 'Remove'
+                );
+                const hideButton = Array.from(document.querySelectorAll('button')).find(
+                    (btn) => btn.textContent?.trim() === 'Hide'
+                );
+                const closeButton = Array.from(document.querySelectorAll('button')).filter(
+                    (btn) => btn.textContent?.trim() === 'Close'
+                )[1];
+
+                if(closeButton){
+                    closeButton.setAttribute('style', 'display: none');
+                }
+
+                hideButton?.addEventListener('click', () => {
+                    console.log('Hide Button Clicked');
+                    window.data.hideSelected(id);
+                    window.data.setPause(false);
+                    window.data.forceUpdate();
+                });
+
+                removeButton?.addEventListener('click', () => {
+                    console.log('Remove Button Clicked');
+                    window.data.removeSelected(id);
+                    window.data.setPause(false);
+                    window.data.forceUpdate();
+                });
             }
-
-            // find button with text "Remove"
-            const removeButton = Array.from(document.querySelectorAll('button')).find(
-                (btn) => btn.textContent?.trim() === 'Remove'
-            );
-            const hideButton = Array.from(document.querySelectorAll('button')).find(
-                (btn) => btn.textContent?.trim() === 'Hide'
-            );
-            const closeButton = Array.from(document.querySelectorAll('button')).find(
-                (btn) => btn.textContent?.trim() === 'Close'
-            );
-
-            hideButton?.addEventListener('click', () => {
-                console.log('Hide Button Clicked');
-                window.data.hideSelected(id);
-                window.data.setPause(false);
-                window.data.forceUpdate();
-            });
-
-            removeButton?.addEventListener('click', () => {
-                console.log('Remove Button Clicked');
-                window.data.removeSelected(id);
-                window.data.setPause(false);
-                window.data.forceUpdate();
-            });
-
-            closeButton?.addEventListener('click', () => {
-                console.log('Close Button Clicked');
-                window.data.setPause(false);
-                // window.data.forceUpdate();
-            });
         }, spinTime * 1000 + 100);
     });
 });
@@ -180,28 +186,27 @@ function helperText() {
     }, 50);
 }
 
-    let reShowInterval: NodeJS.Timeout;
-    // on dom ready
-    window.addEventListener('DOMContentLoaded', () => {
-        console.log('page loaded');
+let reShowInterval: NodeJS.Timeout;
+// on dom ready
+window.addEventListener('DOMContentLoaded', () => {
+    console.log('page loaded');
 
-        // hiding things from the page
-        // div with class name preload-toolbar
-        const toHide = document.body;
-        toHide?.setAttribute('style', 'opacity: 0');
+    // hiding things from the page
+    // div with class name preload-toolbar
+    const toHide = document.body;
+    toHide?.setAttribute('style', 'opacity: 0');
 
-        // check for preload-static-content id element to no longer exist
-        reShowInterval = setInterval(()=> {
-            const staticContent = document.getElementById('preload-static-content');
-            if (staticContent) {
-                staticContent.style.opacity = '0';
-                staticContent.style.display = 'none';
-            }else
-            {
-                clearInterval(reShowInterval)
-                toHide?.setAttribute('style', 'opacity: 1');
-            }
-        }, 50)
-    });
+    // check for preload-static-content id element to no longer exist
+    reShowInterval = setInterval(() => {
+        const staticContent = document.getElementById('preload-static-content');
+        if (staticContent) {
+            staticContent.style.opacity = '0';
+            staticContent.style.display = 'none';
+        } else {
+            clearInterval(reShowInterval);
+            toHide?.setAttribute('style', 'opacity: 1');
+        }
+    }, 50);
+});
 
 helperText();
