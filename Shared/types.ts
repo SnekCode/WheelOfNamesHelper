@@ -23,6 +23,7 @@ export type WheelUser = {
       message?: string;
       channelId?: string;
       service?: Service;
+      mobile?: boolean;
     }
 
 // New state types

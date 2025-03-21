@@ -2,12 +2,21 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.4.2
+
+### Bug Fixes
+- Corrected an issue where a discord user on PS4 or mobile would not be able to be moved to the channel
+  - These members will no longer be moved.
+  - Text on the winner dialog will now indicate if they are on mobile or desktop
+- Removed the Close button from the winner dialog as it was not functioning as intended
+  - There is still a small 'X' in the top right corner to close the dialog but this may break functionality 
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.4.1
 
 Fixed styling for light mode in the discord settings page.
-
-___________________________________________________________________________________________
-___________________________________________________________________________________________
 
 ### Version 2.4.0
 
