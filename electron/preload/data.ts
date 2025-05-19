@@ -34,6 +34,8 @@ ipcRenderer.on('initListeners', async (event, value) => {
     const wheel = document.querySelector('canvas');
     console.log(wheel);
 
+    document.querySelector('.text-h6')?.setAttribute("class", "text-h7");
+
     window.addEventListener('blur', (e) => {
         window.data.saveConfig();
     });
@@ -46,11 +48,18 @@ ipcRenderer.on('initListeners', async (event, value) => {
 
         setTimeout(() => {
             // // get element with class "text-h6"
+            //document.querySelector("#q-portal--dialog--3 > div > div.q-dialog__inner.flex.no-pointer-events.q-dialog__inner--minimized.q-dialog__inner--standard.fixed-full.flex-center > div > div.q-card__section.q-card__section--vert.flex.gap.justify-between > div")
+            
             const messageBox = document.querySelector('.text-h6');
+            console.log(messageBox);
+
             let id = '';
+            // return;
             if (messageBox) {
                 // // get text and convert to date time
                 const currentTime = Date.now();
+                console.log({ currentTime });
+
                 // get the entry from the local storage the messagebox text is the entries channelId
                 id = messageBox.textContent ?? 'NO ID';
                 console.log(id);
@@ -96,9 +105,22 @@ ipcRenderer.on('initListeners', async (event, value) => {
                     (btn) => btn.textContent?.trim() === 'Close'
                 )[1];
 
-                if(closeButton){
+                // get element of role "dialog"
+                const dialog = document.querySelector('[role="dialog"]');
+
+                console.log({ dialog });
+                
+
+                if (closeButton) {
                     closeButton.setAttribute('style', 'display: none');
                 }
+
+                dialog?.addEventListener('click', (e) => {
+                    console.log('Dialog Clicked');
+                    window.data.setPause(false);
+                    window.data.forceUpdate();
+                });
+                    
 
                 hideButton?.addEventListener('click', () => {
                     console.log('Hide Button Clicked');

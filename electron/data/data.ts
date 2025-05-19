@@ -127,13 +127,17 @@ export class DataManager{
   }
 
   public handleRemoveWheelUser = async (_: IpcMainInvokeEvent, id: string) => {
+    console.log({pause: this.pause});
+    
     if (this.pause) {
       this.removeQueueEntry(id);
       return true;
     }
 
     let data = store.get(StoreKeys.data, []);
-    data = data.filter((entry) => entry.id !== id);
+    console.log("id", id);
+    
+    data = data.filter((entry) => entry.channelId !== id);
     setStore(StoreKeys.data, data);
     this.forceUpdate();
     return true;
@@ -178,6 +182,8 @@ export class DataManager{
     }
     while (this.removeQue.length) {
       const name = this.removeQue.pop();
+      console.log({name});
+      
       if (name) this.handleRemoveWheelUser(event, name);
     }
     

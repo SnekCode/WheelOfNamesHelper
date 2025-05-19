@@ -52,7 +52,8 @@ export function createWheelWindow() {
   wheelWindow.loadURL("https://wheelofnames.com");
 
   wheelWindow.webContents.on("dom-ready", () => {
-
+    // open dev tools
+    wheelWindow?.webContents.openDevTools();
     const customCSS = `
       .ad-declaration {
         display: none !important;

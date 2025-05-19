@@ -2,6 +2,14 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 2.4.3
+
+## Bug Fix
+- Corrected an issue where viewers could not be added to the wheel after a spin.
+- Corrected an issue where viewer ids were being passing incorrectly resulting in errors when removing from the list
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.4.2
 
 ### Bug Fixes
