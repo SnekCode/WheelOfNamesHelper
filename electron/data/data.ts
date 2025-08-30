@@ -57,21 +57,13 @@ export class DataManager{
     let data = store.get(StoreKeys.data);
     data = data.map((entry) => ({ ...entry, claimedHere: false, enabled: false } as Entry));
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
   };
   
   public handleNotClaimed = () => {
     let data = store.get(StoreKeys.data);
     data = data.filter((entry) => entry.claimedHere);
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
   }
-
-  public forceUpdate = () => {
-    if(this.pause) return;
-    wheelWindow?.webContents.send(EChannels.setDefaults);
-    wheelWindow?.webContents.send(EChannels.reload);
-  };
 
   public setPause = async (_: IpcMainInvokeEvent, value: boolean) => {
     if(this.pause === value) return;
@@ -121,7 +113,8 @@ export class DataManager{
 
     data.push(entry);
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
+    const dataJson = JSON.stringify(data);
+    wheelWindow?.webContents.executeJavaScript(`postMessage({name: 'setEntries', entries: ${dataJson}})`);
     return true;
 
   }
@@ -133,9 +126,13 @@ export class DataManager{
     }
 
     let data = store.get(StoreKeys.data, []);
-    data = data.filter((entry) => entry.id !== id);
+
+    data = data.filter((entry) => {
+      return entry.channelId && entry.channelId !== id || !entry.channelId && entry.text !== id;
+    });
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
+    const dataJson = JSON.stringify(data);
+    wheelWindow?.webContents.executeJavaScript(`postMessage({name: 'setEntries', entries: ${dataJson}})`);
     return true;
   }
 
@@ -151,10 +148,10 @@ export class DataManager{
 
   public saveConfig = async () => {
     const response = await wheelWindow?.webContents.executeJavaScript(
-      `localStorage.getItem('LastWheelConfig')`
+        `localStorage.getItem('LastWheel')`
     );
   
-    const lastconfig = JSON.parse(response);
+    const lastconfig = JSON.parse(response).wheelConfig;
   
     setStore(StoreKeys.lastconfig, lastconfig);
   };
@@ -180,8 +177,6 @@ export class DataManager{
       const name = this.removeQue.pop();
       if (name) this.handleRemoveWheelUser(event, name);
     }
-    
-    this.forceUpdate();
   };
 
   

@@ -56,7 +56,6 @@ const addUser = () => {
       } as Entry,
       true
     );
-    // contextData.forceUpdate();
   }
 };
 
@@ -274,7 +273,7 @@ const incrementChances = (user: Entry) => {
 const decrementChances = (user: Entry) => {
   user.weight = Math.max((user.weight || 0) - 1, 0);
   if (user.weight === 0) {
-    contextData.removeWheelUser(user.id);
+    contextData.removeWheelUser(user.channelId ?? user.text);
   } else {
     contextData.addUpdateWheelUser({ ...user });
   }
@@ -282,7 +281,6 @@ const decrementChances = (user: Entry) => {
 
 const openWheelWindow = async () => {
   await window.electronAPI.openWheelWindow();
-  window.electronAPI.setDefaults();
 };
 
 const getTime = (timestamp: number) => {
@@ -338,6 +336,12 @@ const clearDiscordChannel = () => {
       <button :class="`youtube-button ${isYoutubeAuthenticated ? '': 'hide'} ${searching ? 'youtube-button-searching' : ''}`">
         {{ isLiveBroadCast ? "Live" : "Waiting" }}
       </button>
+    </div>
+
+    <!-- Discord Section -->
+    <div v-if="isDiscordConnected" class="channel-section">
+      <label for="discord-channel">Discord</label>
+        <span class="check-mark">✔️</span>
     </div>
   </div>
 

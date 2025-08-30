@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, session, webContents } from "electron";
+import { BrowserWindow, ipcMain, session } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { VITE_DEV_SERVER_URL } from "./main";
@@ -68,6 +68,8 @@ export function createWheelWindow() {
     // preloaded event listeners
     setTimeout(() => {
       wheelWindow?.webContents.send("initListeners");
+      const dataJson = JSON.stringify(store.get("entries", []));
+      wheelWindow?.webContents.executeJavaScript(`postMessage({ name: 'setEntries', entries: ${dataJson}})`);
     }, 500);
   });
 
@@ -129,21 +131,6 @@ ipcMain.handle("open-wheel-window", () => {
   return true;
 });
 
-ipcMain.handle("setDefaults", () => {
-  console.log("setDefaults");
-
-  wheelWindow?.webContents.send("setDefaults");
-});
-
-ipcMain.handle("set-local-storage", (event, key, value) => {
-  if (wheelWindow) {
-    wheelWindow.webContents.executeJavaScript(
-      `localStorage.setItem('${key}', '${value}');
-            location.reload();
-            `
-    );
-  }
-});
 
 ipcMain.handle("get-local-storage", async (event, key) => {
   if (wheelWindow) {

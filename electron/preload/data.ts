@@ -1,5 +1,5 @@
-import { log } from 'console';
 import { ipcRenderer } from 'electron';
+import { EChannels } from '~/Shared/channels';
 import { Service } from '~/Shared/enums';
 import { Entry } from '~/Shared/types';
 
@@ -31,6 +31,9 @@ ipcRenderer.on('initListeners', async (event, value) => {
     const wheel = document.querySelector('canvas');
     console.log(wheel);
 
+    // remove unwanted elements from the page
+    document.querySelector('#q-app > div > div.q-page-container > div:nth-child(2) > div')?.remove();
+
     window.addEventListener('blur', (e) => {
         window.data.saveConfig();
     });
@@ -38,8 +41,8 @@ ipcRenderer.on('initListeners', async (event, value) => {
     wheel?.addEventListener('click', () => {
         window.data.setPause(true);
         // grab from the local storage key LastWheelConfig and grab the value for spin time
-        const lastWheelConfig = localStorage.getItem('LastWheelConfig');
-        const spinTime = lastWheelConfig ? JSON.parse(lastWheelConfig).spinTime : 10;
+        const lastWheelConfig = localStorage.getItem('LastWheel');
+        const spinTime = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfig.spinTime : 10;
 
         setTimeout(() => {
             // // get element with class "text-h6"
@@ -52,8 +55,8 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 id = messageBox.textContent ?? 'NO ID';
                 console.log(id);
 
-                const lastWheelConfig = localStorage.getItem('LastWheelConfig');
-                const entries = lastWheelConfig ? JSON.parse(lastWheelConfig).entries : [];
+                const lastWheelConfig = localStorage.getItem('LastWheel');
+                const entries = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfig.entries : [];
                 const entry: Entry = entries.find((entry: Entry) => entry.channelId === id);
 
                 const milliseconds = entry.timestamp ?? 0;
@@ -62,7 +65,6 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 const differenceInSeconds = differenceMilliseconds / 1000;
                 const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
                 const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
-                debugger
                 // if NAN set to 0
                 if (isNaN(minutes) || isNaN(seconds)) {
                     messageBox.textContent = `Not sure if they are here...`;
@@ -93,42 +95,24 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 console.log('Hide Button Clicked');
                 window.data.hideSelected(id);
                 window.data.setPause(false);
-                window.data.forceUpdate();
             });
 
             removeButton?.addEventListener('click', () => {
                 console.log('Remove Button Clicked');
                 window.data.removeSelected(id);
                 window.data.setPause(false);
-                window.data.forceUpdate();
             });
 
             closeButton?.addEventListener('click', () => {
                 console.log('Close Button Clicked');
                 window.data.setPause(false);
-                // window.data.forceUpdate();
             });
         }, spinTime * 1000 + 100);
     });
 });
 
-ipcRenderer.on('reload', () => {
+ipcRenderer.on(EChannels.reload, () => {
     location.reload();
-});
-
-ipcRenderer.on('setDefaults', async () => {
-    const data = JSON.parse(localStorage.getItem('LastWheelConfig') || '{}');
-    const entries = await ipcRenderer.invoke('getStore', 'entries');
-    localStorage.setItem(
-        'LastWheelConfig',
-        JSON.stringify({
-            ...data,
-            isAdvanced: true,
-            entries,
-        })
-    );
-
-    window.data.saveConfig();
 });
 
 // create a new element in the dom
@@ -146,6 +130,14 @@ function helperText() {
     div.style.left = '0px';
     div.style.zIndex = '1000';
     div.style.color = 'white';
+    div.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    div.style.borderRadius = '10px';
+    div.style.padding = '10px';
+    div.style.margin = '10px';
+    div.style.fontFamily = 'Arial, sans-serif';
+    div.style.userSelect = 'none';
+    div.style.pointerEvents = 'none';
+    div.style.backdropFilter = 'blur(5px)';
 
     // add text to the div
     const containerDiv = document.createElement('div');
