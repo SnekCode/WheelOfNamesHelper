@@ -178,8 +178,6 @@ export class DataManager{
     }
     while (this.removeQue.length) {
       const name = this.removeQue.pop();
-      console.log({name});
-      
       if (name) this.handleRemoveWheelUser(event, name);
     }
   };

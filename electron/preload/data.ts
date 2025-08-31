@@ -21,9 +21,6 @@ window.data = {
     },
     handleDiscordWinner(entry: Entry) {
         return ipcRenderer.invoke('discord_winner', entry);
-    },
-    forceUpdate() {
-        return ipcRenderer.invoke('forceUpdate');
     }
 };
 
@@ -52,7 +49,6 @@ ipcRenderer.on('initListeners', async (event, value) => {
             //document.querySelector("#q-portal--dialog--3 > div > div.q-dialog__inner.flex.no-pointer-events.q-dialog__inner--minimized.q-dialog__inner--standard.fixed-full.flex-center > div > div.q-card__section.q-card__section--vert.flex.gap.justify-between > div")
             
             const messageBox = document.querySelector('.text-h6');
-            console.log(messageBox);
 
             let id = '';
             // return;

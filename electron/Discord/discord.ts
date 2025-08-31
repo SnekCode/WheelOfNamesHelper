@@ -42,7 +42,7 @@ store.onDidAnyChange((values, key) => {
 const getUserGuilds = async () => {
     user = discordAuthProvider.user as User | null;
     if (!user) {
-        console.log('No user found');
+        console.log('DISCORD: No user found');
         return;
     }
     if(!client) {
