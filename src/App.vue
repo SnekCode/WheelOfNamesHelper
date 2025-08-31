@@ -39,6 +39,8 @@ const isLiveBroadCast = ref(false);
 const isYoutubeAuthenticated = ref(false);
 const isTwitchConnected = ref(false);
 const isDiscordConnected = ref(false);
+const discordViewerChannel = ref("");
+const discordStreamerChannel = ref("");
 const youtubeHandle = ref("");
 const videoId = ref("");
 const searching = ref(false);
@@ -56,7 +58,6 @@ const addUser = () => {
       } as Entry,
       true
     );
-    // contextData.forceUpdate();
   }
 };
 
@@ -65,6 +66,13 @@ ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     if (storeName === 'discord_enabled') {
         isDiscordConnected.value = data;
     }
+    if( storeName === 'discord_viewersChannelName') {
+        discordViewerChannel.value = data;
+    }
+    if( storeName === 'discord_userVoiceChannelName') {
+        discordStreamerChannel.value = data;
+    }
+    console.log(`Store updated: ${storeName}`, data);
 });
 
 ipcRenderer.on(`${Service.YouTube}-add-wheel`, () => {
@@ -152,6 +160,14 @@ ipcRenderer.on("twitch-handle", (_, data) => {
 // get the channel name from the store
 ipcRenderer.invoke("getStore", "twitchChannelName").then((channelName) => {
   twitchHandle.value = channelName;
+});
+
+// get discord channel names from the store
+ipcRenderer.invoke("getStore", "discord_viewersChannelName").then((channelName) => {
+  discordViewerChannel.value = channelName;
+});
+ipcRenderer.invoke("getStore", "discord_userVoiceChannelName").then((channelName) => {
+  discordStreamerChannel.value = channelName;
 });
 
 // TODO change event name from handle to youtubeHandle e.g
@@ -274,7 +290,7 @@ const incrementChances = (user: Entry) => {
 const decrementChances = (user: Entry) => {
   user.weight = Math.max((user.weight || 0) - 1, 0);
   if (user.weight === 0) {
-    contextData.removeWheelUser(user.channelId);
+    contextData.removeWheelUser(user.channelId ?? user.text);
   } else {
     contextData.addUpdateWheelUser({ ...user });
   }
@@ -282,7 +298,6 @@ const decrementChances = (user: Entry) => {
 
 const openWheelWindow = async () => {
   await window.electronAPI.openWheelWindow();
-  window.electronAPI.setDefaults();
 };
 
 const getTime = (timestamp: number) => {
@@ -338,6 +353,14 @@ const clearDiscordChannel = () => {
       <button :class="`youtube-button ${isYoutubeAuthenticated ? '': 'hide'} ${searching ? 'youtube-button-searching' : ''}`">
         {{ isLiveBroadCast ? "Live" : "Waiting" }}
       </button>
+    </div>
+
+    <!-- Discord Section -->
+    <div v-if="isDiscordConnected" class="channel-section">
+      <label for="discord-channel">Discord</label>
+        <span class="check-mark">✔️</span>
+      <div>Streamer Channel: {{ discordStreamerChannel }}</div>
+      <div>Viewer Channel: {{ discordViewerChannel }}</div>
     </div>
   </div>
 

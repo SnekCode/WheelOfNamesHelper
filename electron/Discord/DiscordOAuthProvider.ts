@@ -47,6 +47,8 @@ export class DiscordOAuthProvider extends EventEmitter {
 
         if (this.expiryTime) {
             // 1 day window to refresh token
+            console.log('Expiry time', new Date(parseInt(this.expiryTime)).toLocaleString());
+            
             if (new Date().getTime() > parseInt(this.expiryTime) - Times.DAY * 2) {
                 await this.refreshAccessToken();
             }
@@ -110,11 +112,13 @@ export class DiscordOAuthProvider extends EventEmitter {
     public isAuthenticated() {
         
         if(!this.accessToken) {
+            setStore('discord_authenticated', false);
             return false;
         }
 
         // check if expiry time is in the past
         if (this.expiryTime && new Date().getTime() > parseInt(this.expiryTime)) {
+            setStore('discord_authenticated', false);
             return false;
         }
         return true;

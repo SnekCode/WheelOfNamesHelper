@@ -14,6 +14,7 @@ import { store } from "../main/store";
 import { Entry } from "Shared/types";
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
+  console.log("broadcasting update", name, data);
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
 
@@ -57,21 +58,13 @@ export class DataManager{
     let data = store.get(StoreKeys.data);
     data = data.map((entry) => ({ ...entry, claimedHere: false, enabled: false } as Entry));
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
   };
   
   public handleNotClaimed = () => {
     let data = store.get(StoreKeys.data);
     data = data.filter((entry) => entry.claimedHere);
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
   }
-
-  public forceUpdate = () => {
-    if(this.pause) return;
-    wheelWindow?.webContents.send(EChannels.setDefaults);
-    wheelWindow?.webContents.send(EChannels.reload);
-  };
 
   public setPause = async (_: IpcMainInvokeEvent, value: boolean) => {
     if(this.pause === value) return;
@@ -121,7 +114,8 @@ export class DataManager{
 
     data.push(entry);
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
+    const dataJson = JSON.stringify(data);
+    wheelWindow?.webContents.executeJavaScript(`postMessage({name: 'setEntries', entries: ${dataJson}})`);
     return true;
 
   }
@@ -135,11 +129,13 @@ export class DataManager{
     }
 
     let data = store.get(StoreKeys.data, []);
-    console.log("id", id);
-    
-    data = data.filter((entry) => entry.channelId !== id);
+
+    data = data.filter((entry) => {
+      return entry.channelId && entry.channelId !== id || !entry.channelId && entry.text !== id;
+    });
     setStore(StoreKeys.data, data);
-    this.forceUpdate();
+    const dataJson = JSON.stringify(data);
+    wheelWindow?.webContents.executeJavaScript(`postMessage({name: 'setEntries', entries: ${dataJson}})`);
     return true;
   }
 
@@ -155,10 +151,10 @@ export class DataManager{
 
   public saveConfig = async () => {
     const response = await wheelWindow?.webContents.executeJavaScript(
-      `localStorage.getItem('LastWheelConfig')`
+        `localStorage.getItem('LastWheel')`
     );
   
-    const lastconfig = JSON.parse(response);
+    const lastconfig = JSON.parse(response).wheelConfig;
   
     setStore(StoreKeys.lastconfig, lastconfig);
   };
@@ -186,8 +182,6 @@ export class DataManager{
       
       if (name) this.handleRemoveWheelUser(event, name);
     }
-    
-    this.forceUpdate();
   };
 
   

@@ -66,9 +66,6 @@ contextBridge.exposeInMainWorld('contextData', {
     syncWithWheel() {
         return ipcRenderer.invoke('syncWithWheel');
     },
-    forceUpdate() {
-        return ipcRenderer.invoke('forceUpdate');
-    },
     saveConfig() {
         return ipcRenderer.invoke('saveConfig');
     },
@@ -77,12 +74,10 @@ contextBridge.exposeInMainWorld('contextData', {
     },
 });
 
-contextBridge.exposeInMainWorld("electronAPI", {
-  openWheelWindow: () => ipcRenderer.invoke("open-wheel-window"),
-  setLocalStorage: (key: string, value: string) =>
-    ipcRenderer.invoke("set-local-storage", key, value),
-  getLocalStorage: (key: string) => ipcRenderer.invoke("get-local-storage", key),
-  setDefaults: () => ipcRenderer.invoke("setDefaults"),
+contextBridge.exposeInMainWorld('electronAPI', {
+    openWheelWindow: () => ipcRenderer.invoke('open-wheel-window'),
+    // setLocalStorage: (key: string, value: string) => ipcRenderer.invoke('set-local-storage', key, value),
+    getLocalStorage: (key: string) => ipcRenderer.invoke('get-local-storage', key)
 });
 
 // --------- Preload scripts loading ---------

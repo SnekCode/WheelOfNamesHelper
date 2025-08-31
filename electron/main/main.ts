@@ -231,7 +231,6 @@ ipcMain.handle("resetClaims", dataManager.handleResetClaims);
 ipcMain.handle("removeNotClaimed", dataManager.handleNotClaimed);
 ipcMain.handle("addUpdateWheelUser", dataManager.handleAddUpdateWheelUser);
 ipcMain.handle("removeWheelUser", dataManager.handleRemoveWheelUser);
-ipcMain.handle("forceUpdate", dataManager.forceUpdate);
 ipcMain.handle("setPause", dataManager.setPause)
 ipcMain.handle("saveConfig", dataManager.saveConfig);
 ipcMain.handle("hideSelected", dataManager.hideSelected);

@@ -2,6 +2,18 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+### Version 3.0.0
+
+- Updated to adhere to changes to the wheel of names website.
+- Thanks to the developers at the wheel of names we saw an amazing performance update
+  - No more flashing screens!
+- Added indicator if connected to Discord what channels are set.
+  - Streamer's Channel is where Winners of the Wheel will move to
+  - Viewer's Channel is the channel discord users join to be added to the wheel
+  
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ### Version 2.4.3
 
 ## Bug Fix

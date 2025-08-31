@@ -40,12 +40,10 @@ export interface IElectronAPI {
 }
 
 export interface IContextDataAPI {
-    setDefaults: () => void;
     resetClaims: () => void;
     removeNotClaimed: () => void;
     addUpdateWheelUser: (user: Entry, override: boolean) => void;
     removeWheelUser: (name: string) => void;
-    forceUpdate: () => void;
     updateActivity: (displayName: string, channelId: string) => void;
 }
 
