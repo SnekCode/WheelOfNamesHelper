@@ -14,6 +14,7 @@ import { store } from "../main/store";
 import { Entry } from "Shared/types";
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
+  console.log("broadcasting update", name, data);
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
 

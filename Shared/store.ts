@@ -29,6 +29,7 @@ export interface IStore {
     channel: string;
     discord_userGuilds: Collection<string, Guild> | null;
     discord_userVoiceChannel: string;
+    discord_userVoiceChannelName: string;
     discord_viewersChannel: string;
     discord_selectedGuild: string;
     discord_enabled: boolean;

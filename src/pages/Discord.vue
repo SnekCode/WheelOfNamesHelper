@@ -100,12 +100,20 @@ const handleSelectPlayChannel = (channelId: string) => {
     ipcRenderer.invoke('setStore', 'discord_userVoiceChannel', channelId);
     userVoiceChannel.value = channelId;
     console.log(channelId);
+
+    // get channel name of the channelId
+    const channel = channels.value.find((c) => c.id === channelId);
+    ipcRenderer.invoke('setStore', 'discord_userVoiceChannelName', channel ? channel.name : '');
 };
 
 const handleSelectViewersChannel = (channelId: string) => {
     ipcRenderer.invoke('setStore', 'discord_viewersChannel', channelId);
     viewersChannel.value = channelId;
     console.log(channelId);
+
+    // get channel name of the channelId
+    const channel = channels.value.find((c) => c.id === channelId);
+    ipcRenderer.invoke('setStore', 'discord_viewersChannelName', channel ? channel.name : '');
 };
 
 const handleToggleDiscord = () => {

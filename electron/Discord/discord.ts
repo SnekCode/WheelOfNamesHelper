@@ -81,6 +81,8 @@ export const setUpClient = () => {
     });
 
     if(!discordAuthProvider.botToken) {
+        setStore('discord_bot_ready', false);
+        setStore('discord_authenticated', false);
         return;
     }
     
@@ -109,8 +111,9 @@ export const setUpClient = () => {
         if (newState.member?.id === user?.id) {
             if (newState.channel?.id && followMode) {
                 setStore('discord_userVoiceChannel', newState.channel?.id);
+                setStore('discord_userVoiceChannelName', newState.channel?.name);
             }
-            // return;
+            return;
         }
 
         if (newState.channel?.id === viewerVoiceChannel) {
