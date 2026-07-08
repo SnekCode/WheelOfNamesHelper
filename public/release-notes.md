@@ -2,6 +2,10 @@
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
+## Version 3.0.1
+
+- Corrected bug related to upstream wheel of name changes preventing some entries from being logged.
+
 ### Version 3.0.0
 
 - Updated to adhere to changes to the wheel of names website.

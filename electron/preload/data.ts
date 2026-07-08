@@ -41,8 +41,8 @@ ipcRenderer.on('initListeners', async (event, value) => {
     wheel?.addEventListener('click', () => {
         window.data.setPause(true);
         // grab from the local storage key LastWheelConfig and grab the value for spin time
-        const lastWheelConfig = localStorage.getItem('LastWheel');
-        const spinTime = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfig.spinTime : 10;
+        const lastWheelConfig = localStorage.getItem('LastWheelGroup');
+        const spinTime = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfigs[0].spinTime : 10;
 
         setTimeout(() => {
             // // get element with class "text-h6"
@@ -61,8 +61,8 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 id = messageBox.textContent ?? 'NO ID';
                 console.log(id);
 
-                const lastWheelConfig = localStorage.getItem('LastWheel');
-                const entries = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfig.entries : [];
+                const lastWheelConfig = localStorage.getItem('LastWheelGroup');
+                const entries = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfigs[0].entries : [];
                 const entry: Entry = entries.find((entry: Entry) => entry.channelId === id);
 
                 const milliseconds = entry.timestamp ?? 0;

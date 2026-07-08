@@ -205,7 +205,7 @@ youtubeOAuthProvider.on('authenticated', async () => {
 });
 
 youtubeOAuthProvider.on('unauthenticated', () => {
-    console.log('UNAUTHENTICATED');
+    console.log('YOUTUBE UNAUTHENTICATED');
 
     win?.webContents.send('youtube-unauthenticated');
 });

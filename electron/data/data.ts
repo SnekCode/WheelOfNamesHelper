@@ -14,15 +14,22 @@ import { store } from "../main/store";
 import { Entry } from "Shared/types";
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
-  console.log("broadcasting update", name, data);
+  console.log("broadcasting update", name);
   mainWindow?.webContents.send(EChannels.storeUpdate, name, data);
 };
 
 const logFilterListOfStoreKeyNames = ["lastconfig"];
 export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
+  console.log("inside set store");
+  if(data === undefined) {
+    console.log("data is undefined for store key", name);
+    return;
+  };
   if(!logFilterListOfStoreKeyNames.includes(name)){
-    console.log("setting store", name, data);
+    console.log("setting store", name);
   }
+  console.log("before set store");
+  
   store.set(name, data);
   broadcastUpdate(name, data);
 };
@@ -151,12 +158,16 @@ export class DataManager{
 
   public saveConfig = async () => {
     const response = await wheelWindow?.webContents.executeJavaScript(
-        `localStorage.getItem('LastWheel')`
+        `localStorage.getItem('LastWheelGroup')`
     );
   
-    const lastconfig = JSON.parse(response).wheelConfig;
+    const lastconfig = JSON.parse(response).wheelConfigs[0];
   
+    console.log("setStore");
+    
     setStore(StoreKeys.lastconfig, lastconfig);
+    console.log("finish set store");
+    
   };
 
   public removeSelected = async (_: IpcMainInvokeEvent, id: string) => {
