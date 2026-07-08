@@ -39,60 +39,61 @@ jest.mock('../main/main', () => ({
 jest.mock('../main/store')
 
 describe('data tests', () => {
+    const event = {} as IpcMainInvokeEvent;
+
+    const buildEntry = (overrides: Partial<Entry> = {}): Entry => ({
+        text: 'test',
+        weight: 1,
+        claimedHere: false,
+        channelId: '123',
+        service: Service.Twitch,
+        ...overrides,
+    });
+
+    beforeEach(() => {
+        jest.restoreAllMocks();
+        store.clear();
+
+        // Default wheel mock supports saveConfig's new LastWheelGroup/wheelConfigs format.
+        // @ts-expect-error mocked method
+        jest.spyOn(wheelWindow?.webContents, 'executeJavaScript').mockImplementation(async (script: string) => {
+            if (script.includes("localStorage.getItem('LastWheelGroup')")) {
+                return JSON.stringify({ wheelConfigs: [{ spinTime: 10, entries: [] }] });
+            }
+            return undefined;
+        });
+    });
 
     it('should add user to store', () => {
-        //(alias) handleAddWheelUser(_: Electron.CrossProcessExports.IpcMainInvokeEvent, entry: Entry, override?: boolean): boolean
-        // mock out Date.now() to return a fixed value
         jest.spyOn(Date, 'now').mockReturnValue(1234);
-        
-        const event = {} as IpcMainInvokeEvent
-        const entry: Entry = {
-            text: 'test',
-            weight: 1,
-            claimedHere: false,
-            channelId: '123',
-            service: Service.Twitch
-         };
-        const dataManager = new DataManager();
-        const override = false;
-        dataManager.handleAddUpdateWheelUser(event, entry, override);
 
-        const storeData = store.get('entries', []);
+        const entry = buildEntry();
+        const dataManager = new DataManager();
+        dataManager.handleAddUpdateWheelUser(event, entry, false);
+
+        const storeData = store.get(StoreKeys.data, []);
         expect(storeData.length).toBe(1);
         const storeEntry = storeData[0];
         expect(storeEntry.timestamp).toEqual(1234);
     });
 
     it('should update user to store', () => {
-        //(alias) handleAddWheelUser(_: Electron.CrossProcessExports.IpcMainInvokeEvent, entry: Entry, override?: boolean): boolean
-        // mock out Date.now() to return a fixed value
         jest.spyOn(Date, 'now').mockReturnValue(1234);
-        
-        const event = {} as IpcMainInvokeEvent
-        const entry: Entry = {
-            text: 'test',
-            weight: 2,
-            claimedHere: false,
-            channelId: '123',
-            service: Service.Twitch,
-            enabled: false,
-         };
 
-        // add entry to store
-        store.set('entries', [entry]);
+        const entry = buildEntry({ weight: 2, enabled: false });
+
+        store.set(StoreKeys.data, [entry]);
 
         const dataManager = new DataManager();
-        const override = false;
-        dataManager.handleAddUpdateWheelUser(event, entry, override);
+        dataManager.handleAddUpdateWheelUser(event, entry, false);
 
-        const storeData = store.get('entries', []);
+        const storeData = store.get(StoreKeys.data, []);
         expect(storeData.length).toBe(1);
         const storeEntry = storeData[0];
         expect(storeEntry.timestamp).toEqual(1234);
     });
 
     it('should remove user from store', () => {
-        const event = {} as IpcMainInvokeEvent
         const entry: Entry = {
             id: '123',
             text: 'test',
@@ -100,8 +101,9 @@ describe('data tests', () => {
             claimedHere: false,
             channelId: '123',
             service: Service.Twitch
-         };
-         store.set(StoreKeys.data, [entry]);
+        };
+        store.set(StoreKeys.data, [entry]);
+
         const dataManager = new DataManager();
         dataManager.handleRemoveWheelUser(event, entry.id!);
 
@@ -109,42 +111,24 @@ describe('data tests', () => {
         expect(storeData.length).toBe(0);
     });
 
-    it('test add que', () => {
-        // given a dataManager
-        // when pause is true
-        // all entries should be added to the que
-        // then when pause is false
-        // all entries should be added to the store
+    it('should flush queued entries when pause is disabled', () => {
+        const entry1 = buildEntry({ text: 'test1', channelId: '123' });
+        const entry2 = buildEntry({ text: 'test2', channelId: '321' });
 
-        // return empty json array when wheelWindow.webContents.executeJavaScript is called
-        // @ts-expect-error mock
-        jest.spyOn(wheelWindow?.webContents, 'executeJavaScript').mockResolvedValue('[]');
-
-        const event = {} as IpcMainInvokeEvent
-        const entry1: Entry = {
-            text: 'test1',
-            weight: 1,
-            claimedHere: false,
-            channelId: '123',
-            service: Service.Twitch
-         };
-        const entry2: Entry = {
-            text: 'test2',
-            weight: 1,
-            claimedHere: false,
-            channelId: '321',
-            service: Service.Twitch
-        };
         const dataManager = new DataManager();
         dataManager.pause = true;
+
         dataManager.handleAddUpdateWheelUser(event, entry1);
         dataManager.handleAddUpdateWheelUser(event, entry2);
-        const storeData = store.get('entries', []);
+
+        const storeData = store.get(StoreKeys.data, []);
         expect(storeData.length).toBe(0);
         expect(dataManager.addQueue.length).toBe(2);
+
         dataManager.setPause(event, false);
-        const storeData2 = store.get('entries', []);
+
+        const storeData2 = store.get(StoreKeys.data, []);
         expect(storeData2.length).toBe(2);
-    })
+    });
 
 });
