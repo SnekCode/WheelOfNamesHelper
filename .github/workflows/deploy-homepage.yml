@@ -40,8 +40,3 @@ jobs:
       - name: Deploy homepage to S3
         run: |
           aws s3 sync dist-homepage/ "s3://${{ vars.S3_BUCKET }}/" --delete
-
-      - name: Invalidate CloudFront cache
-        if: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        run: |
-          aws cloudfront create-invalidation             --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}"             --paths "/*"
