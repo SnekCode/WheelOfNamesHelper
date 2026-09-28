@@ -46,6 +46,12 @@ function handleRouteChange() {
                 'privacy-policy'
             );
             break;
+        case 'termsofservice':
+            loadMarkdownContent(
+                'https://raw.githubusercontent.com/SnekCode/WheelOfNamesHelper/refs/heads/master/TERMS_OF_SERVICE.md',
+                'privacy-policy'
+            );
+            break;
         case 'readme':
             loadMarkdownContent(
                 'https://raw.githubusercontent.com/SnekCode/WheelOfNamesHelper/refs/heads/master/README.md',

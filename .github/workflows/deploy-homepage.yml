@@ -1,0 +1,42 @@
+name: Deploy Homepage
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "homepage/**"
+      - "PRIVACY_POLICY.md"
+      - "TERMS_OF_SERVICE.md"
+      - ".github/workflows/deploy-homepage.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::671327559912:role/WheelOfNamesHelperHomepageDeploy
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Prepare static site
+        run: |
+          rm -rf dist-homepage
+          mkdir -p dist-homepage
+          cp -R homepage/. dist-homepage/
+          cp PRIVACY_POLICY.md dist-homepage/
+          cp TERMS_OF_SERVICE.md dist-homepage/
+
+      - name: Deploy homepage to S3
+        run: |
+          aws s3 sync dist-homepage/ "s3://${{ vars.S3_BUCKET }}/" --delete
