@@ -1,46 +1,69 @@
-Privacy Policy for WheelOfNamesHelper
+# Privacy Policy for WheelOfNamesHelper
 
-Effective Date: 11/9/2024
+**Effective Date: September 28, 2026**
 
-WheelOfNamesHelper ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information when you use our desktop application that connects to YouTube's Live Chat API, Twitch chat data, and other related services.
+WheelOfNamesHelper ("the application") is a desktop application for streamers that integrates with services including Twitch, YouTube, and Discord to manage viewer participation in raffles and Wheel of Names workflows.
 
-1. Information We Collect
-When using WheelOfNamesHelper, the following types of data may be collected:
+## 1. Information the Application Processes
 
-* YouTube Live Chat Messages: We collect messages sent during YouTube live broadcasts, including usernames and content of the messages.
-* YouTube Channel Data: We may collect basic information about your YouTube channel to identify and connect to the current live broadcast. This may include the channel ID, name, and live stream status.
-* Twitch Chat Messages: We collect public chat messages from Twitch broadcasts, including usernames and message content, to display within the app.
+Depending on the integrations enabled by the streamer, WheelOfNamesHelper may process:
 
-2. How We Use Your Information
-We use the collected data for the following purposes:
+- **Twitch:** usernames, display names, and chat messages or commands needed to manage wheel participation.
+- **YouTube:** channel information, live broadcast information, usernames, and live chat messages or commands needed to identify streams and manage wheel participation.
+- **Discord:** Discord user IDs, usernames/display names, guild and voice-channel information, voice-state information, and role information needed to configure Discord participation and determine when a user is participating through a configured voice channel.
+- **Application state:** participant names, identifiers, wheel weights/chances, configuration settings, and authentication/configuration information required for enabled integrations.
 
-* To display live chat messages from YouTube and Twitch during broadcasts within the application.
-* To identify active live streams and connect to the corresponding chat data.
-* To enhance user experience and ensure seamless app functionality.
-3. How We Share Your Information
-does not share, sell, or transmit your information to any third parties. The application is designed to process data locally on your device, ensuring that all data collected from YouTube and Twitch chat services remains private and secure within the app itself. Since there is no backend service or external data transmission, your information is never shared or exposed outside your local environment.
-4. Data Security
-At WheelOfNamesHelper, we prioritize the security and privacy of user data. Since our application is designed as a desktop app without a backend service, all data processing occurs locally on your device. This means:
+WheelOfNamesHelper does not require Discord Message Content or Presence privileged gateway intents for its current Discord voice-channel participation workflow.
 
-* Local Data Processing: All data collected from YouTube’s Live Chat API and Twitch chat is processed and displayed solely within the app on your device. No data is transmitted to external servers owned or managed by us.
-* Temporary Data Storage: Any data retrieved from YouTube and Twitch (e.g., live chat messages and channel information) is stored in the app's memory during the session and is not saved to your device or transmitted externally. Once the app is closed, all data is cleared and permanently deleted.
-* Secure API Integration: We use secure methods for connecting to YouTube’s APIs, ensuring that your data is protected during transmission between these services and your app.
-* Minimal Permissions: WheelOfNamesHelper only requests permissions necessary for accessing live chat and broadcast data from YouTube and Twitch to minimize potential risks.
-* User Responsibility: While we take all feasible steps to secure data within the app, we recommend users keep their devices protected with standard security practices (e.g., using updated antivirus software and strong passwords).
+## 2. How Information Is Used
 
-By relying solely on client-side processing and not involving any backend data storage or transmission, WheelOfNamesHelper minimizes the potential for external data breaches and enhances user control over their data.
+Information is processed only to provide application functionality, including:
 
-5. Data Retention
-WheelOfNamesHelper does not store any user data beyond the session duration. Any live chat data collected during a session is temporary and is not retained after the app is closed.
+- Connecting to streamer accounts and configured communities.
+- Detecting participation commands or activity on supported services.
+- Adding, updating, or removing participants from the wheel.
+- Applying streamer-configured raffle weights or chances.
+- Identifying configured Discord guilds and voice channels and responding to voice-channel participation.
+- Displaying integration and raffle state to the streamer.
 
-6. Third-Party Services
-WheelOfNamesHelper may use third-party services, such as Google's APIs, which are governed by their own privacy policies. We encourage users to review the Google Privacy Policy for more information.
+Information is not sold or used for advertising or user profiling. WheelOfNamesHelper does not use user data to train machine-learning or AI models.
 
-7. User Consent
-By using WheelOfNamesHelper, you consent to the collection and use of your data as described in this Privacy Policy.
+## 3. Storage and Processing
 
-8. Changes to This Policy
-We reserve the right to update this Privacy Policy as needed. Any changes will be reflected with an updated effective date at the top of this document.
+WheelOfNamesHelper is primarily a local desktop application. Application configuration and state may be stored locally on the streamer's device so that the application can retain settings and wheel state between sessions.
 
-9. Contact Us
-If you have any questions or concerns regarding this Privacy Policy, please contact us at [Your Contact Email].
+Data received from Twitch, YouTube, and Discord is processed by the application as needed to provide the enabled features. WheelOfNamesHelper does not operate a service intended to centrally archive users' Discord messages, presence history, or activity history.
+
+Authentication credentials or tokens required by integrations are handled by the application for the purpose of connecting to those services. Users should protect access to the device on which WheelOfNamesHelper is installed.
+
+## 4. Sharing of Information
+
+WheelOfNamesHelper does not sell personal information. Data may necessarily be transmitted to or received from Twitch, Google/YouTube, Discord, and Wheel of Names when the user enables or interacts with those services. Those services are governed by their own terms and privacy policies.
+
+## 5. Data Retention and Deletion
+
+Locally persisted application settings and wheel state remain on the streamer's device until changed, cleared, or the application's local data is removed. Transient service data that is not part of persisted application state is not intentionally retained as a historical activity archive.
+
+A streamer can remove participants from the wheel and can remove the application's local data by clearing or uninstalling the application. Access granted through third-party services can also be revoked through the applicable service.
+
+## 6. Discord Data
+
+For Discord integration, WheelOfNamesHelper uses data necessary to configure and operate streamer-selected voice-channel raffle workflows. The application may process a participating member's Discord ID and display name and voice-state/channel information to add or remove that member from a configured raffle.
+
+The current workflow does not use Discord message content for Discord participation, does not track Discord Presence status, and is not designed to build histories of Discord user activity.
+
+## 7. Security
+
+WheelOfNamesHelper is designed to minimize the data it requests and processes. Users are responsible for maintaining the security of the device running the application and for managing access granted to connected third-party accounts.
+
+## 8. Third-Party Services
+
+Use of Twitch, YouTube/Google, Discord, and Wheel of Names is also subject to the policies and terms of those respective services.
+
+## 9. Changes to This Policy
+
+This Privacy Policy may be updated as WheelOfNamesHelper changes. Material changes will be reflected by updating the effective date above.
+
+## 10. Contact
+
+Questions or concerns about this Privacy Policy can be submitted through the WheelOfNamesHelper GitHub repository or the project's support Discord linked from the WheelOfNamesHelper website.
