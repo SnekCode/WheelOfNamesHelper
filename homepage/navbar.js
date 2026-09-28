@@ -33,22 +33,6 @@ function updateActiveNavItem(hash) {
 }
 
 function handleRouteChange() {
-    const path = window.location.pathname.replace(/\/$/, '') || '/';
-    if (path === '/privacy') {
-        loadMarkdownContent(
-            'https://raw.githubusercontent.com/SnekCode/WheelOfNamesHelper/refs/heads/master/PRIVACY_POLICY.md',
-            'privacy-policy'
-        );
-        return;
-    }
-    if (path === '/terms') {
-        loadMarkdownContent(
-            'https://raw.githubusercontent.com/SnekCode/WheelOfNamesHelper/refs/heads/master/TERMS_OF_SERVICE.md',
-            'privacy-policy'
-        );
-        return;
-    }
-
     const hash = window.location.hash.substring(1); // Remove the '#' character
     updateActiveNavItem(hash); // Update the active nav item
 
@@ -59,6 +43,12 @@ function handleRouteChange() {
         case 'privacypolicy':
             loadMarkdownContent(
                 'https://raw.githubusercontent.com/SnekCode/WheelOfNamesHelper/refs/heads/master/PRIVACY_POLICY.md',
+                'privacy-policy'
+            );
+            break;
+        case 'termsofservice':
+            loadMarkdownContent(
+                'https://raw.githubusercontent.com/SnekCode/WheelOfNamesHelper/refs/heads/master/TERMS_OF_SERVICE.md',
                 'privacy-policy'
             );
             break;
