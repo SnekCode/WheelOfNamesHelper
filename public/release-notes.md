@@ -1,4 +1,9 @@
 ## Wheel of Names Changelog 
+
+### Unreleased
+
+- Reduced Discord bot gateway access by removing the unused Server Members and message intents.
+- Kept Presence access for mobile winner handling and Voice States access for channel participation.
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
