@@ -13,7 +13,7 @@ Depending on the integrations enabled by the streamer, WheelOfNamesHelper may pr
 - **Discord:** Discord user IDs, usernames/display names, guild and voice-channel information, voice-state information, and role information needed to configure Discord participation and determine when a user is participating through a configured voice channel.
 - **Application state:** participant names, identifiers, wheel weights/chances, configuration settings, and authentication/configuration information required for enabled integrations.
 
-WheelOfNamesHelper does not require Discord Message Content or Presence privileged gateway intents for its current Discord voice-channel participation workflow.
+WheelOfNamesHelper does not require the Discord Message Content privileged gateway intent for its current Discord workflow. It does use the Discord Presence privileged gateway intent to determine whether a participating Discord member is using a mobile or desktop client. This distinction is used by the raffle winner workflow to avoid attempting an unsupported voice-channel move for mobile participants and to label Discord entries appropriately.
 
 ## 2. How Information Is Used
 
@@ -50,7 +50,7 @@ A streamer can remove participants from the wheel and can remove the application
 
 For Discord integration, WheelOfNamesHelper uses data necessary to configure and operate streamer-selected voice-channel raffle workflows. The application may process a participating member's Discord ID and display name and voice-state/channel information to add or remove that member from a configured raffle.
 
-The current workflow does not use Discord message content for Discord participation, does not track Discord Presence status, and is not designed to build histories of Discord user activity.
+The current workflow does not use Discord message content for Discord participation. It uses Discord Presence client-status data to determine whether an active participant is using a mobile or desktop Discord client. This information affects winner handling and display behavior. Presence data is used for this operational purpose and is not intended to create a historical record of a user's presence or activity.
 
 ## 7. Security
 
