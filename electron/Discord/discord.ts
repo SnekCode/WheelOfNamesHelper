@@ -71,6 +71,7 @@ export const setUpClient = () => {
     client = new Client({
         intents: [
             GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildPresences,
             GatewayIntentBits.GuildVoiceStates,
         ],
     });
@@ -114,8 +115,7 @@ export const setUpClient = () => {
 
         if (newState.channel?.id === viewerVoiceChannel) {
             const discord_weights = store.get('discord_weights', 1);
-            // Presence data is intentionally not requested; voice state is sufficient
-            // to determine participation in the configured Discord channel.
+            const mobile = newState.member?.presence?.clientStatus?.mobile;
             const newEntry: Entry = {
                 weight: discord_weights,
                 claimedHere: true,
@@ -123,7 +123,7 @@ export const setUpClient = () => {
                 id: newState.member?.id,
                 text: newState.member?.displayName ?? newState.member?.user.username ?? 'Unknown',
                 enabled: true,
-                mobile: false,
+                mobile: !!mobile,
                 service: Service.Discord,
             };
             dataManager.handleAddUpdateWheelUser({} as any, newEntry);
