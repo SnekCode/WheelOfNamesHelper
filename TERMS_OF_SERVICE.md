@@ -58,7 +58,7 @@ To the extent permitted by applicable law, the developer and contributors of Whe
 
 Use of WheelOfNamesHelper is also subject to the Privacy Policy available at:
 
-https://wheelofnameshelper.snekcode.com/privacy
+https://wheelofnameshelper.snekcode.com/#privacypolicy
 
 ## 11. Changes to These Terms
 
