@@ -7,12 +7,6 @@ function loadNavbar() {
             handleRouteChange();
         })
         .catch((error) => console.error('Error loading navbar:', error));
-    fetch('home.html')
-        .then((response) => response.text())
-        .then((data) => {
-            document.getElementById('content').innerHTML = data;
-        })
-        .catch((error) => console.error('Error loading content:', error));
 }
 
 function addEventListeners() {
