@@ -1,4 +1,9 @@
 ## Wheel of Names Changelog 
+
+## Version 3.0.2
+
+### Discord optimization
+- Reduced Discord bot gateway access by removing unused Server Members and message intents.
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 

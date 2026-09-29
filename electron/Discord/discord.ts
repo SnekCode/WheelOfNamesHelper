@@ -71,12 +71,8 @@ export const setUpClient = () => {
     client = new Client({
         intents: [
             GatewayIntentBits.Guilds,
-            'GuildMembers',
-            'GuildPresences',
-            'GuildVoiceStates',
-            'Guilds',
-            GatewayIntentBits.GuildMessages,
-            'GuildMessageTyping',
+            GatewayIntentBits.GuildPresences,
+            GatewayIntentBits.GuildVoiceStates,
         ],
     });
 
@@ -119,7 +115,7 @@ export const setUpClient = () => {
 
         if (newState.channel?.id === viewerVoiceChannel) {
             const discord_weights = store.get('discord_weights', 1);
-            const mobile = newState.member?.presence?.clientStatus?.mobile     
+            const mobile = newState.member?.presence?.clientStatus?.mobile;
             const newEntry: Entry = {
                 weight: discord_weights,
                 claimedHere: true,
