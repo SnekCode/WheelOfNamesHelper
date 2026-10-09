@@ -2,18 +2,25 @@
 
 ## Version 3.0.3
 
-- Fixed Discord connection and viewer joining issues. Winners now move to the streamer's channel on all devices.
+- Fixed Discord connection and viewer joining the wheel issues. Winners now move to the streamer's channel on all devices.
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
 
 ## Version 3.0.2
 
 ### Discord optimization
 - Reduced Discord bot gateway access by removing unused Server Members and message intents.
+
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________
 
 ## Version 3.0.1
 
 - Corrected bug related to upstream wheel of name changes preventing some entries from being logged.
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
 
 ### Version 3.0.0
 
