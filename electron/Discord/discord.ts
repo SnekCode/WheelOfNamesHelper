@@ -13,7 +13,8 @@ import { dataManager, discordAuthProvider } from '../main/main';
 import { store } from '../main/store';
 import { setStore } from '../data/data';
 import { ipcMain } from 'electron';
-import { createDiscordVoiceEntry, getAuthorizedGuilds, getViewerVoiceAction } from './discordHelpers';
+import type { Entry } from '~/Shared/types';
+import { createDiscordVoiceEntry, getAuthorizedGuilds, getViewerVoiceAction, moveDiscordWinner } from './discordHelpers';
 dotenv.config();
 
 const targetRoles = ['Wheel Bot User'];
@@ -146,7 +147,7 @@ ipcMain.handle('discord_winner', async (_, winner: Entry) => {
     }
     try {
         // Moving a member by ID uses the REST API and does not depend on a cached GuildMember.
-        await guild.members.edit(winnerId, { channel: channel.id });
+        await moveDiscordWinner(guild, winnerId, channel.id);
         return winner;
     } catch (error) {
         console.error('DISCORD: Failed to move wheel winner', error);
