@@ -13,15 +13,18 @@ export class WheelEntrySync {
   private paused = false;
   private dirty = false;
   private sending = false;
+  private revision = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   public attach(target: WheelTarget | null) {
     this.target = target;
+    this.revision++;
     this.dirty = true;
     this.schedule();
   }
 
   public update(entries: Entry[]) {
+    this.revision++;
     this.entries = entries.map(entry => ({ ...entry }));
     this.dirty = true;
     this.schedule();
@@ -44,6 +47,7 @@ export class WheelEntrySync {
     const target = this.target;
     if (!target || target.isDestroyed() || this.paused || !this.dirty) return;
     if (new URL(target.getURL()).origin !== 'https://wheelofnames.com') return;
+    const revision = this.revision;
     this.sending = true;
     this.dirty = false;
     try {
@@ -54,6 +58,7 @@ export class WheelEntrySync {
       this.dirty = true;
       console.error('Unable to update wheel entries', error);
       this.sending = false;
+      if (this.revision !== revision) this.schedule();
       return;
     }
     this.sending = false;
