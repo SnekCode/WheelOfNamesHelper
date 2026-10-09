@@ -58,3 +58,12 @@ export function createDiscordVoiceEntry(
         service: Service.Discord,
     };
 }
+
+/** Move a winner by Discord user ID, without assuming the member is cached. */
+export async function moveDiscordWinner(
+    guild: Pick<Guild, 'members'>,
+    winnerId: string,
+    targetChannelId: string,
+): Promise<void> {
+    await guild.members.edit(winnerId, { channel: targetChannelId });
+}
