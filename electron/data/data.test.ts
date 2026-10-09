@@ -1,5 +1,6 @@
 import { Entry } from "../../Shared/types";
-import { DataManager } from "./data";
+import { DataManager, setStore } from "./data";
+import { wheelEntrySync } from "../main/wheelEntrySync";
 import { Service } from "~/Shared/enums";
 import { store } from "../main/store";
 import { IpcMainInvokeEvent } from "electron";
@@ -131,4 +132,29 @@ describe('data tests', () => {
         expect(storeData2.length).toBe(2);
     });
 
+    it('publishes bulk edits and winner changes through the shared live API path', async () => {
+        const update = jest.spyOn(wheelEntrySync, 'update');
+        const entries = [buildEntry({ enabled: true }), buildEntry({ channelId: '456' })];
+        setStore(StoreKeys.data, entries);
+        expect(update).toHaveBeenLastCalledWith(entries);
+        const manager = new DataManager();
+        await manager.hideSelected(event, '123');
+        expect(update.mock.calls.at(-1)?.[0][0].enabled).toBe(false);
+        await manager.removeSelected(event, '123');
+        expect(update).toHaveBeenLastCalledWith([entries[1]]);
+        manager.handleResetClaims();
+        expect(update.mock.calls.at(-1)?.[0][0]).toMatchObject({ claimedHere: false, enabled: false });
+        manager.handleNotClaimed();
+        expect(update).toHaveBeenLastCalledWith([]);
+    });
+
+    it('keeps the newest update when the same viewer joins repeatedly during a spin', async () => {
+        const manager = new DataManager();
+        await manager.setPause(event, true);
+        await manager.handleAddUpdateWheelUser(event, buildEntry({ weight: 1 }));
+        await manager.handleAddUpdateWheelUser(event, buildEntry({ weight: 4 }));
+        await manager.setPause(event, false);
+        expect(store.get(StoreKeys.data)).toHaveLength(1);
+        expect(store.get(StoreKeys.data)[0].weight).toBe(4);
+    });
 });

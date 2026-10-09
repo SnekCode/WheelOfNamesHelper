@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { VITE_DEV_SERVER_URL } from "./main";
 import { store } from "./store";
+import { wheelEntrySync } from "./wheelEntrySync";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -68,27 +69,43 @@ export function createWheelWindow() {
 
     `);
 
-    // preloaded event listeners
-    setTimeout(() => {
-      wheelWindow?.webContents.send("initListeners");
-      const dataJson = JSON.stringify(store.get("entries", []));
-      wheelWindow?.webContents.executeJavaScript(`postMessage({ name: 'setEntries', entries: ${dataJson}})`);
-    }, 500);
   });
 
-  wheelWindow.on("close", async () => {
-    setTimeout(() => {
-      wheelWindow = null;
-      console.log('window null');
-    }, 1000);
-    
-      await wheelWindow?.webContents.executeJavaScript(`
-          window.data.saveConfig()
-      `);
-      store.set("wheelWindowBounds", wheelWindow?.getNormalBounds());
-      console.log("close window");
+  const currentWindow = wheelWindow;
+  currentWindow.webContents.on('did-start-loading', () => wheelEntrySync.attach(null));
+  currentWindow.webContents.on('did-finish-load', async () => {
+    try {
+      // The site's SPA can mount after the document has finished loading.
+      const ready = await currentWindow.webContents.executeJavaScript(`new Promise(resolve => {
+        const started = Date.now();
+        const check = () => {
+          if (document.querySelector('canvas') && !document.getElementById('preload-static-content')) {
+            resolve(true);
+          } else if (Date.now() - started > 15000) {
+            resolve(false);
+          } else {
+            setTimeout(check, 50);
+          }
+        };
+        check();
+      })`);
+      if (!ready || currentWindow.isDestroyed() || currentWindow.webContents.isLoading()) return;
+      currentWindow.webContents.send('initListeners');
+      wheelEntrySync.update(store.get('entries', []));
+      wheelEntrySync.attach(currentWindow.webContents);
+    } catch (error) {
+      console.error('Unable to initialize wheel synchronization', error);
+    }
   });
-
+  currentWindow.on('closed', () => {
+    wheelEntrySync.attach(null);
+    wheelWindow = null;
+  });
+  currentWindow.on('close', () => {
+    store.set('wheelWindowBounds', currentWindow.getNormalBounds());
+    void currentWindow.webContents.executeJavaScript('window.data.saveConfig()')
+      .catch(error => console.error('Unable to save wheel configuration on close', error));
+  });
   wheelWindow.on('move', () => {
   store.set("wheelWindowBounds", wheelWindow?.getNormalBounds());
 })

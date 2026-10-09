@@ -1,5 +1,4 @@
 import { ipcRenderer } from 'electron';
-import { EChannels } from '~/Shared/channels';
 import { Service } from '~/Shared/enums';
 import { Entry } from '~/Shared/types';
 
@@ -130,9 +129,7 @@ ipcRenderer.on('initListeners', async (event, value) => {
     });
 });
 
-ipcRenderer.on(EChannels.reload, () => {
-    location.reload();
-});
+
 
 // create a new element in the dom
 // size to to fit content

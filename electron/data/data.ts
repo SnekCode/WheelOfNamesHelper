@@ -12,6 +12,7 @@ import { EChannels } from "Shared/channels";
 // load main ipc actions
 import { store } from "../main/store";
 import { Entry } from "Shared/types";
+import { wheelEntrySync } from "../main/wheelEntrySync";
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   console.log("broadcasting update", name);
@@ -32,6 +33,7 @@ export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   
   store.set(name, data);
   broadcastUpdate(name, data);
+  if (name === StoreKeys.data) wheelEntrySync.update(data as Entry[]);
 };
 
 ipcMain.handle(
@@ -77,6 +79,7 @@ export class DataManager{
     if(this.pause === value) return;
 
     this.pause = value;
+    wheelEntrySync.setPaused(value);
     // reset the sync flag if value is false
     if(!value) {
       this.syncWithWheel();
@@ -121,8 +124,7 @@ export class DataManager{
 
     data.push(entry);
     setStore(StoreKeys.data, data);
-    const dataJson = JSON.stringify(data);
-    wheelWindow?.webContents.executeJavaScript(`postMessage({name: 'setEntries', entries: ${dataJson}})`);
+
     return true;
 
   }
@@ -141,8 +143,7 @@ export class DataManager{
       return entry.channelId && entry.channelId !== id || !entry.channelId && entry.text !== id;
     });
     setStore(StoreKeys.data, data);
-    const dataJson = JSON.stringify(data);
-    wheelWindow?.webContents.executeJavaScript(`postMessage({name: 'setEntries', entries: ${dataJson}})`);
+
     return true;
   }
 
@@ -161,7 +162,9 @@ export class DataManager{
         `localStorage.getItem('LastWheelGroup')`
     );
   
-    const lastconfig = JSON.parse(response).wheelConfigs[0];
+    if (!response) return;
+    const lastconfig = JSON.parse(response).wheelConfigs?.[0];
+    if (!lastconfig) return;
   
     console.log("setStore");
     
@@ -179,18 +182,19 @@ export class DataManager{
 
   public syncWithWheel = async () => {
     if(this.pause) return;
-    this.saveConfig();
+    void this.saveConfig().catch(error => console.error("Unable to save wheel configuration", error));
 
     // create dummy ipc event to trigger the queue
     const event: IpcMainInvokeEvent = {} as IpcMainInvokeEvent;
     while (this.addQueue.length) {
-      const entry = this.addQueue.pop();
+      const entry = this.addQueue.shift();
       if (entry) this.handleAddUpdateWheelUser(event, entry);
     }
     while (this.removeQue.length) {
-      const name = this.removeQue.pop();
+      const name = this.removeQue.shift();
       if (name) this.handleRemoveWheelUser(event, name);
     }
+    wheelEntrySync.update(store.get(StoreKeys.data, []));
   };
 
   

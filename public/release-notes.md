@@ -1,5 +1,16 @@
 ## Wheel of Names Changelog 
 
+## Version 3.1.0
+
+- Updated how names are added and removed from the wheel for smoother performance.
+- Reduced screen flicker when updating the wheel.
+  - No more refreshing the whole window!
+- Optimized updates when multiple viewers join at once or during a spin.
+- Thanks to the developers at Wheel of Names for making these improvements possible!
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ## Version 3.0.3
 
 - Fixed Discord connection and viewer joining the wheel issues. Winners now move to the streamer's channel on all devices.
