@@ -75,6 +75,9 @@ ipcRenderer.on('storeUpdate', (event, storeName, data) => {
 
         discordAuthenticated.value = data;
     }
+    if (storeName === 'discord_bot_ready') {
+        discord_bot_ready.value = data;
+    }
     if (storeName === 'discord_userGuilds') {
         if (data && data[0]) {
             userGuilds.value = Array.from(data[0].values());
