@@ -5,7 +5,6 @@ import {
     Events,
     GatewayIntentBits,
     Guild,
-    GuildMember,
     User,
     VoiceChannel,
 } from 'discord.js';
@@ -13,9 +12,8 @@ import dotenv from 'dotenv';
 import { dataManager, discordAuthProvider } from '../main/main';
 import { store } from '../main/store';
 import { setStore } from '../data/data';
-import { Entry } from '~/Shared/types';
 import { ipcMain } from 'electron';
-import { Service } from '~/Shared/enums';
+import { createDiscordVoiceEntry, getAuthorizedGuilds, getViewerVoiceAction } from './discordHelpers';
 dotenv.config();
 
 const targetRoles = ['Wheel Bot User'];
@@ -49,22 +47,19 @@ const getUserGuilds = async () => {
         setUpClient();
         return;
     }
-    // build list of guilds where the user has the role "Wheel Bot"
-        userGuilds = client.guilds.cache.filter((guild) => {
-            const member = guild.members.cache.get(user!.id);    
-            return member?.roles.cache.some((role) => targetRoles.includes(role.name));
-        });
-        setStore('discord_userGuilds', userGuilds);
+    // Fetch only the authenticated streamer's membership in each guild.
+    // A single-member REST lookup does not require the privileged GuildMembers intent.
+    userGuilds = await getAuthorizedGuilds(client.guilds.cache, user.id, targetRoles);
+    setStore('discord_userGuilds', userGuilds);
 
-        // for each guild, get the list of voice channels
-        userGuilds.forEach((guild) => {
-            const channels = guild.channels.cache.filter((channel) => channel.type === ChannelType.GuildVoice);
-            const value = `discord_channels-${guild.id}`;
-            // @ts-expect-error - SetStore expects a static value
-            setStore(value, channels);
-        });
-                
-        setStore('discord_bot_ready', !!userGuilds && userGuilds?.size > 0);
+    userGuilds.forEach((guild) => {
+        const channels = guild.channels.cache.filter((channel) => channel.type === ChannelType.GuildVoice);
+        const value = `discord_channels-${guild.id}`;
+        // @ts-expect-error - SetStore expects a static value
+        setStore(value, channels);
+    });
+
+    setStore('discord_bot_ready', userGuilds.size > 0);
     };
 
 export const setUpClient = () => {
@@ -105,38 +100,22 @@ export const setUpClient = () => {
         const followMode = store.get('discord_followMode', false);
 
         // follow me feature
-        if (newState.member?.id === user?.id) {
-            if (newState.channel?.id && followMode) {
-                setStore('discord_userVoiceChannel', newState.channel?.id);
+        // VoiceState.id remains available when the GuildMember cache is empty.
+        // Only react to actual channel transitions, not mute/deafen updates.
+        if (newState.id === user?.id) {
+            if (newState.channelId && followMode) {
+                setStore('discord_userVoiceChannel', newState.channelId);
                 setStore('discord_userVoiceChannelName', newState.channel?.name);
             }
             return;
         }
 
-        if (newState.channel?.id === viewerVoiceChannel) {
-            const discord_weights = store.get('discord_weights', 1);
-            const mobile = newState.member?.presence?.clientStatus?.mobile;
-            const newEntry: Entry = {
-                weight: discord_weights,
-                claimedHere: true,
-                channelId: newState.member?.id,
-                id: newState.member?.id,
-                text: newState.member?.displayName ?? newState.member?.user.username ?? 'Unknown',
-                enabled: true,
-                mobile: !!mobile,
-                service: Service.Discord,
-            };
-            dataManager.handleAddUpdateWheelUser({} as any, newEntry);
-        } else if (oldState.channel?.id === viewerVoiceChannel) {
-            // hide method
-            // const entries = store.get('entries', []);
-            // const entry = entries.find(entry => entry.id === user?.id);
-            // if(entry) {
-            //     entry.enabled = false;
-            //     setStore('entries', entries);
-            // }
-            // remove method
-            dataManager.handleRemoveWheelUser({} as any, oldState.member?.id ?? '');
+        const action = getViewerVoiceAction(oldState.channelId, newState.channelId, viewerVoiceChannel);
+        if (action === 'join') {
+            const discordWeights = store.get('discord_weights', 1);
+            dataManager.handleAddUpdateWheelUser({} as any, createDiscordVoiceEntry(newState, discordWeights));
+        } else if (action === 'leave') {
+            dataManager.handleRemoveWheelUser({} as any, oldState.id);
         }
     });
 };
@@ -161,14 +140,17 @@ ipcMain.handle('discord_winner', async (_, winner: Entry) => {
     if (!channel) {
         return;
     }
-    const member = guild.members.cache.get(winner.id!);
-    if (!member) {
+    const winnerId = winner.id ?? winner.channelId;
+    if (!winnerId) {
         return;
     }
-    if (channel) {
-        await member.voice.setChannel(channel);
+    try {
+        // Moving a member by ID uses the REST API and does not depend on a cached GuildMember.
+        await guild.members.edit(winnerId, { channel: channel.id });
+        return winner;
+    } catch (error) {
+        console.error('DISCORD: Failed to move wheel winner', error);
     }
-    return winner;
 });
 
 ipcMain.on('clear_voice_channel', async () => {
@@ -188,18 +170,19 @@ ipcMain.on('clear_voice_channel', async () => {
         return;
     }
 
-    const clear = (member: GuildMember) => {
-        // except the user who is logged in
-        if (member.id === user?.id) {
-            return;
+    // Voice-state IDs also work for viewers whose member objects are not cached.
+    const voiceStates = guild.voiceStates.cache.filter(
+        (state) => state.id !== user?.id && (
+            state.channelId === channel1.id || state.channelId === channel2.id
+        )
+    );
+    await Promise.allSettled(voiceStates.map(async (state) => {
+        try {
+            await state.disconnect();
+        } catch (error) {
+            console.error(`DISCORD: Failed to disconnect member ${state.id}`, error);
         }
-        member.voice.setChannel(null);
-    };
-
-    const channel1members = channel1.members;
-    const channel2members = channel2.members;
-    channel1members.forEach(clear);
-    channel2members.forEach(clear);
+    }));
 });
 
 ipcMain.on("discord_install", async () => {
