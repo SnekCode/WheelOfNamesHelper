@@ -1,26 +1,25 @@
-name: Tag version changes
-
+name: Prepare release PR
 on:
-  push:
+  pull_request_target:
     branches: [master]
+    types: [closed]
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: release-tag-${{ github.repository }}-${{ github.sha }}
+  group: release-prepare-${{ github.repository }}
   cancel-in-progress: false
-
 jobs:
-  tag:
-    if: github.ref == 'refs/heads/master'
+  prepare:
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # Run trusted master code, never code from a PR checkout.
+      - uses: actions/checkout@v4
         with:
+          ref: master
           fetch-depth: 0
           persist-credentials: false
-
       - uses: actions/create-github-app-token@v3
         id: app
         with:
@@ -29,8 +28,9 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: WheelOfNamesHelper
           permission-contents: write
+          permission-pull-requests: write
       - uses: actions/github-script@v7
         with:
           github-token: ${{ steps.app.outputs.token }}
           script: |
-            await require('./.github/scripts/release.cjs').tag({ github, context, core });
+            await require('./.github/scripts/release.cjs').prepare({ github, context, core });
