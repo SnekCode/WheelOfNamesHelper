@@ -18,9 +18,14 @@ function bump(v, type) {
   return `${major}.${minor}.${patch + (v.includes('-') ? 0 : 1)}`;
 }
 async function verify(github, repo) {
-  if (`${repo.owner}/${repo.repo}`.toLowerCase() !== 'snekcode/wheelofnameshelper') throw new Error('Unexpected repository');
+  const expected = `${repo.owner}/${repo.repo}`.toLowerCase();
   const { data } = await github.rest.apps.listReposAccessibleToInstallation({ per_page: 100 });
-  if (data.total_count !== 1 || data.repositories[0].full_name.toLowerCase() !== 'snekcode/wheelofnameshelper') throw new Error('Token must be restricted to WheelOfNamesHelper');
+  if (data.total_count !== 1 || data.repositories.length !== 1 || data.repositories[0].full_name.toLowerCase() !== expected) throw new Error('Token must be restricted to the current workflow repository');
+}
+function defaultBranch(context) {
+  const branch = context.payload.repository?.default_branch;
+  if (!branch) throw new Error('Workflow event is missing the repository default branch');
+  return branch;
 }
 function releaseType(labels) {
   const selected = labels.map(l => typeof l === 'string' ? l : l.name).filter(l => ['release:major', 'release:minor', 'release:hotfix'].includes(l));
@@ -61,6 +66,7 @@ async function availableVersion(github, repo, current, type) {
 }
 async function tag({ github, context, core }) {
   const repo = context.repo;
+  const baseBranch = defaultBranch(context);
   await verify(github, repo);
   const commits = git('rev-list', '--first-parent', 'HEAD').split('\n').reverse();
   const before = context.payload.before;
@@ -71,14 +77,15 @@ async function tag({ github, context, core }) {
     const v = validate(version(sha));
     if (v === version(parent)) continue;
     const linked = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, { ...repo, commit_sha: sha, per_page: 100 });
-    if (linked.some(pr => pr.merged_at && pr.base.ref === 'master' && pr.labels.some(l => l.name === 'release:hotfix'))) {
-      throw new Error('Refusing to tag a hotfix merged into master; use its maintenance branch');
+    if (linked.some(pr => pr.merged_at && pr.base.ref === baseBranch && pr.labels.some(l => l.name === 'release:hotfix'))) {
+      throw new Error('Refusing to tag a hotfix merged into the default branch; use its maintenance branch');
     }
     await createTag(github, repo, v, sha, core);
   }
 }
 async function prepare({ github, context, core }) {
   const repo = context.repo;
+  const baseBranch = defaultBranch(context);
   await verify(github, repo);
   const head = git('rev-parse', 'HEAD');
   const current = validate(version(head));
@@ -93,11 +100,11 @@ async function prepare({ github, context, core }) {
   const notes = [];
   for (const sha of pending.reverse()) {
     const linked = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, { ...repo, commit_sha: sha, per_page: 100 });
-    const merged = linked.filter(pr => pr.merged_at && pr.base.ref === 'master' && pr.head.ref !== BRANCH && pr.merge_commit_sha === sha);
+    const merged = linked.filter(pr => pr.merged_at && pr.base.ref === baseBranch && pr.head.ref !== BRANCH && pr.merge_commit_sha === sha);
     if (!merged.length) notes.push(`- ${git('show', '-s', '--format=%s', sha)} (${sha.slice(0, 7)})`);
     for (const pr of merged) prs.set(pr.number, pr);
   }
-  const open = await github.paginate(github.rest.pulls.list, { ...repo, state: 'open', base: 'master', head: `${repo.owner}:${BRANCH}`, per_page: 100 });
+  const open = await github.paginate(github.rest.pulls.list, { ...repo, state: 'open', base: baseBranch, head: `${repo.owner}:${BRANCH}`, per_page: 100 });
   if (open.length > 1) throw new Error('Multiple release PRs found');
   if (open.some(pr => pr.user.login !== BOT)) throw new Error('Release PR is not owned by the expected bot');
   if (!pending.length) {
@@ -108,7 +115,7 @@ async function prepare({ github, context, core }) {
   let type = 'patch';
   for (const pr of prs.values()) {
     const requested = releaseType(pr.labels);
-    if (requested === 'hotfix') throw new Error('A hotfix was merged into master; use the maintenance workflow for isolated hotfixes');
+    if (requested === 'hotfix') throw new Error('A hotfix was merged into the default branch; use the maintenance workflow for isolated hotfixes');
     if (requested === 'major') type = 'major';
     else if (requested === 'minor' && type !== 'major') type = 'minor';
     notes.push(`- ${pr.title.replace(/[\r\n]/g, ' ')} ([#${pr.number}](${pr.html_url}))`);
@@ -126,8 +133,8 @@ async function prepare({ github, context, core }) {
     { path: 'CHANGELOG.md', mode: '100644', type: 'blob', content: changelog },
   ] });
   const commit = await github.rest.git.createCommit({ ...repo, message: `chore(release): ${next}`, tree: tree.data.sha, parents: [head], author: identity, committer: identity });
-  const latest = await github.rest.git.getRef({ ...repo, ref: 'heads/master' });
-  if (latest.data.object.sha !== head) throw new Error('master advanced; rerun Prepare release PR');
+  const latest = await github.rest.git.getRef({ ...repo, ref: `heads/${baseBranch}` });
+  if (latest.data.object.sha !== head) throw new Error('Default branch advanced; rerun Prepare release PR');
   try {
     const existing = await github.rest.git.getRef({ ...repo, ref: `heads/${BRANCH}` });
     const tip = await github.rest.repos.getCommit({ ...repo, ref: existing.data.object.sha });
@@ -139,11 +146,11 @@ async function prepare({ github, context, core }) {
   }
   const remote = await github.rest.git.getRef({ ...repo, ref: `heads/${BRANCH}` });
   if (remote.data.object.sha !== commit.data.sha) throw new Error('Release branch verification failed');
-  const body = `Release ${next} from master (${current}).\n\n${notes.join('\n')}\n\nThis branch is regenerated from master. Edit titles or bump labels on source PRs, then rerun Prepare release PR. Merge after tests and review to trigger tagging and publishing.`;
+  const body = `Release ${next} from ${baseBranch} (${current}).\n\n${notes.join('\n')}\n\nThis branch is regenerated from ${baseBranch}. Edit titles or bump labels on source PRs, then rerun Prepare release PR. Merge after tests and review to trigger tagging and publishing.`;
   const result = open.length
     ? await github.rest.pulls.update({ ...repo, pull_number: open[0].number, title: `chore(release): ${next}`, body })
-    : await github.rest.pulls.create({ ...repo, head: BRANCH, base: 'master', title: `chore(release): ${next}`, body });
+    : await github.rest.pulls.create({ ...repo, head: BRANCH, base: baseBranch, title: `chore(release): ${next}`, body });
   if (result.data.user.login !== BOT) throw new Error('Unexpected release PR actor');
   core.info(result.data.html_url);
 }
-module.exports = { tag, prepare, bump, validate, verify, createTag, availableVersion, releaseType, identity };
+module.exports = { tag, prepare, bump, validate, verify, createTag, availableVersion, releaseType, identity, defaultBranch };

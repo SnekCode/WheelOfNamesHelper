@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { bump, validate, verify, createTag, releaseType, identity, prepare } = require('./release.cjs');
+const { bump, validate, verify, createTag, releaseType, identity, prepare, defaultBranch } = require('./release.cjs');
 const CI_PATH = '.github/workflows/hotfix-build.yml';
 const stable = /^\d+\.\d+\.\d+$/;
 async function contents(github, repo, ref, file) {
@@ -60,7 +60,7 @@ async function maintenance(github, repo, branch, tagSha, version, core) {
 }
 async function prepareHotfix({ github, context, core }, pr) {
   const repo = context.repo;
-  if (pr.head.repo?.full_name.toLowerCase() !== 'snekcode/wheelofnameshelper') throw new Error('Hotfix automation requires a branch in WheelOfNamesHelper');
+  if (pr.head.repo?.full_name.toLowerCase() !== `${repo.owner}/${repo.repo}`.toLowerCase()) throw new Error('Hotfix automation requires a branch in the current workflow repository');
   if (pr.draft) { core.info('Mark the hotfix ready for review before preparation'); return; }
   const pkgText = await contents(github, repo, pr.head.sha, 'package.json');
   const pkg = JSON.parse(pkgText);
@@ -72,17 +72,17 @@ async function prepareHotfix({ github, context, core }, pr) {
   const [major, minor, patch] = baseline.split('.').map(Number);
   const tags = await github.paginate(github.rest.repos.listTags, { ...repo, per_page: 100 });
   if (tags.some(t => { const m = /^v(\d+)\.(\d+)\.(\d+)$/.exec(t.name); return m && +m[1] === major && +m[2] === minor && +m[3] > patch; })) throw new Error('A newer patch is already released on this maintenance line; branch from that tag');
-  const mainSha = await ref(github, repo, 'master');
+  const mainSha = await ref(github, repo, defaultBranch(context));
   const delta = await compare(github, repo, baseSha, pr.head.sha);
   if (delta.merge_base_commit.sha !== baseSha || delta.status !== 'ahead') throw new Error('Create the hotfix branch from the affected version tag');
   // Sharing main commits beyond the release tag means unreleased features slipped into this hotfix.
   const baselineMain = await compare(github, repo, baseSha, mainSha);
   const sourceMain = await compare(github, repo, pr.head.sha, mainSha);
-  if (baselineMain.merge_base_commit.sha !== sourceMain.merge_base_commit.sha) throw new Error('Hotfix branch includes master changes beyond the release tag');
+  if (baselineMain.merge_base_commit.sha !== sourceMain.merge_base_commit.sha) throw new Error('Hotfix branch includes default-branch changes beyond the release tag');
   if (delta.files.length >= 300) throw new Error('Hotfix comparison is too large; split the changes');
   if (delta.files.some(f => f.filename.startsWith('.github/workflows/'))) throw new Error('Hotfix PRs cannot edit workflow files; use a separate workflow PR');
   const target = `maintenance/${major}.${minor}`;
-  if (!['master', target].includes(pr.base.ref)) throw new Error('Unexpected hotfix PR target');
+  if (![defaultBranch(context), target].includes(pr.base.ref)) throw new Error('Unexpected hotfix PR target');
   const pending = await github.paginate(github.rest.pulls.list, { ...repo, state: 'open', base: target, per_page: 100 });
   if (pending.some(other => other.number !== pr.number)) throw new Error('Another hotfix is open on this maintenance line; finish it before preparing the next one');
   const next = bump(baseline, 'patch');
@@ -114,6 +114,7 @@ async function prepareHotfix({ github, context, core }, pr) {
 }
 async function backport({ github, context, core }, pr, baseline) {
   const repo = context.repo;
+  const baseBranch = defaultBranch(context);
   const branch = `automation/backport-hotfix-${pr.number}`;
   const baseSha = await taggedCommit(github, repo, `v${baseline}`);
   const pkg = JSON.parse(await contents(github, repo, pr.merge_commit_sha, 'package.json'));
@@ -125,17 +126,17 @@ async function backport({ github, context, core }, pr, baseline) {
   const files = [['package.json', JSON.stringify(pkg, null, 2) + '\n'], ['package-lock.json', JSON.stringify(lock, null, 2) + '\n'], ['CHANGELOG.md', await contents(github, repo, baseSha, 'CHANGELOG.md')]];
   let tip = await ref(github, repo, branch);
   if (!tip) {
-    tip = await commitFiles(github, repo, pr.merge_commit_sha, `chore(backport): preserve master release metadata for hotfix #${pr.number}`, files);
+    tip = await commitFiles(github, repo, pr.merge_commit_sha, `chore(backport): preserve default-branch release metadata for hotfix #${pr.number}`, files);
     await github.rest.git.createRef({ ...repo, ref: `refs/heads/${branch}`, sha: tip });
     if (await ref(github, repo, branch) !== tip) throw new Error('Backport ref verification failed');
   }
-  const existing = await github.paginate(github.rest.pulls.list, { ...repo, state: 'all', base: 'master', head: `${repo.owner}:${branch}`, per_page: 100 });
+  const existing = await github.paginate(github.rest.pulls.list, { ...repo, state: 'all', base: baseBranch, head: `${repo.owner}:${branch}`, per_page: 100 });
   if (existing.length) {
     if (existing.length !== 1 || existing[0].user.login !== identity.name) throw new Error('Unexpected backport PR owner');
     core.info(`Backport already exists: ${existing[0].html_url}`);
     return;
   }
-  const result = await github.rest.pulls.create({ ...repo, base: 'master', head: branch, title: `Backport hotfix #${pr.number}: ${pr.title}`, body: `Bring the fix from ${pr.html_url} into master.\n\nThe maintenance version bump and release notes are reverted relative to the affected tag so master keeps its own release metadata. Original contributor history and dependency changes are preserved. Review and resolve any code conflicts before merging; do not apply release:hotfix to this backport. Merging refreshes the pending release PR.` });
+  const result = await github.rest.pulls.create({ ...repo, base: baseBranch, head: branch, title: `Backport hotfix #${pr.number}: ${pr.title}`, body: `Bring the fix from ${pr.html_url} into ${baseBranch}.\n\nThe maintenance version bump and release notes are reverted relative to the affected tag so ${baseBranch} keeps its own release metadata. Original contributor history and dependency changes are preserved. Review and resolve any code conflicts before merging; do not apply release:hotfix to this backport. Merging refreshes the pending release PR.` });
   if (result.data.user.login !== identity.name) throw new Error('Unexpected backport actor');
   core.info(result.data.html_url);
 }
@@ -144,7 +145,7 @@ async function finishHotfix(args, pr) {
   const repo = context.repo;
   const baseline = baseVersion(pr, '');
   const expectedTarget = `maintenance/${baseline.split('.').slice(0, 2).join('.')}`;
-  if (pr.base.ref !== expectedTarget) throw new Error('Merged hotfix must target its maintenance branch, not master');
+  if (pr.base.ref !== expectedTarget) throw new Error('Merged hotfix must target its maintenance branch, not the default branch');
   const next = bump(baseline, 'patch');
   const mergedPackage = JSON.parse(await contents(github, repo, pr.merge_commit_sha, 'package.json'));
   if (mergedPackage.version !== next) throw new Error('Merged hotfix has an unexpected version');
@@ -155,10 +156,10 @@ async function finishHotfix(args, pr) {
   try { alreadyTagged = await taggedCommit(github, repo, `v${next}`) === pr.merge_commit_sha; }
   catch (error) { if (error.status !== 404) throw error; }
   if (!alreadyTagged) {
-    const mainSha = await ref(github, repo, 'master');
+    const mainSha = await ref(github, repo, defaultBranch(context));
     const baseMain = await compare(github, repo, baseSha, mainSha);
     const mergedMain = await compare(github, repo, pr.merge_commit_sha, mainSha);
-    if (baseMain.merge_base_commit.sha !== mergedMain.merge_base_commit.sha) throw new Error('Hotfix merge includes master changes beyond its baseline');
+    if (baseMain.merge_base_commit.sha !== mergedMain.merge_base_commit.sha) throw new Error('Hotfix merge includes default-branch changes beyond its baseline');
   }
   await createTag(github, repo, next, pr.merge_commit_sha, core);
   await backport(args, pr, baseline);

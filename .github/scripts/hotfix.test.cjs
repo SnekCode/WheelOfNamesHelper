@@ -6,7 +6,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { prepareHotfix, finishHotfix, baseVersion } = require('./hotfix.cjs');
 const { releaseType, availableVersion, identity, prepare } = require('./release.cjs');
-const repo = { owner: 'SnekCode', repo: 'WheelOfNamesHelper' };
+const repo = { owner: 'ExampleOwner', repo: 'AnotherProject' };
 const core = { info() {} };
 function fixture() {
   const previous = process.cwd();
@@ -28,13 +28,13 @@ function fixture() {
   git(['checkout', '-b', 'fix/crash', baseline]);
   fs.writeFileSync('bug.txt', 'fixed\n');
   const source = commit('fix crash');
-  const pr = { number: 42, state: 'open', draft: false, merged_at: null, title: 'Fix crash', body: 'Fix the startup crash.', html_url: 'https://example.test/pr/42', labels: [{ name: 'release:hotfix' }], user: { login: 'contributor' }, base: { ref: 'master' }, head: { ref: 'fix/crash', sha: source, repo: { full_name: 'SnekCode/WheelOfNamesHelper' } } };
+  const pr = { number: 42, state: 'open', draft: false, merged_at: null, title: 'Fix crash', body: 'Fix the startup crash.', html_url: 'https://example.test/pr/42', labels: [{ name: 'release:hotfix' }], user: { login: 'contributor' }, base: { ref: 'master' }, head: { ref: 'fix/crash', sha: source, repo: { full_name: 'ExampleOwner/AnotherProject' } } };
   const refs = new Map([['tags/v3.1.0', baseline], ['heads/master', master], ['heads/fix/crash', source]]);
   const prs = [pr];
   const calls = { commits: [], updates: [], creates: [], tags: [] };
   const missing = () => Object.assign(new Error('missing'), { status: 404 });
   const github = { rest: {
-    apps: { async listReposAccessibleToInstallation() { return { data: { total_count: 1, repositories: [{ full_name: 'SnekCode/WheelOfNamesHelper' }] } }; } },
+    apps: { async listReposAccessibleToInstallation() { return { data: { total_count: 1, repositories: [{ full_name: 'ExampleOwner/AnotherProject' }] } }; } },
     repos: {
       listTags: 'tags',
       listPullRequestsAssociatedWithCommit: 'associated',
@@ -81,7 +81,7 @@ function fixture() {
     if (method === 'associated') return [];
     return prs.filter(p => (!args.base || p.base.ref === args.base) && (!args.head || `${repo.owner}:${p.head.ref}` === args.head) && (args.state === 'all' || p.state !== 'closed'));
   } };
-  const args = { github, context: { repo }, core };
+  const args = { github, context: { repo, payload: { repository: { default_branch: 'master' } } }, core };
   return { git, write, commit, baseline, master, source, pr, refs, prs, calls, args, cleanup() { process.chdir(previous); if (!path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep)) throw new Error('Unsafe cleanup path'); fs.rmSync(root, { recursive: true, force: true }); } };
 }
 test('patch default and mutually exclusive release labels', () => {
@@ -118,7 +118,7 @@ test('rejects hotfix branches carrying unreleased master features before making 
     f.git(['checkout', '-B', 'wrong-base', f.master]);
     fs.writeFileSync('another-fix.txt', 'fix\n');
     f.pr.head.sha = f.commit('fix on master');
-    await assert.rejects(prepareHotfix(f.args, f.pr), /master changes beyond/);
+    await assert.rejects(prepareHotfix(f.args, f.pr), /default-branch changes beyond/);
     assert.equal(f.calls.commits.length, 0);
   } finally { f.cleanup(); }
 });
@@ -173,7 +173,7 @@ test('a merged hotfix targeting master is rejected and does not publish', async 
   const f = fixture();
   try {
     f.pr.body = 'Hotfix base: v3.1.0';
-    await assert.rejects(finishHotfix(f.args, f.pr), /not master/);
+    await assert.rejects(finishHotfix(f.args, f.pr), /not the default branch/);
     assert.equal(f.calls.tags.length, 0);
   } finally { f.cleanup(); }
 });
@@ -203,5 +203,23 @@ test('master release retains pending features after a maintenance release and ad
     assert.equal(f.git(['show', `${refreshed}:bug.txt`]), 'fixed');
     assert.equal(f.git(['show', `${refreshed}:unreleased-feature.txt`]), 'not ready');
     assert.equal(f.calls.creates.filter(p => p.head === 'automation/release').length, 1);
+  } finally { f.cleanup(); }
+});
+test('hotfix routing and backport target follow a main default branch in another repository', async () => {
+  const f = fixture();
+  try {
+    f.args.context.payload.repository.default_branch = 'main';
+    f.pr.base.ref = 'main';
+    f.refs.delete('heads/master'); f.refs.set('heads/main', f.master);
+    await prepareHotfix(f.args, f.pr);
+    assert.equal(f.pr.base.ref, 'maintenance/3.1');
+    f.git(['checkout', '-B', 'maintenance/3.1', f.refs.get('heads/maintenance/3.1')]);
+    f.git(['merge', '--no-ff', '-m', 'Merge isolated hotfix', f.pr.head.sha]);
+    f.pr.merge_commit_sha = f.git(['rev-parse', 'HEAD']);
+    f.pr.state = 'closed'; f.pr.merged_at = 'today';
+    f.refs.set('heads/maintenance/3.1', f.pr.merge_commit_sha);
+    await finishHotfix(f.args, f.pr);
+    assert.equal(f.calls.creates[0].base, 'main');
+    assert.equal(f.refs.get('tags/v3.1.1'), f.pr.merge_commit_sha);
   } finally { f.cleanup(); }
 });

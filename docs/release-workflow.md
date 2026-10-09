@@ -1,5 +1,7 @@
 # Label-driven releases
 
+These release scripts and workflows use the current workflow repository and its default branch. Examples below use master; the same behavior applies when a repository uses main or another default-branch name. They require package.json and package-lock.json, and release preparation also requires CHANGELOG.md. The reusable version-tagging workflow needs only release.yml and release.cjs, plus package.json and the configured App credential.
+
 | PR label | Behavior |
 | --- | --- |
 | None | Patch bump in the next master release |
@@ -41,7 +43,7 @@ Historical release tags may lack the new test workflow. When creating the mainte
 
 ## Setup and checks
 
-The App is 5245338 (snekcode-agent), scoped to SnekCode/WheelOfNamesHelper. Runtime needs Contents and Pull requests write permissions; isolated hotfix preparation also needs Workflows write to install maintenance CI. Store a separate App key in the RELEASE_APP_PRIVATE_KEY repository Actions secret. The existing local private-key.pem stays local and is not uploaded by this proposal. The secret has been provisioned by the repository owner.
+The App is 5245338 (snekcode-agent) and can be installed on multiple repositories. Each workflow requests an installation token limited to its current repository, and the scripts verify that scope against the workflow context. No repository owner or name is hardcoded into these release scripts. Runtime needs Contents and Pull requests write permissions; isolated hotfix preparation also needs Workflows write to install maintenance CI. Store a separate App key in the RELEASE_APP_PRIVATE_KEY Actions secret accessible to each repository using the workflows. The existing local private-key.pem stays local and is not uploaded by this proposal. The secret has been provisioned by the owner for this repository.
 
 Installation tokens are restricted to this repository and the job's requested permissions, then revoked at job completion. Ordinary release preparation requests Contents and Pull requests write; master tagging requests only Contents write. Hotfix preparation requests those permissions plus Workflows write. No job executes hotfix code while holding this App token.
 
