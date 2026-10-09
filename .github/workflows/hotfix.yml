@@ -1,0 +1,52 @@
+name: Prepare and release hotfix
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, labeled, unlabeled, edited, synchronize, closed]
+permissions:
+  contents: read
+concurrency:
+  group: hotfix-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  validate-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const type = require('./.github/scripts/release.cjs').releaseType(pr.labels);
+            if (pr.base.ref.startsWith('maintenance/') && type !== 'hotfix') {
+              throw new Error('Maintenance PRs require release:hotfix');
+            }
+  hotfix:
+    needs: validate-labels
+    if: contains(github.event.pull_request.labels.*.name, 'release:hotfix') || startsWith(github.event.pull_request.base.ref, 'maintenance/')
+    runs-on: ubuntu-latest
+    steps:
+      # Read trusted automation from master. Never run hotfix branch code in this job.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/create-github-app-token@v3
+        id: app
+        with:
+          app-id: '5245338'
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          # Install the trusted, unprivileged CI workflow on historical maintenance branches.
+          permission-workflows: write
+      - uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            await require('./.github/scripts/hotfix.cjs').run({ github, context, core });
