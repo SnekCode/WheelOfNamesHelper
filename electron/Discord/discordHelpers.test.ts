@@ -1,7 +1,7 @@
 import { Collection } from 'discord.js';
 import type { Guild, VoiceState } from 'discord.js';
 import { Service } from '~/Shared/enums';
-import { createDiscordVoiceEntry, getAuthorizedGuilds, getViewerVoiceAction } from './discordHelpers';
+import { createDiscordVoiceEntry, getAuthorizedGuilds, getViewerVoiceAction, moveDiscordWinner } from './discordHelpers';
 
 const mockGuild = (id: string, roleNames: string[]) => {
     const roles = new Collection<string, { name: string }>();
@@ -94,5 +94,24 @@ describe('Discord viewer voice transitions', () => {
             mobile: true,
             service: Service.Discord,
         });
+    });
+});
+
+describe('Discord winner movement between voice channels', () => {
+    it('moves a channel B winner into channel A by ID without a cached GuildMember', async () => {
+        const edit = jest.fn().mockResolvedValue(undefined);
+        const guild = { members: { edit } } as unknown as Pick<Guild, 'members'>;
+
+        await moveDiscordWinner(guild, 'winner-from-B', 'channel-A');
+
+        expect(edit).toHaveBeenCalledWith('winner-from-B', { channel: 'channel-A' });
+    });
+
+    it('propagates Discord permission failures', async () => {
+        const edit = jest.fn().mockRejectedValue(new Error('Missing Move Members'));
+        const guild = { members: { edit } } as unknown as Pick<Guild, 'members'>;
+
+        await expect(moveDiscordWinner(guild, 'winner-from-B', 'channel-A'))
+            .rejects.toThrow('Missing Move Members');
     });
 });
