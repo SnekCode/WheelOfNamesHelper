@@ -110,3 +110,13 @@ test('hotfix or release merge closes stale proposal; next feature starts from th
     assert.doesNotMatch(b.calls.trees[0].tree[2].content, /hotfix release/);
   } finally { f.cleanup(); }
 });
+test('master listener refuses to tag a labeled hotfix merged to the wrong branch', async () => {
+  const f = fixture();
+  try {
+    const baseline = f.commit('3.1.0', 'baseline');
+    const head = f.commit('3.1.1', 'misrouted hotfix');
+    const a = api(head, [{ number: 42, merge_commit_sha: head, merged_at: 'today', base: { ref: 'master' }, labels: [{ name: 'release:hotfix' }] }]);
+    await assert.rejects(tag({ github: a.github, context: { repo, payload: { before: baseline } }, core }), /Refusing to tag/);
+    assert.equal(a.calls.created.length, 0);
+  } finally { f.cleanup(); }
+});

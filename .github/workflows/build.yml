@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test .github/scripts/release.test.cjs
+      - run: node --test .github/scripts/release.test.cjs .github/scripts/hotfix.test.cjs
   build:
     runs-on: windows-latest
     strategy:

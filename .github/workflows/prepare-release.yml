@@ -2,7 +2,7 @@ name: Prepare release PR
 on:
   pull_request_target:
     branches: [master]
-    types: [closed]
+    types: [closed, labeled, unlabeled]
   workflow_dispatch:
 permissions:
   contents: read

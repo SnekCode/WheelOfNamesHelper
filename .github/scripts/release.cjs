@@ -22,6 +22,43 @@ async function verify(github, repo) {
   const { data } = await github.rest.apps.listReposAccessibleToInstallation({ per_page: 100 });
   if (data.total_count !== 1 || data.repositories[0].full_name.toLowerCase() !== 'snekcode/wheelofnameshelper') throw new Error('Token must be restricted to WheelOfNamesHelper');
 }
+function releaseType(labels) {
+  const selected = labels.map(l => typeof l === 'string' ? l : l.name).filter(l => ['release:major', 'release:minor', 'release:hotfix'].includes(l));
+  if (new Set(selected).size > 1) throw new Error('Use only one release label: major, minor, or hotfix');
+  return selected[0]?.split(':')[1] || 'patch';
+}
+async function createTag(github, repo, v, sha, core) {
+  validate(v);
+  const ref = `tags/v${v}`;
+  let existing;
+  try { existing = (await github.rest.git.getRef({ ...repo, ref })).data.object; }
+  catch (error) { if (error.status !== 404) throw error; }
+  if (existing) {
+    while (existing.type === 'tag') existing = (await github.rest.git.getTag({ ...repo, tag_sha: existing.sha })).data.object;
+    if (existing.sha !== sha) throw new Error(`v${v} already points to another commit; refusing to move it`);
+    core.info(`v${v} already exists on ${sha}`);
+    return;
+  }
+  try { await github.rest.git.createRef({ ...repo, ref: `refs/${ref}`, sha }); }
+  catch (error) { if (error.status !== 422) throw error; }
+  const { data } = await github.rest.git.getRef({ ...repo, ref });
+  if (data.object.sha !== sha) throw new Error(`v${v} tag verification failed; refusing to move it`);
+  core.info(`Created v${v} on ${sha}`);
+}
+async function availableVersion(github, repo, current, type) {
+  let next = bump(current, type);
+  const open = await github.paginate(github.rest.pulls.list, { ...repo, state: 'open', per_page: 100 });
+  const reserved = new Set(open.filter(pr => pr.base.ref.startsWith('maintenance/') && pr.labels?.some(l => l.name === 'release:hotfix'))
+    .map(pr => /^Hotfix base: v(\d+\.\d+\.\d+)\s*$/m.exec(pr.body || '')?.[1]).filter(Boolean).map(v => bump(v, 'patch')));
+  for (let i = 0; i < 1000; i++) {
+    if (!reserved.has(next)) {
+      try { await github.rest.git.getRef({ ...repo, ref: `tags/v${next}` }); }
+      catch (error) { if (error.status === 404) return next; throw error; }
+    }
+    next = bump(next, 'patch');
+  }
+  throw new Error('Could not find an unused release version');
+}
 async function tag({ github, context, core }) {
   const repo = context.repo;
   await verify(github, repo);
@@ -33,24 +70,11 @@ async function tag({ github, context, core }) {
     const parent = git('rev-parse', `${sha}^1`);
     const v = validate(version(sha));
     if (v === version(parent)) continue;
-    const ref = `tags/v${v}`;
-    try {
-      const { data } = await github.rest.git.getRef({ ...repo, ref });
-      let object = data.object;
-      while (object.type === 'tag') object = (await github.rest.git.getTag({ ...repo, tag_sha: object.sha })).data.object;
-      if (object.sha !== sha) throw new Error(`v${v} already points to another commit; refusing to move it`);
-      core.info(`v${v} already exists on ${sha}`);
-    } catch (error) {
-      if (error.status !== 404) throw error;
-      try {
-        await github.rest.git.createRef({ ...repo, ref: `refs/${ref}`, sha });
-      } catch (createError) {
-        if (createError.status !== 422) throw createError;
-      }
-      const { data } = await github.rest.git.getRef({ ...repo, ref });
-      if (data.object.sha !== sha) throw new Error('Tag verification failed');
-      core.info(`Created v${v} on ${sha}`);
+    const linked = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, { ...repo, commit_sha: sha, per_page: 100 });
+    if (linked.some(pr => pr.merged_at && pr.base.ref === 'master' && pr.labels.some(l => l.name === 'release:hotfix'))) {
+      throw new Error('Refusing to tag a hotfix merged into master; use its maintenance branch');
     }
+    await createTag(github, repo, v, sha, core);
   }
 }
 async function prepare({ github, context, core }) {
@@ -83,12 +107,13 @@ async function prepare({ github, context, core }) {
   }
   let type = 'patch';
   for (const pr of prs.values()) {
-    const labels = pr.labels.map(l => l.name);
-    if (labels.includes('release:major')) type = 'major';
-    else if (labels.includes('release:minor') && type !== 'major') type = 'minor';
+    const requested = releaseType(pr.labels);
+    if (requested === 'hotfix') throw new Error('A hotfix was merged into master; use the maintenance workflow for isolated hotfixes');
+    if (requested === 'major') type = 'major';
+    else if (requested === 'minor' && type !== 'major') type = 'minor';
     notes.push(`- ${pr.title.replace(/[\r\n]/g, ' ')} ([#${pr.number}](${pr.html_url}))`);
   }
-  const next = bump(current, type);
+  const next = await availableVersion(github, repo, current, type);
   const pkg = JSON.parse(read(head, 'package.json'));
   const lock = JSON.parse(read(head, 'package-lock.json'));
   pkg.version = lock.version = next;
@@ -121,4 +146,4 @@ async function prepare({ github, context, core }) {
   if (result.data.user.login !== BOT) throw new Error('Unexpected release PR actor');
   core.info(result.data.html_url);
 }
-module.exports = { tag, prepare, bump, validate };
+module.exports = { tag, prepare, bump, validate, verify, createTag, availableVersion, releaseType, identity };
