@@ -1,5 +1,9 @@
 ## Wheel of Names Changelog 
 
+## Version 3.0.3
+
+- Fixed Discord connection and viewer joining issues. Winners now move to the streamer's channel on all devices.
+
 ## Version 3.0.2
 
 ### Discord optimization
