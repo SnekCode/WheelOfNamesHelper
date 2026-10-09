@@ -34,6 +34,8 @@ const date = new Date().toLocaleString().replace(/\//g, '-').replace(/:/g, '-').
 const pathToLog = path.join(process.env.APPDATA ?? __dirname, `${pkg.name}/logs/${date}.log`);
 log.transports.file.resolvePathFn = () => pathToLog;
 console.log = log.log;
+console.warn = log.warn;
+console.error = log.error;
 
 console.log(pathToLog);
 

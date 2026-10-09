@@ -22,16 +22,18 @@ export class DiscordOAuthProvider extends EventEmitter {
     public refreshToken: string | null = null;
     public expiryTime: string | null = null;
     private readonly tokenExchangeEndpoint = 'https://auth.snekcode.com/discord/auth';
-    public user = null;
+    public user: { id: string; username?: string } | null = null;
     constructor() {
         super();
     }
 
     private async saveTokens(accessToken: string, botToken: string, refreshToken: string, expiryTime: string) {
-        keytar.setPassword('discord', 'access_token', accessToken);
-        keytar.setPassword('discord', 'refresh_token', refreshToken);
-        keytar.setPassword('discord', 'expiry_time', expiryTime);
-        keytar.setPassword('discord', 'bot_token', botToken);
+        await Promise.all([
+            keytar.setPassword('discord', 'access_token', accessToken),
+            keytar.setPassword('discord', 'refresh_token', refreshToken),
+            keytar.setPassword('discord', 'expiry_time', expiryTime),
+            keytar.setPassword('discord', 'bot_token', botToken),
+        ]);
 
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
@@ -76,17 +78,32 @@ export class DiscordOAuthProvider extends EventEmitter {
 
     public async retrieveAccessToken() {
         await this.retrieveTokens();
-        // check if access token is present
-        if (this.accessToken) {
+        await this.startAuthenticatedSession();
+    }
+
+    private async startAuthenticatedSession() {
+        this.user = null;
+        setStore('discord_authenticated', false);
+        setStore('discord_bot_ready', false);
+        if (!this.accessToken) return;
+        try {
             const userUrl = 'https://discord.com/api/users/@me';
             const userResponse = await axios.get(userUrl, {
                 headers: { Authorization: `Bearer ${this.accessToken}` },
-            }).catch((error) => {
-                setStore('discord_authenticated', false);
             });
-            this.user = userResponse?.data;
+            if (typeof userResponse.data?.id !== 'string' || !userResponse.data.id) {
+                throw new Error('Discord returned no user identity');
+            }
+            this.user = userResponse.data;
+            console.log('DISCORD: OAuth user verified', { userId: this.user!.id });
             setStore('discord_authenticated', true);
             setUpClient();
+        } catch (error) {
+            const details = error as { response?: { status?: number }; message?: string };
+            console.warn('DISCORD: Unable to verify OAuth user', {
+                status: details.response?.status, message: details.message,
+            });
+            setStore('discord_bot_status', 'Discord sign-in could not be verified. Please sign in again.');
         }
     }
 
@@ -104,6 +121,7 @@ export class DiscordOAuthProvider extends EventEmitter {
         this.refreshToken = null;
         this.expiryTime = null;
         this.botToken = null;
+        this.user = null;
 
         setStore('discord_authenticated', false);
         setStore('discord_bot_ready', false);
@@ -148,7 +166,7 @@ export class DiscordOAuthProvider extends EventEmitter {
         // this.authWindow?.webContents.openDevTools({mode: 'detach', activate: true});
 
         this.authWindow?.webContents.on('will-navigate', async (event, url) => {
-            console.log('did-redirect-navigation', url);
+            console.log('DISCORD: OAuth redirect received');
         });
 
         this.authWindow?.webContents.on('will-navigate', async (event, url) => {
@@ -160,7 +178,7 @@ export class DiscordOAuthProvider extends EventEmitter {
                     code,
                 });
 
-                console.log('response', response.data);
+                console.log('DISCORD: Token exchange completed', { statusCode: response.data.statusCode });
                 
                 if(response.data.statusCode === 401) {
                     console.log('Unauthorized');
@@ -169,7 +187,6 @@ export class DiscordOAuthProvider extends EventEmitter {
                 }
 
                 const data = JSON.parse(response.data.body);
-                this.user = data.user;
                 // schema
                 /**
                  *  access_token: '#####',
@@ -181,12 +198,11 @@ export class DiscordOAuthProvider extends EventEmitter {
                 // save access token, refresh token and expiry time
                 // calculate expiry time
                 const expiryTime = new Date().getTime() + data.expires_in * 1000;
-                this.saveTokens(data.access_token, data.botToken, data.refresh_token, expiryTime.toString());
+                await this.saveTokens(data.access_token, data.botToken, data.refresh_token, expiryTime.toString());
 
                 // log expiry time in human readable format
                 this.authWindow?.close();
-                setStore('discord_authenticated', true);
-                setUpClient();
+                await this.startAuthenticatedSession();
             }
         });
     }

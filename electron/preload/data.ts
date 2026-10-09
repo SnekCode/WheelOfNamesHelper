@@ -72,7 +72,7 @@ ipcRenderer.on('initListeners', async (event, value) => {
                 const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
                 const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
 
-                if (entry?.service === Service.Discord && entry?.mobile === false) {
+                if (entry?.service === Service.Discord) {
                     console.log('Discord Winner');
                     // auto move
                     window.data.handleDiscordWinner(entry);
@@ -85,10 +85,6 @@ ipcRenderer.on('initListeners', async (event, value) => {
                     messageBox.textContent = `Last Seen: ${minutes} Minutes and ${seconds}s ago ${
                         entry.service ? `on ${entry.service}` : ''
                     }`;
-                }
-
-                if (entry.service === Service.Discord) {
-                    messageBox.textContent = `${messageBox.textContent} - ${entry?.mobile ? 'Mobile' : 'Desktop'}`;
                 }
 
                 // find button with text "Remove"
