@@ -3,6 +3,12 @@ import type { Guild, VoiceState } from 'discord.js';
 import type { Entry } from '~/Shared/types';
 import { Service } from '~/Shared/enums';
 
+export function getDiscordLoginErrorMessage(error: { message?: string }): string {
+    return /disallowed intents/i.test(error.message ?? '')
+        ? 'Discord rejected the bot connection because of its gateway intents. This build requires only Guilds and GuildVoiceStates; none of the privileged intents are required. See the app log.'
+        : 'Unable to connect to the Discord bot. Check the app log and try Refresh.';
+}
+
 /**
  * Resolve only the logged-in streamer's membership in each connected guild.
  * Unlike listing guild members, fetching one member by ID works without
@@ -19,9 +25,19 @@ export async function getAuthorizedGuilds(
             const member = await guild.members.fetch({ user: userId, force: true });
             if (member.roles.cache.some((role) => roleNames.includes(role.name))) {
                 authorizedGuilds.set(guild.id, guild);
+                console.log(`DISCORD: Authorized user ${userId} in guild ${guild.id}`);
+            } else {
+                console.log(`DISCORD: User ${userId} in guild ${guild.id} lacks required role`, {
+                    requiredRoles: roleNames,
+                    memberRoles: member.roles.cache.map((role) => role.name),
+                });
             }
         } catch (error) {
-            console.warn(`DISCORD: Unable to check membership in guild ${guild.id}`, error);
+            // Avoid logging request objects, which can include authorization headers.
+            const details = error as { code?: unknown; status?: unknown; message?: string };
+            console.warn(`DISCORD: Unable to check user ${userId} in guild ${guild.id}`, {
+                code: details?.code, status: details?.status, message: details?.message,
+            });
         }
     }));
     return authorizedGuilds;
@@ -54,7 +70,7 @@ export function createDiscordVoiceEntry(
         id: state.id,
         text: member?.displayName ?? member?.user.username ?? `Discord User ${state.id}`,
         enabled: true,
-        mobile: !!member?.presence?.clientStatus?.mobile,
+        mobile: member?.presence?.clientStatus ? !!member.presence.clientStatus.mobile : undefined,
         service: Service.Discord,
     };
 }

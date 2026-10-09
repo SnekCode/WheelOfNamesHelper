@@ -77,6 +77,7 @@ describe('Discord viewer voice transitions', () => {
             enabled: true,
             service: Service.Discord,
         });
+        expect(entry.mobile).toBeUndefined();
     });
 
     it('retains display names and mobile status when member metadata is present', () => {

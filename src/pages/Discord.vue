@@ -15,12 +15,13 @@ const discordAuthenticated = ref<boolean>(false);
 const followMode = ref<boolean>(false);
 const discord_weights = ref<number>(1);
 const discord_bot_ready = ref<boolean>(false);
+const discord_bot_status = ref<string>('');
 
 const discordInviteLink = "https://discord.gg/qcffQKmYTV"
 
 // getters
 ipcRenderer.invoke('getStore', 'discord_userGuilds').then((guilds) => {
-    userGuilds.value = guilds;
+    userGuilds.value = Array.isArray(guilds) ? guilds : [];
 });
 
 ipcRenderer.invoke('getStore', 'discord_selectedGuild').then((guildId) => {
@@ -56,6 +57,9 @@ ipcRenderer.invoke('getStore', 'discord_weights').then((weights) => {
 ipcRenderer.invoke('getStore', 'discord_bot_ready').then((bot_ready) => {
     discord_bot_ready.value = bot_ready;
 });
+ipcRenderer.invoke('getStore', 'discord_bot_status').then((status) => {
+    discord_bot_status.value = status ?? '';
+});
 
 ipcRenderer.invoke('getStore', 'discord_authenticated').then((value) => {
     discordAuthenticated.value = value;
@@ -64,8 +68,8 @@ ipcRenderer.invoke('getStore', 'discord_authenticated').then((value) => {
 // updater / listener
 ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     console.log(storeName);
-    if (storeName.includes('discord_channels')) {
-        channels.value = channels.value.splice(0, channels.value.length, ...data);
+    if (storeName === `discord_channels-${selectedGuild.value}`) {
+        channels.value = Array.isArray(data) ? data : [];
     }
     if (storeName === 'discord_userVoiceChannel') {
         userVoiceChannel.value = data;
@@ -78,10 +82,11 @@ ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     if (storeName === 'discord_bot_ready') {
         discord_bot_ready.value = data;
     }
+    if (storeName === 'discord_bot_status') {
+        discord_bot_status.value = data ?? '';
+    }
     if (storeName === 'discord_userGuilds') {
-        if (data && data[0]) {
-            userGuilds.value = Array.from(data[0].values());
-        }
+        userGuilds.value = Array.isArray(data) ? data : [];
     }
 });
 
@@ -95,7 +100,9 @@ const handleSelectGuild = (guildId: string) => {
 const handleGetChannels = (guildId: string) => {
     ipcRenderer.invoke('getStore', `discord_channels-${guildId}`).then((fetchedChannels) => {
         console.log(channels);
-        channels.value.splice(0, channels.value.length, ...fetchedChannels);
+        if (selectedGuild.value === guildId) {
+            channels.value = Array.isArray(fetchedChannels) ? fetchedChannels : [];
+        }
     });
 };
 
@@ -135,7 +142,7 @@ const handleWeights = (value: number) => {
 };
 
 const reloadPage = () => {
-    window.location.reload();
+    ipcRenderer.invoke('discord_refresh');
 };
 </script>
 
@@ -167,7 +174,7 @@ const reloadPage = () => {
                 <!-- select with channels as options -->
                 <div>
                     <label>Select the Voice Channel you play in:</label>
-                    <small>This is the channel viewers will be moved to upon a win</small>
+                    <small>Winning viewers are moved here on every device, including mobile</small>
                 </div>
                 <select
                     :value="userVoiceChannel"
@@ -225,6 +232,7 @@ const reloadPage = () => {
             </div>
         </div>
         <div v-if="discordAuthenticated">
+            <p v-if="discord_bot_status" role="status">{{ discord_bot_status }}</p>
             <a
                 href="https://discord.com/oauth2/authorize?client_id=1348170053509447800&scope=bot&permissions=8"
                 target="_blank"

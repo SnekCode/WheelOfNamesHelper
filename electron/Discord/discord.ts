@@ -5,7 +5,6 @@ import {
     Events,
     GatewayIntentBits,
     Guild,
-    User,
     VoiceChannel,
 } from 'discord.js';
 import dotenv from 'dotenv';
@@ -14,11 +13,12 @@ import { store } from '../main/store';
 import { setStore } from '../data/data';
 import { ipcMain } from 'electron';
 import type { Entry } from '~/Shared/types';
-import { createDiscordVoiceEntry, getAuthorizedGuilds, getViewerVoiceAction, moveDiscordWinner } from './discordHelpers';
+import { Service } from '~/Shared/enums';
+import { createDiscordVoiceEntry, getAuthorizedGuilds, getDiscordLoginErrorMessage, getViewerVoiceAction, moveDiscordWinner } from './discordHelpers';
 dotenv.config();
 
 const targetRoles = ['Wheel Bot User'];
-let user: User | null;
+let user: { id: string } | null;
 let userGuilds: Collection<string, Guild> | undefined;
 let client: Client | null;
 
@@ -39,52 +39,73 @@ store.onDidAnyChange((values, key) => {
 });
 
 const getUserGuilds = async () => {
-    user = discordAuthProvider.user as User | null;
+    user = discordAuthProvider.user;
     if (!user) {
         console.log('DISCORD: No user found');
+        setStore('discord_bot_ready', false);
+        setStore('discord_bot_status', 'Discord user identity is unavailable. Please sign in again.');
         return;
     }
     if(!client) {
         setUpClient();
         return;
     }
+    if (!client.isReady()) return;
+    const checkingClient = client;
+    const checkingUserId = user.id;
+    setStore('discord_bot_status', 'Checking your server access…');
     // Fetch only the authenticated streamer's membership in each guild.
     // A single-member REST lookup does not require the privileged GuildMembers intent.
-    userGuilds = await getAuthorizedGuilds(client.guilds.cache, user.id, targetRoles);
-    setStore('discord_userGuilds', userGuilds);
+    console.log('DISCORD: Checking guild access', { userId: user.id, connectedGuilds: client.guilds.cache.size });
+    const authorizedGuilds = await getAuthorizedGuilds(client.guilds.cache, user.id, targetRoles);
+    if (client !== checkingClient || discordAuthProvider.user?.id !== checkingUserId) return;
+    userGuilds = authorizedGuilds;
+    // Store and send only plain data; Discord Guild objects cannot cross Electron IPC safely.
+    setStore('discord_userGuilds', userGuilds.map(({ id, name }) => ({ id, name })));
 
     userGuilds.forEach((guild) => {
         const channels = guild.channels.cache.filter((channel) => channel.type === ChannelType.GuildVoice);
         const value = `discord_channels-${guild.id}`;
         // @ts-expect-error - SetStore expects a static value
-        setStore(value, channels);
+        setStore(value, channels.map(({ id, name }) => ({ id, name })));
     });
 
     setStore('discord_bot_ready', userGuilds.size > 0);
-    };
+    setStore('discord_bot_status', userGuilds.size > 0 ? '' :
+        'No accessible servers found. Check that this bot is installed and your signed-in account has the Wheel Bot User role. See the app log for lookup errors.');
+    console.log('DISCORD: Guild access check complete', { authorizedGuilds: userGuilds.size });
+};
 
 export const setUpClient = () => {
+    client?.destroy();
+    setStore('discord_bot_ready', false);
+    setStore('discord_userGuilds', []);
+    setStore('discord_bot_status', 'Connecting to the Discord bot…');
     client = new Client({
         intents: [
             GatewayIntentBits.Guilds,
-            GatewayIntentBits.GuildPresences,
             GatewayIntentBits.GuildVoiceStates,
         ],
     });
 
     if(!discordAuthProvider.botToken) {
         setStore('discord_bot_ready', false);
-        setStore('discord_authenticated', false);
+        setStore('discord_bot_status', 'Bot credentials are unavailable. Please sign in again.');
         return;
     }   
 
     
+    const connectingClient = client;
     client.login(discordAuthProvider.botToken ?? '').catch((error) => {
+        if (client !== connectingClient) return;
         console.error('Error logging in to discord', error.message);
+        setStore('discord_bot_ready', false);
+        setStore('discord_bot_status', getDiscordLoginErrorMessage(error));
     });
 
     client.once(Events.ClientReady, (readyClient) => {
-        getUserGuilds();
+        console.log('DISCORD: Gateway ready', { botId: readyClient.user.id, connectedGuilds: readyClient.guilds.cache.size });
+        return getUserGuilds();
     });
 
     // when a user joins a voice channel, update the store
@@ -106,12 +127,16 @@ export const setUpClient = () => {
         if (newState.id === user?.id) {
             if (newState.channelId && followMode) {
                 setStore('discord_userVoiceChannel', newState.channelId);
-                setStore('discord_userVoiceChannelName', newState.channel?.name);
+                setStore('discord_userVoiceChannelName', newState.channel?.name ?? '');
             }
             return;
         }
 
         const action = getViewerVoiceAction(oldState.channelId, newState.channelId, viewerVoiceChannel);
+        if (action) console.log('DISCORD: Viewer voice transition', {
+            action, guildId: newState.guild.id, userId: newState.id,
+            fromChannel: oldState.channelId, toChannel: newState.channelId,
+        });
         if (action === 'join') {
             const discordWeights = store.get('discord_weights', 1);
             dataManager.handleAddUpdateWheelUser({} as any, createDiscordVoiceEntry(newState, discordWeights));
@@ -126,7 +151,7 @@ ipcMain.handle('discord_winner', async (_, winner: Entry) => {
     const selectedGuildId = store.get('discord_selectedGuild', '');
     const userVoiceChannel = store.get('discord_userVoiceChannel', '');
     const userGuilds = store.get('discord_userGuilds', null);
-    if (!winner) {
+    if (!winner || winner.service !== Service.Discord) {
         return;
     }
     if (!selectedGuildId || !userGuilds || !client) {
@@ -148,10 +173,16 @@ ipcMain.handle('discord_winner', async (_, winner: Entry) => {
     try {
         // Moving a member by ID uses the REST API and does not depend on a cached GuildMember.
         await moveDiscordWinner(guild, winnerId, channel.id);
+        console.log('DISCORD: Winner moved', { guildId: guild.id, userId: winnerId, targetChannelId: channel.id });
         return winner;
     } catch (error) {
         console.error('DISCORD: Failed to move wheel winner', error);
     }
+});
+
+ipcMain.handle('discord_refresh', async () => {
+    if (client?.isReady()) await getUserGuilds();
+    else setUpClient();
 });
 
 ipcMain.on('clear_voice_channel', async () => {
