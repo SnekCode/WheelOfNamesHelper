@@ -483,7 +483,8 @@ const clearDiscordChannel = () => {
                 @click="decrementChances(entry)">➖</button>
               <div class="card-details">
                 <strong>{{ entry.text }}</strong>
-                <div>{{ entry.weight }} chances · {{ getTime(entry.timestamp ?? 0) }}</div>
+                <div>{{ entry.weight }} chances</div>
+                <div>{{ getTime(entry.timestamp ?? 0) }}</div>
                 <label>
                   <input type="checkbox" :checked="entry.enabled"
                     @change="contextData.addUpdateWheelUser({ ...entry, enabled: !entry.enabled })" />
