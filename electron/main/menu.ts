@@ -194,16 +194,17 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                     },
                 },
                 {
-                    label: 'Open Log File',
+                    label: 'Open Log Folder',
                     click: async () => {
-                        const error = await shell.openPath(log.transports.file.getFile().path);
-                        if (error) dialog.showErrorBox('Could not open log file', error);
+                        const error = await shell.openPath(path.dirname(log.transports.file.getFile().path));
+                        if (error) dialog.showErrorBox('Could not open log folder', error);
                     },
                 },
                 {
-                    label: 'Open Config File',
-                    click: () => {
-                        shell.openPath(store.path);
+                    label: 'Open Config Folder',
+                    click: async () => {
+                        const error = await shell.openPath(path.dirname(store.path));
+                        if (error) dialog.showErrorBox('Could not open config folder', error);
                     },
                 },
             ],

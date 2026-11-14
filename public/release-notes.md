@@ -7,8 +7,8 @@
   - Move names to Winners, send them back to the queue, or remove winner cards individually or all at once.
 - Click Winner on the wheel to save the result and announce it in Twitch or YouTube chat. Click Cancel to keep the name in the queue.
 - Fixed an issue where some winners with unknown last-seen activity were missed.
-- Closing the dashboard now closes the other app windows.
-- Moved Open Config File and Open Log File to the Help menu. Open Log File now opens the current session's log.
+- Closing the dashboard now closes the all windows, no more orphans!
+- Added Open Config Folder and Open Log Folder to the Help menu.
 - Fixed Force Window On Top to show the focused window's setting and remember it separately for the dashboard and wheel.
 - Debug Menu and Open Dev Tools Window are only shown when running in development mode.
 
