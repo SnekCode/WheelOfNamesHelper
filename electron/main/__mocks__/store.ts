@@ -14,8 +14,12 @@ class Store {
     return this.data[key];
   }
 
-  public set(key: string, value: any) {
-    this.data[key] = value;
+  public set(key: string | Record<string, unknown>, value?: unknown) {
+    if (typeof key === "string") {
+      this.data[key] = value;
+    } else {
+      Object.assign(this.data, key);
+    }
   }
 
   public delete(key: string) {

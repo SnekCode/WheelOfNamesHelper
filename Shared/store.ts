@@ -1,9 +1,10 @@
-import { Entry, WheelConfig } from "./types";
+import { Entry, WheelConfig, Winner } from "./types";
 
 
 // enums for key names
 export enum StoreKeys {
     data = "entries",
+    winners = "winners",
     lastconfig = "lastconfig",
     twitchChannelName = "twitchChannelName",
     searching = "searching",
@@ -15,6 +16,7 @@ export enum StoreKeys {
 
 export interface IStore {
     entries: Entry[];
+    winners?: Winner[];
     lastconfig: WheelConfig;
     twitchChannelName: string;
     twitchAuth: string;

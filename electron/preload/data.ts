@@ -18,16 +18,24 @@ window.data = {
     removeSelected(id: string) {
         return ipcRenderer.invoke('removeSelected', id);
     },
+    recordWinner(id: string) {
+        return ipcRenderer.invoke('recordWinner', id);
+    },
     handleDiscordWinner(entry: Entry) {
         return ipcRenderer.invoke('discord_winner', entry);
     }
 };
+
+let initializedWheel: Element | null = null;
+let spinPending = false;
 
 // set up a ipc on the renderer side to listen for a message and execute a function on recieve
 ipcRenderer.on('initListeners', async (event, value) => {
     console.log('initListeners');
     // const wheel = document.querySelector("#parentDiv");
     const wheel = document.querySelector('canvas');
+    if (!wheel || wheel === initializedWheel) return;
+    initializedWheel = wheel;
     console.log(wheel);
 
     // remove unwanted elements from the page
@@ -37,39 +45,30 @@ ipcRenderer.on('initListeners', async (event, value) => {
         window.data.saveConfig();
     });
 
-    wheel?.addEventListener('click', () => {
+    wheel.addEventListener('click', () => {
+        if (spinPending) return;
+        spinPending = true;
         window.data.setPause(true);
         // grab from the local storage key LastWheelConfig and grab the value for spin time
         const lastWheelConfig = localStorage.getItem('LastWheelGroup');
-        const spinTime = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfigs[0].spinTime : 10;
+        const config = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfigs[0] : undefined;
+        const spinTime = config?.spinTime ?? 10;
 
         setTimeout(() => {
-            // // get element with class "text-h6"
-            //document.querySelector("#q-portal--dialog--3 > div > div.q-dialog__inner.flex.no-pointer-events.q-dialog__inner--minimized.q-dialog__inner--standard.fixed-full.flex-center > div > div.q-card__section.q-card__section--vert.flex.gap.justify-between > div")
-            
-            const messageBox = document.querySelector('.text-h6');
+            spinPending = false;
+            const dialog = document.querySelector('[role="dialog"]');
+            const messageBox = dialog?.querySelector('.text-h6');
+            const entries: Entry[] = config?.entries ?? [];
+            const result = messageBox?.textContent?.trim();
+            const name = dialog?.querySelector('.text-h5, .text-h4, h2, h3')?.textContent?.trim();
+            const entry = entries.find(entry => result && result === (entry.channelId ?? entry.id))
+                ?? entries.find(entry => !entry.channelId && (entry.text === name || entry.text === result));
 
-            let id = '';
-            // return;
-            if (messageBox) {
-                // // get text and convert to date time
-                const currentTime = Date.now();
-                console.log({ currentTime });
+            if (entry) {
+                const id = entry.channelId ?? entry.text;
+                void window.data.recordWinner(id).catch((error: unknown) => console.error('Unable to record wheel winner', error));
 
-                // get the entry from the local storage the messagebox text is the entries channelId
-                id = messageBox.textContent ?? 'NO ID';
-                console.log(id);
-
-                const lastWheelConfig = localStorage.getItem('LastWheelGroup');
-                const entries = lastWheelConfig ? JSON.parse(lastWheelConfig).wheelConfigs[0].entries : [];
-                const entry: Entry = entries.find((entry: Entry) => entry.channelId === id);
-
-                const milliseconds = entry.timestamp ?? 0;
-
-                const differenceMilliseconds = currentTime - milliseconds;
-                const differenceInSeconds = differenceMilliseconds / 1000;
-                const minutes = Math.floor(differenceInSeconds / 60); // Get the minutes
-                const seconds = parseInt((differenceInSeconds % 60).toFixed(0)); // Get the remaining seconds
+                const elapsed = entry.timestamp ? Math.max(0, Math.floor((Date.now() - entry.timestamp) / 1000)) : undefined;
 
                 if (entry?.service === Service.Discord) {
                     console.log('Discord Winner');
@@ -77,13 +76,10 @@ ipcRenderer.on('initListeners', async (event, value) => {
                     window.data.handleDiscordWinner(entry);
                 }
 
-                // if NAN set to 0
-                if (isNaN(minutes) || isNaN(seconds)) {
-                    messageBox.textContent = `Not sure if they are here...`;
-                } else {
-                    messageBox.textContent = `Last Seen: ${minutes} Minutes and ${seconds}s ago ${
-                        entry.service ? `on ${entry.service}` : ''
-                    }`;
+                if (messageBox) {
+                    messageBox.textContent = elapsed === undefined
+                        ? 'Last Seen: Unknown'
+                        : `Last Seen: ${Math.floor(elapsed / 60)} Minutes and ${elapsed % 60}s ago${entry.service ? ` on ${entry.service}` : ''}`;
                 }
 
                 // find button with text "Remove"
@@ -124,6 +120,8 @@ ipcRenderer.on('initListeners', async (event, value) => {
                     window.data.removeSelected(id);
                     window.data.setPause(false);
                 });
+            } else {
+                window.data.setPause(false);
             }
         }, spinTime * 1000 + 100);
     });

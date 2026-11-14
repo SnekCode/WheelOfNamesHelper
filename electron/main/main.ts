@@ -8,7 +8,9 @@ import log from 'electron-log/main';
 import { createMenu } from './menu';
 import { YouTubeChatService } from '../YouTube/YouTubeChatService';
 import { YouTubeOAuthProvider } from '../YouTube/YouTubeOAuthProvider';
-import { DataManager } from '../data/data';
+import { DataManager, recordWinner } from '../data/data';
+import { sendTwitchChatMessage } from '../Twitch/TwitchChatService';
+import { Service } from '~/Shared/enums';
 
 import '../Discord/discord';
 import {DiscordOAuthProvider} from "../Discord/DiscordOAuthProvider"
@@ -17,7 +19,7 @@ export const dataManager = new DataManager();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import './wheelOfNames';
+import { wheelWindow } from './wheelOfNames';
 import '../updater/releaseNotes';
 
 // Youtube Auth Provider
@@ -237,6 +239,25 @@ ipcMain.handle("setPause", dataManager.setPause)
 ipcMain.handle("saveConfig", dataManager.saveConfig);
 ipcMain.handle("hideSelected", dataManager.hideSelected);
 ipcMain.handle("removeSelected", dataManager.removeSelected);
+ipcMain.handle("moveToWinners", dataManager.moveToWinners);
+ipcMain.handle("returnWinnerToQueue", dataManager.returnWinnerToQueue);
+ipcMain.handle("removeWinner", dataManager.removeWinner);
+ipcMain.handle("recordWinner", (event, id: string) => {
+    if (event.sender !== wheelWindow?.webContents ||
+        event.senderFrame !== event.sender.mainFrame ||
+        !event.senderFrame?.url.startsWith('https://wheelofnames.com/')) return;
+
+    const winner = recordWinner(id);
+    if (!winner) return;
+
+    const name = winner.service === Service.Twitch ? `@${winner.name}` : winner.name;
+    const message = `Congratulations ${name}, you won the wheel spin!`;
+    if (winner.service === Service.Twitch) {
+        sendTwitchChatMessage(message);
+    } else if (winner.service === Service.YouTube && youTubeChatService.isLiveBroadCast && youTubeChatService.liveChatId) {
+        void youTubeChatService.sendMessage(message);
+    }
+});
 ipcMain.handle("syncWithWheel", dataManager.syncWithWheel);
 
 // discord ipc events

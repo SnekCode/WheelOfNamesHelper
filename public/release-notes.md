@@ -1,5 +1,16 @@
 ## Wheel of Names Changelog 
 
+## Version 3.2.0
+
+- Added a Winners list next to the Wheel Queue. Both lists use the same sorting and name filter.
+  - Winner history stays available after you remove a name from the wheel or restart the app.
+  - Move names to Winners, send them back to the queue, or remove individual winner cards.
+- Winners are announced in Twitch or YouTube chat when the wheel picks them. Keep spinning without waiting for a reply!
+- Fixed an issue where some winners with unknown last-seen activity were missed.
+
+___________________________________________________________________________________________
+___________________________________________________________________________________________
+
 ## Version 3.1.0
 
 - Updated how names are added and removed from the wheel for smoother performance.

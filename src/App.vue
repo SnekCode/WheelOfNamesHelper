@@ -3,8 +3,9 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import Updater from "./components/Updater.vue";
 import ReleaseNotes from "./components/ReleaseNotes.vue";
 import tmi from "tmi.js";
-import { Entry } from "../Shared/types";
+import { Entry, Winner } from "../Shared/types";
 import { Service } from "../Shared/enums";
+import { StoreKeys } from "../Shared/store";
 
 enum FilterType {
   ACTIVITY = "activity",
@@ -25,6 +26,7 @@ const twitchHereCount = ref(0); // Add a ref for the count
 const youtubeWheelCount = ref(0); // Add a ref for the count
 const youtubeHereCount = ref(0); // Add a ref for the count
 const users = ref<Entry[]>([] as Entry[]); // Add a ref for the users
+const winners = ref<Winner[]>([]);
 const filterText = ref(""); // Add a ref for the filter text
 let timerRef = ref(""); // Add a ref for the timer
 const appLoadTime = ref(Date.now()); // Add a ref for the app load time
@@ -63,6 +65,9 @@ const addUser = () => {
 
 // updater / listener
 ipcRenderer.on('storeUpdate', (event, storeName, data) => {
+    if (storeName === StoreKeys.winners) {
+        winners.value = data;
+    }
     if (storeName === 'discord_enabled') {
         isDiscordConnected.value = data;
     }
@@ -73,6 +78,10 @@ ipcRenderer.on('storeUpdate', (event, storeName, data) => {
         discordStreamerChannel.value = data;
     }
     console.log(`Store updated: ${storeName}`, data);
+});
+
+ipcRenderer.invoke("getStore", StoreKeys.winners).then((data: Winner[] | undefined) => {
+  if (winners.value.length === 0) winners.value = data ?? [];
 });
 
 ipcRenderer.on(`${Service.YouTube}-add-wheel`, () => {
@@ -226,42 +235,65 @@ onUnmounted(() => {
 
 
 
-const sortWeight = (a: Entry, b: Entry) => b.weight - a.weight;
-const sortTimestamp = (a: Entry, b: Entry) => {
-  const time1: number = a.timestamp || 0;
-  const time2: number = b.timestamp || 0;
-  return time2 - time1;
+const filterAndSort = <T,>(items: T[], getEntry: (item: T) => Entry, getActivity: (item: T) => number) => {
+  const filter = filterText.value.trim().toLowerCase();
+  return items
+    .filter(item => getEntry(item).text.toLowerCase().includes(filter))
+    .sort((a, b) => {
+      const first = getEntry(a);
+      const second = getEntry(b);
+      let order: number;
+      switch (filterType.value) {
+        case FilterType.WEIGHT:
+          order = second.weight - first.weight;
+          break;
+        case FilterType.ALPHABETICAL:
+          order = first.text.localeCompare(second.text);
+          break;
+        case FilterType.ENABLED:
+          order = Number(Boolean(second.enabled)) - Number(Boolean(first.enabled));
+          break;
+        default:
+          order = getActivity(b) - getActivity(a);
+      }
+      return sortType.value === SortType.ASC ? -order : order;
+    });
 };
 
-const sortAlphabetical = (a: Entry, b: Entry) => a.text.localeCompare(b.text);
+const lists = computed(() => [
+  {
+    id: "queue",
+    title: "Wheel Queue",
+    empty: "No names in the queue.",
+    cards: filterAndSort(
+      users.value.filter(entry => entry.weight > 0 || filterText.value.trim()),
+      entry => entry,
+      entry => entry.timestamp ?? 0
+    )
+      .map(entry => ({ key: entry.channelId ?? entry.text, entry, winner: undefined })),
+  },
+  {
+    id: "winners",
+    title: "Winners",
+    empty: "No winners yet.",
+    cards: filterAndSort(winners.value, winner => winner.entry ?? {
+      text: winner.name, service: winner.service, weight: 1, claimedHere: false,
+    }, winner => winner.drawnAt)
+      .map(winner => ({ key: winner.id!, entry: winner.entry, winner })),
+  },
+]);
 
-const filteredUsers = computed<Entry[]>(() => {
-  const sort = (a: Entry, b: Entry) => {
-    switch (filterType.value) {
-      case FilterType.WEIGHT:
-        return sortWeight(a, b);
-      case FilterType.ACTIVITY:
-        return sortTimestamp(a, b);
-      case FilterType.ALPHABETICAL:
-        return sortAlphabetical(a, b);
-      case FilterType.ENABLED:
-        return a.enabled === b.enabled ? 0 : a.enabled ? -1 : 1;
-      default:
-        return sortTimestamp(a, b);
+const cardError = ref("");
+const updateCard = async (action: string, id: string) => {
+  cardError.value = "";
+  try {
+    if (!await ipcRenderer.invoke(action, id)) {
+      cardError.value = "Could not move this card. If the wheel is spinning, try again after closing the result.";
     }
-  };
-
-  const filter = filterText.value.toLowerCase();
-  const filters = users.value
-    .filter((user) => user.text.toLowerCase().includes(filter))
-    .sort(sort);
-
-  if (sortType.value === SortType.ASC) {
-    return filters.reverse();
+  } catch {
+    cardError.value = "Could not update this card. Please try again.";
   }
-
-  return filters;
-});
+};
 
 const resetWheelRequests = () => {
   twitchWheelCount.value = 0;
@@ -415,33 +447,49 @@ const clearDiscordChannel = () => {
         <option value="asc">Sort Ascending</option>
         <option value="desc">Sort Descending</option>
       </select>
-      <input class="search" v-model="filterText" placeholder="Filter users by name" />
+      <input class="search" v-model="filterText" aria-label="Filter both lists by name" placeholder="Filter both lists by name" />
       <button class="clear" @click="filterText = ''">✖</button>
     </div>
-    <br />
-    <br />
-    <!-- <input v-on:blur="updateChannel" v-model="channel" placeholder="Enter the channel to join" /> -->
-    <!-- map over the wheelUsers object to display in a grid pattern with buttons to remove from the object -->
-    <div class="grid">
-      <div v-for="user in filteredUsers" :key="user.text">
-        <div class="userList" v-if="(user && user.weight > 0) || filterText"
-          :class="{ new: !user.claimedHere, here: user.claimedHere }">
-          <button class="subbtn" @click="decrementChances(user)">➖</button>
-          <!-- @click="contextData.removeWheelUser(user.text)" -->
-          <div class="name">
-            {{ user.text }}
-            <div>{{ user.weight }}</div>
-            <div>{{ getTime(user.timestamp ?? 0) }}</div>
-            <!-- checkbox based on the user.enabled property. This should set the property when checked -->
-            <!-- contextData.updateWheelUser({...user, enabled:}) -->
-            <!-- onclick pass the checkbox value to contextData.updateWheelUser -->
-            <input type="checkbox" v-model="user.enabled"
-              @click="contextData.addUpdateWheelUser({...user, enabled: !user.enabled})" />
-
-          </div>
-          <button class="addbtn" @click="incrementChances(user)">➕</button>
-        </div>
-      </div>
+    <p v-if="cardError" role="status">{{ cardError }}</p>
+    <div class="wheel-lists">
+      <section v-for="list in lists" :key="list.id" :class="['wheel-list', list.id]"
+        :aria-labelledby="`${list.id}-heading`">
+        <h2 :id="`${list.id}-heading`">{{ list.title }}</h2>
+        <p v-if="!list.cards.length">{{ filterText.trim() ? "No matching names." : list.empty }}</p>
+        <ul v-else class="card-list">
+          <li v-for="{ key, entry, winner } in list.cards" :key="key" class="userList"
+            :class="{ new: entry && !entry.claimedHere, here: entry?.claimedHere }">
+            <div v-if="winner" class="card-details">
+              <strong>{{ winner.name }}</strong>
+              <div v-if="winner.service">{{ winner.service }}</div>
+              <time :datetime="new Date(winner.drawnAt).toISOString()">{{ new Date(winner.drawnAt).toLocaleString() }}</time>
+              <div v-if="entry">{{ entry.weight }} chances · {{ entry.enabled ? "Enabled" : "Disabled" }}</div>
+            </div>
+            <div v-else-if="entry" class="queue-details">
+              <button class="subbtn" :aria-label="`Decrease chances for ${entry.text}`"
+                @click="decrementChances(entry)">➖</button>
+              <div class="card-details">
+                <strong>{{ entry.text }}</strong>
+                <div>{{ entry.weight }} chances · {{ getTime(entry.timestamp ?? 0) }}</div>
+                <label>
+                  <input type="checkbox" :checked="entry.enabled"
+                    @change="contextData.addUpdateWheelUser({ ...entry, enabled: !entry.enabled })" />
+                  Enabled
+                </label>
+              </div>
+              <button class="addbtn" :aria-label="`Increase chances for ${entry.text}`"
+                @click="incrementChances(entry)">➕</button>
+            </div>
+            <div class="card-actions">
+              <template v-if="winner">
+                <button @click="updateCard('returnWinnerToQueue', key)">Back to Queue</button>
+                <button class="remove-card" @click="updateCard('removeWinner', key)">Remove</button>
+              </template>
+              <button v-else @click="updateCard('moveToWinners', key)">Move to Winners</button>
+            </div>
+          </li>
+        </ul>
+      </section>
     </div>
   </div>
 </template>
@@ -662,9 +710,47 @@ const clearDiscordChannel = () => {
   }
 }
 
-.grid {
+.wheel-lists {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 200px));
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.wheel-list {
+  min-width: 0;
+  border: 1px solid #8888;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.wheel-list.winners {
+  border-top: 3px solid #d7a849;
+}
+
+.wheel-list h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.card-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.winners .card-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 560px) {
+  .wheel-lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .flex-center {
@@ -706,31 +792,49 @@ const clearDiscordChannel = () => {
 
 .userList {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
-  margin: 0.5em;
-  padding: 0.5em;
+  gap: 0.6rem;
+  padding: 0.6rem;
   border: 1px solid #ccc;
   border-radius: 0.5em;
   background-color: #65a0c7;
   color: black;
+  text-align: center;
 }
 
-.name {
-  width: 10rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.queue-details, .card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.card-details {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.card-actions {
+  flex-wrap: wrap;
+}
+
+.card-actions button {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.card-actions .remove-card {
+  background-color: #922d28;
+  color: white;
 }
 
 .new {
-  background-color: #4c5eaf;
-  opacity: 0.7;
+  background-color: #7181bd;
 }
 
 .here {
-  background-color: #36cef4;
-  opacity: 0.7;
+  background-color: #54b3ce;
 }
 
 .addbtn {

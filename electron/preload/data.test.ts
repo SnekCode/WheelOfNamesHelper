@@ -3,22 +3,32 @@ import { Service } from '~/Shared/enums';
 
 jest.mock('electron', () => ({ ipcRenderer: { on: jest.fn(), invoke: jest.fn() } }));
 
-describe('Wheel winner dialog Discord movement', () => {
+describe('Wheel winner dialog', () => {
     afterEach(() => {
         jest.useRealTimers();
         jest.restoreAllMocks();
     });
 
-    it.each([true, false, undefined])('requests movement for a winner with mobile status %s', async (mobile) => {
+    it.each([
+        { service: Service.Discord, mobile: true, result: 'winner-1', name: 'Viewer', expectedId: 'winner-1' },
+        { service: Service.Discord, mobile: false, result: 'winner-1', name: 'Viewer', expectedId: 'winner-1' },
+        { service: Service.Discord, mobile: undefined, result: 'winner-1', name: 'Viewer', expectedId: 'winner-1' },
+        { service: Service.Twitch, result: undefined, name: 'Bob25U', expectedId: 'Bob25U' },
+        { service: Service.YouTube, result: 'wheel-generated-id', name: 'Charlie726T', expectedId: 'Charlie726T' },
+    ])('records $name on $service with result $result', async ({ service, mobile, result, name, expectedId }) => {
         jest.resetModules();
         jest.mocked(ipcRenderer.invoke).mockClear();
         jest.mocked(ipcRenderer.on).mockClear();
         jest.useFakeTimers();
         let onSpin: () => void = () => undefined;
-        const messageBox = { textContent: 'winner-1' };
+        const messageBox = result === undefined ? null : { textContent: result };
         const winner = {
-            id: 'winner-1', channelId: 'winner-1', text: 'Viewer',
-            timestamp: Date.now(), service: Service.Discord, mobile,
+            id: 'wheel-generated-id', text: name, service,
+            ...(service === Service.Discord ? { channelId: 'winner-1', timestamp: Date.now(), mobile } : {}),
+        };
+        const dialog = {
+            querySelector: (selector: string) => selector === '.text-h6' ? messageBox : { textContent: name },
+            addEventListener: jest.fn(),
         };
         Object.defineProperty(globalThis, 'window', {
             configurable: true, value: { addEventListener: jest.fn(), location: { href: 'test' } },
@@ -27,7 +37,7 @@ describe('Wheel winner dialog Discord movement', () => {
             configurable: true, value: {
                 querySelector: jest.fn((selector) => selector === 'canvas'
                     ? { addEventListener: (_event: string, handler: () => void) => { onSpin = handler; } }
-                    : selector === '.text-h6' ? messageBox : null),
+                    : selector === '[role="dialog"]' ? dialog : null),
                 querySelectorAll: jest.fn().mockReturnValue([]),
             },
         });
@@ -36,13 +46,21 @@ describe('Wheel winner dialog Discord movement', () => {
                 wheelConfigs: [{ entries: [winner], spinTime: 1 }],
             }) },
         });
-        const { ipcRenderer: renderer } = require('electron');
+        const { ipcRenderer: renderer } = require('electron') as typeof import('electron');
+        jest.mocked(renderer.invoke).mockResolvedValue(undefined);
         require('./data');
         const init = jest.mocked(renderer.on).mock.calls.find((call: any) => call[0] === 'initListeners')![1] as any;
         await init({}, undefined);
         onSpin();
+        onSpin();
         jest.advanceTimersByTime(1100);
-        expect(renderer.invoke).toHaveBeenCalledWith('discord_winner', winner);
-        expect(messageBox.textContent).not.toMatch(/Desktop|Mobile/);
+        expect(jest.mocked(renderer.invoke).mock.calls.filter(([channel]) => channel === 'recordWinner'))
+            .toEqual([['recordWinner', expectedId]]);
+        if (service === Service.Discord) {
+            expect(renderer.invoke).toHaveBeenCalledWith('discord_winner', winner);
+            expect(messageBox?.textContent).not.toMatch(/Desktop|Mobile/);
+        } else if (messageBox) {
+            expect(messageBox.textContent).toBe('Last Seen: Unknown');
+        }
     });
 });

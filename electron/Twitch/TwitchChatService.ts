@@ -4,11 +4,6 @@ import tmi, { Client } from "tmi.js";
 import { handleChatCommand } from "../ChatService/ChatService";
 import { win } from "../main/main";
 import { Service } from "Shared/enums";
-import { kill } from "process";
-
-
-// TODO update later to use keygen
-const twitchChannelName = store.get('twitchChannelName', '');
 
 let client: Client | undefined = undefined
 
@@ -21,8 +16,11 @@ ipcMain.on('did-finish-load', () => {
     }
 })
 
-const sendChatMessage = (message: string) => {
-    client?.say(twitchChannelName, message);
+export const sendTwitchChatMessage = (message: string) => {
+    const channel = client?.getChannels()[0];
+    if (client && channel) {
+        void client.say(channel, message).catch(error => console.error('Unable to send Twitch chat message', error));
+    }
 }
 
 export const killTwitchClient = () => {
@@ -31,6 +29,7 @@ export const killTwitchClient = () => {
 
 export const setUpClient = () => {
     client?.disconnect();
+    const twitchChannelName = store.get('twitchChannelName', '');
     const twitchAuthToken = store.get('twitchAuth', '');
     
 
@@ -50,7 +49,6 @@ export const setUpClient = () => {
         if (self) return;
         const displayName = tags['display-name'] ?? tags['username'] ?? 'UNKNOWN';
         const channelId = tags['user-id'] ?? 'UNKNOWN';
-        handleChatCommand(message, displayName, channelId, Service.Twitch, sendChatMessage);
+        handleChatCommand(message, displayName, channelId, Service.Twitch, sendTwitchChatMessage);
     });
 }
-      

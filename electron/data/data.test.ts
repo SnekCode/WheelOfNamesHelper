@@ -1,5 +1,5 @@
 import { Entry } from "../../Shared/types";
-import { DataManager, setStore } from "./data";
+import { DataManager, recordWinner, setStore } from "./data";
 import { wheelEntrySync } from "../main/wheelEntrySync";
 import { Service } from "~/Shared/enums";
 import { store } from "../main/store";
@@ -63,6 +63,60 @@ describe('data tests', () => {
             }
             return undefined;
         });
+    });
+
+    it('keeps draw history when winners are removed and records repeated draws', async () => {
+        const twitchEntry = buildEntry({ text: 'Twitch viewer' });
+        const manualEntry = buildEntry({ text: 'Manual viewer', channelId: undefined, service: undefined });
+        store.set(StoreKeys.data, [twitchEntry, manualEntry]);
+        jest.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValueOnce(200).mockReturnValueOnce(300);
+
+        const first = recordWinner(twitchEntry.channelId!);
+        const second = recordWinner(twitchEntry.channelId!);
+        const third = recordWinner(manualEntry.text);
+        const dataManager = new DataManager();
+        await dataManager.removeSelected(event, twitchEntry.channelId!);
+        await dataManager.removeSelected(event, manualEntry.text);
+
+        expect(store.get(StoreKeys.data)).toEqual([]);
+        expect(recordWinner(twitchEntry.channelId!)).toBeUndefined();
+        expect(store.get(StoreKeys.winners)).toEqual([third, second, first]);
+        expect(first).toMatchObject({ name: 'Twitch viewer', service: Service.Twitch, drawnAt: 100, entry: twitchEntry });
+        expect(third).toMatchObject({ name: 'Manual viewer', drawnAt: 300, entry: manualEntry });
+    });
+
+    it('moves a card between lists and deletes a winner without touching the queue', () => {
+        const manager = new DataManager();
+        const viewer = buildEntry({ weight: 4, enabled: false, claimedHere: true });
+        store.set(StoreKeys.data, [viewer]);
+
+        expect(manager.moveToWinners(event, '123')).toBe(true);
+        expect(manager.moveToWinners(event, '123')).toBe(false);
+        expect(store.get(StoreKeys.data)).toEqual([]);
+        const [winner] = store.get(StoreKeys.winners) ?? [];
+        expect(winner.entry).toEqual(viewer);
+
+        expect(manager.returnWinnerToQueue(event, winner.id!)).toBe(true);
+        expect(store.get(StoreKeys.winners)).toEqual([]);
+        expect(store.get(StoreKeys.data)).toEqual([{ ...viewer, enabled: true }]);
+
+        const drawn = recordWinner('123')!;
+        manager.removeWinner(event, drawn.id!);
+        expect(store.get(StoreKeys.winners)).toEqual([]);
+        expect(store.get(StoreKeys.data)).toEqual([{ ...viewer, enabled: true }]);
+    });
+
+    it('restores a legacy winner using an existing matching queue entry', () => {
+        const manager = new DataManager();
+        const viewer = buildEntry({ weight: 4, enabled: false });
+        store.set(StoreKeys.data, [viewer]);
+        store.set(StoreKeys.winners, [{ name: viewer.text, service: viewer.service, drawnAt: 100 }]);
+
+        const latest = recordWinner('123')!;
+        const [, legacy] = store.get(StoreKeys.winners) ?? [];
+        expect(manager.returnWinnerToQueue(event, legacy.id!)).toBe(true);
+        expect(store.get(StoreKeys.data)).toEqual([{ ...viewer, enabled: true }]);
+        expect(store.get(StoreKeys.winners)).toEqual([latest]);
     });
 
     it('should add user to store', () => {

@@ -3,6 +3,7 @@
 // deconflicting the entries from wheel of names and the store after a spin
 // this is where the data process ipc events are defined and handled
 
+import { randomUUID } from "node:crypto";
 import { ipcMain, IpcMainInvokeEvent } from "electron";
 import { IStore, IStoreKeys, StoreKeys } from "../../Shared/store";
 import { win as mainWindow } from "../main/main";
@@ -11,7 +12,7 @@ import { EChannels } from "Shared/channels";
 
 // load main ipc actions
 import { store } from "../main/store";
-import { Entry } from "Shared/types";
+import { Entry, Winner } from "Shared/types";
 import { wheelEntrySync } from "../main/wheelEntrySync";
 
 const broadcastUpdate = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
@@ -36,11 +37,46 @@ export const setStore = <K extends IStoreKeys>(name: K, data: IStore[K]) => {
   if (name === StoreKeys.data) wheelEntrySync.update(data as Entry[]);
 };
 
+const entryKey = (entry: Entry) => entry.channelId ?? entry.text;
+
+const getWinners = () => {
+  const winners = store.get(StoreKeys.winners) ?? [];
+  if (winners.every(winner => winner.id)) return winners;
+
+  const history = winners.map(winner => ({ ...winner, id: winner.id ?? randomUUID() }));
+  store.set(StoreKeys.winners, history);
+  return history;
+};
+
+const createWinner = (entry: Entry): Winner => ({
+  id: randomUUID(),
+  name: entry.text,
+  service: entry.service,
+  drawnAt: Date.now(),
+  entry,
+});
+
+export const recordWinner = (id: string) => {
+  const entry = store.get(StoreKeys.data, []).find(entry => entryKey(entry) === id);
+  if (!entry) return;
+
+  const winner = createWinner(entry);
+  setStore(StoreKeys.winners, [winner, ...getWinners()]);
+  return winner;
+};
+
+const updateLists = (entries: Entry[], winners: Winner[]) => {
+  store.set({ entries, winners });
+  broadcastUpdate(StoreKeys.data, entries);
+  broadcastUpdate(StoreKeys.winners, winners);
+  wheelEntrySync.update(entries);
+};
+
 ipcMain.handle(
   "getStore",
   <K extends IStoreKeys>(_: IpcMainInvokeEvent, name: K): IStore[K] => {
-    const data = store.get(name);
-    return data;
+    if (name === StoreKeys.winners) getWinners();
+    return store.get(name);
   }
 );
 
@@ -85,6 +121,42 @@ export class DataManager{
       this.syncWithWheel();
     }
   }
+
+  public moveToWinners = (_: IpcMainInvokeEvent, id: string) => {
+    if (this.pause) return false;
+    const entries = store.get(StoreKeys.data, []);
+    const entry = entries.find(entry => entryKey(entry) === id);
+    if (!entry) return false;
+
+    updateLists(entries.filter(entry => entryKey(entry) !== id), [createWinner(entry), ...getWinners()]);
+    return true;
+  };
+
+  public returnWinnerToQueue = (_: IpcMainInvokeEvent, id: string) => {
+    if (this.pause) return false;
+    const winners = getWinners();
+    const winner = winners.find(winner => winner.id === id);
+    if (!winner) return false;
+
+    const entries = store.get(StoreKeys.data, []);
+    const entry = winner.entry ?? {
+      text: winner.name, service: winner.service, weight: 1, claimedHere: false,
+    };
+    const existing = entries.find(queued => entryKey(queued) === entryKey(entry) ||
+      (!entry.channelId && queued.text === entry.text && queued.service === entry.service));
+    const restored = { ...(existing ?? entry), enabled: true };
+    updateLists(
+      [...entries.filter(queued => queued !== existing), restored],
+      winners.filter(winner => winner.id !== id)
+    );
+    return true;
+  };
+
+  public removeWinner = (_: IpcMainInvokeEvent, id: string) => {
+    const winners = getWinners();
+    setStore(StoreKeys.winners, winners.filter(winner => winner.id !== id));
+    return true;
+  };
 
   private addQueueEntry = (entry: Entry) => {
     this.addQueue.push(entry);
@@ -152,7 +224,7 @@ export class DataManager{
     // filter entries from store and set enabled to false
     let entries = store.get(StoreKeys.data);
     entries = entries.map((entry) =>
-      entry.channelId === id ? { ...entry, enabled: false } : entry
+      (entry.channelId ?? entry.text) === id ? { ...entry, enabled: false } : entry
     );
     setStore(StoreKeys.data, entries);
   }
@@ -176,7 +248,7 @@ export class DataManager{
   public removeSelected = async (_: IpcMainInvokeEvent, id: string) => {
     // filter entries from store and remove entry
     let entries = store.get(StoreKeys.data);
-    entries = entries.filter((entry) => entry.channelId !== id);
+    entries = entries.filter((entry) => (entry.channelId ?? entry.text) !== id);
     setStore(StoreKeys.data, entries);
   }
 

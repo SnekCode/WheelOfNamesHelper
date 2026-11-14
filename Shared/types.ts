@@ -26,6 +26,14 @@ export type WheelUser = {
       mobile?: boolean;
     }
 
+export interface Winner {
+  name: string;
+  service?: Service;
+  drawnAt: number;
+  id?: string;
+  entry?: Entry;
+}
+
 // New state types
   export interface WheelConfig {
     displayWinnerDialog?: boolean;
