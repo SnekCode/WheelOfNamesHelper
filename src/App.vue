@@ -27,6 +27,7 @@ const youtubeWheelCount = ref(0); // Add a ref for the count
 const youtubeHereCount = ref(0); // Add a ref for the count
 const users = ref<Entry[]>([] as Entry[]); // Add a ref for the users
 const winners = ref<Winner[]>([]);
+let receivedWinnerUpdate = false;
 const filterText = ref(""); // Add a ref for the filter text
 let timerRef = ref(""); // Add a ref for the timer
 const appLoadTime = ref(Date.now()); // Add a ref for the app load time
@@ -66,6 +67,7 @@ const addUser = () => {
 // updater / listener
 ipcRenderer.on('storeUpdate', (event, storeName, data) => {
     if (storeName === StoreKeys.winners) {
+        receivedWinnerUpdate = true;
         winners.value = data;
     }
     if (storeName === 'discord_enabled') {
@@ -81,7 +83,7 @@ ipcRenderer.on('storeUpdate', (event, storeName, data) => {
 });
 
 ipcRenderer.invoke("getStore", StoreKeys.winners).then((data: Winner[] | undefined) => {
-  if (winners.value.length === 0) winners.value = data ?? [];
+  if (!receivedWinnerUpdate) winners.value = data ?? [];
 });
 
 ipcRenderer.on(`${Service.YouTube}-add-wheel`, () => {
@@ -284,14 +286,20 @@ const lists = computed(() => [
 ]);
 
 const cardError = ref("");
-const updateCard = async (action: string, id: string) => {
+const updateCard = async (action: string, ...args: string[]) => {
   cardError.value = "";
   try {
-    if (!await ipcRenderer.invoke(action, id)) {
+    if (!await ipcRenderer.invoke(action, ...args)) {
       cardError.value = "Could not move this card. If the wheel is spinning, try again after closing the result.";
     }
   } catch {
     cardError.value = "Could not update this card. Please try again.";
+  }
+};
+
+const removeAllWinners = () => {
+  if (window.confirm("Remove all winners from the history?")) {
+    void updateCard("removeAllWinners");
   }
 };
 
@@ -454,7 +462,12 @@ const clearDiscordChannel = () => {
     <div class="wheel-lists">
       <section v-for="list in lists" :key="list.id" :class="['wheel-list', list.id]"
         :aria-labelledby="`${list.id}-heading`">
-        <h2 :id="`${list.id}-heading`">{{ list.title }}</h2>
+        <header class="wheel-list-heading">
+          <h2 :id="`${list.id}-heading`">{{ list.title }}</h2>
+          <button v-if="list.id === 'winners' && winners.length" class="remove-card" @click="removeAllWinners">
+            Remove All Winners
+          </button>
+        </header>
         <p v-if="!list.cards.length">{{ filterText.trim() ? "No matching names." : list.empty }}</p>
         <ul v-else class="card-list">
           <li v-for="{ key, entry, winner } in list.cards" :key="key" class="userList"
@@ -729,8 +742,17 @@ const clearDiscordChannel = () => {
   border-top: 3px solid #d7a849;
 }
 
+.wheel-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .wheel-list h2 {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-size: 1.1rem;
 }
 
@@ -819,12 +841,12 @@ const clearDiscordChannel = () => {
   flex-wrap: wrap;
 }
 
-.card-actions button {
+.card-actions button, .wheel-list-heading button {
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
 }
 
-.card-actions .remove-card {
+.wheel-list .remove-card {
   background-color: #922d28;
   color: white;
 }

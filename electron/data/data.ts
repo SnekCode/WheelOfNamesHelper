@@ -56,12 +56,18 @@ const createWinner = (entry: Entry): Winner => ({
   entry,
 });
 
-export const recordWinner = (id: string) => {
-  const entry = store.get(StoreKeys.data, []).find(entry => entryKey(entry) === id);
+export const recordWinner = (id: string, removeFromQueue = false) => {
+  const entries = store.get(StoreKeys.data, []);
+  const entry = entries.find(entry => entryKey(entry) === id);
   if (!entry) return;
 
   const winner = createWinner(entry);
-  setStore(StoreKeys.winners, [winner, ...getWinners()]);
+  const winners = [winner, ...getWinners()];
+  if (removeFromQueue) {
+    updateLists(entries.filter(entry => entryKey(entry) !== id), winners);
+  } else {
+    setStore(StoreKeys.winners, winners);
+  }
   return winner;
 };
 
@@ -149,6 +155,11 @@ export class DataManager{
       [...entries.filter(queued => queued !== existing), restored],
       winners.filter(winner => winner.id !== id)
     );
+    return true;
+  };
+
+  public removeAllWinners = () => {
+    setStore(StoreKeys.winners, []);
     return true;
   };
 

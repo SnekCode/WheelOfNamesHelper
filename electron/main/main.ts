@@ -125,6 +125,13 @@ async function createWindow() {
         store.set('discord_bot_ready', false);
     });
 
+    win.on('closed', () => {
+        win = null;
+        for (const window of BrowserWindow.getAllWindows()) {
+            if (!window.isDestroyed()) window.close();
+        }
+    });
+
     if (VITE_DEV_SERVER_URL) {
         // #298
         win.loadURL(VITE_DEV_SERVER_URL);
@@ -238,16 +245,16 @@ ipcMain.handle("removeWheelUser", dataManager.handleRemoveWheelUser);
 ipcMain.handle("setPause", dataManager.setPause)
 ipcMain.handle("saveConfig", dataManager.saveConfig);
 ipcMain.handle("hideSelected", dataManager.hideSelected);
-ipcMain.handle("removeSelected", dataManager.removeSelected);
 ipcMain.handle("moveToWinners", dataManager.moveToWinners);
 ipcMain.handle("returnWinnerToQueue", dataManager.returnWinnerToQueue);
 ipcMain.handle("removeWinner", dataManager.removeWinner);
+ipcMain.handle("removeAllWinners", dataManager.removeAllWinners);
 ipcMain.handle("recordWinner", (event, id: string) => {
     if (event.sender !== wheelWindow?.webContents ||
         event.senderFrame !== event.sender.mainFrame ||
         !event.senderFrame?.url.startsWith('https://wheelofnames.com/')) return;
 
-    const winner = recordWinner(id);
+    const winner = recordWinner(id, true);
     if (!winner) return;
 
     const name = winner.service === Service.Twitch ? `@${winner.name}` : winner.name;
@@ -257,6 +264,7 @@ ipcMain.handle("recordWinner", (event, id: string) => {
     } else if (winner.service === Service.YouTube && youTubeChatService.isLiveBroadCast && youTubeChatService.liveChatId) {
         void youTubeChatService.sendMessage(message);
     }
+    return true;
 });
 ipcMain.handle("syncWithWheel", dataManager.syncWithWheel);
 

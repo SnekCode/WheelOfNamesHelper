@@ -15,9 +15,6 @@ window.data = {
     hideSelected(id: string) {
         return ipcRenderer.invoke('hideSelected', id);
     },
-    removeSelected(id: string) {
-        return ipcRenderer.invoke('removeSelected', id);
-    },
     recordWinner(id: string) {
         return ipcRenderer.invoke('recordWinner', id);
     },
@@ -57,6 +54,14 @@ ipcRenderer.on('initListeners', async (event, value) => {
         setTimeout(() => {
             spinPending = false;
             const dialog = document.querySelector('[role="dialog"]');
+            const buttons = Array.from(dialog?.querySelectorAll('button') ?? []);
+            const findButton = (label: string) => buttons.find(button => button.textContent?.trim() === label);
+            const closeButton = findButton('Close');
+            const removeButton = findButton('Remove');
+            const hideButton = findButton('Hide');
+            if (closeButton) (closeButton.querySelector('.q-btn__content .block') ?? closeButton).textContent = 'Cancel';
+            if (removeButton) (removeButton.querySelector('.q-btn__content .block') ?? removeButton).textContent = 'Winner';
+
             const messageBox = dialog?.querySelector('.text-h6');
             const entries: Entry[] = config?.entries ?? [];
             const result = messageBox?.textContent?.trim();
@@ -66,15 +71,7 @@ ipcRenderer.on('initListeners', async (event, value) => {
 
             if (entry) {
                 const id = entry.channelId ?? entry.text;
-                void window.data.recordWinner(id).catch((error: unknown) => console.error('Unable to record wheel winner', error));
-
                 const elapsed = entry.timestamp ? Math.max(0, Math.floor((Date.now() - entry.timestamp) / 1000)) : undefined;
-
-                if (entry?.service === Service.Discord) {
-                    console.log('Discord Winner');
-                    // auto move
-                    window.data.handleDiscordWinner(entry);
-                }
 
                 if (messageBox) {
                     messageBox.textContent = elapsed === undefined
@@ -82,44 +79,23 @@ ipcRenderer.on('initListeners', async (event, value) => {
                         : `Last Seen: ${Math.floor(elapsed / 60)} Minutes and ${elapsed % 60}s ago${entry.service ? ` on ${entry.service}` : ''}`;
                 }
 
-                // find button with text "Remove"
-                const removeButton = Array.from(document.querySelectorAll('button')).find(
-                    (btn) => btn.textContent?.trim() === 'Remove'
-                );
-                const hideButton = Array.from(document.querySelectorAll('button')).find(
-                    (btn) => btn.textContent?.trim() === 'Hide'
-                );
-                const closeButton = Array.from(document.querySelectorAll('button')).filter(
-                    (btn) => btn.textContent?.trim() === 'Close'
-                )[1];
-
-                // get element of role "dialog"
-                const dialog = document.querySelector('[role="dialog"]');
-
-                console.log({ dialog });
-                
-
-                if (closeButton) {
-                    closeButton.setAttribute('style', 'display: none');
-                }
-
-                dialog?.addEventListener('click', (e) => {
-                    console.log('Dialog Clicked');
+                dialog?.addEventListener('click', () => {
                     window.data.setPause(false);
-                });
-                    
+                }, { once: true });
 
                 hideButton?.addEventListener('click', () => {
-                    console.log('Hide Button Clicked');
                     window.data.hideSelected(id);
-                    window.data.setPause(false);
-                });
+                }, { once: true });
 
                 removeButton?.addEventListener('click', () => {
-                    console.log('Remove Button Clicked');
-                    window.data.removeSelected(id);
-                    window.data.setPause(false);
-                });
+                    void window.data.recordWinner(id)
+                        .then((confirmed: boolean | undefined) => {
+                            if (confirmed && entry.service === Service.Discord) {
+                                return window.data.handleDiscordWinner(entry);
+                            }
+                        })
+                        .catch((error: unknown) => console.error('Unable to confirm wheel winner', error));
+                }, { once: true });
             } else {
                 window.data.setPause(false);
             }

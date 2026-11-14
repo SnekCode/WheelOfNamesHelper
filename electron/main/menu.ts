@@ -1,4 +1,6 @@
-import { BrowserWindow, Menu, app, shell } from 'electron';
+import { BrowserWindow, Menu, app, dialog, shell } from 'electron';
+import log from 'electron-log/main';
+import { wheelWindow } from './wheelOfNames';
 import path from 'node:path';
 import { store } from './store';
 import { setStore } from '../data/data';
@@ -191,6 +193,19 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         win?.webContents.send('releaseNotes', [true, htmlContent]);
                     },
                 },
+                {
+                    label: 'Open Log File',
+                    click: async () => {
+                        const error = await shell.openPath(log.transports.file.getFile().path);
+                        if (error) dialog.showErrorBox('Could not open log file', error);
+                    },
+                },
+                {
+                    label: 'Open Config File',
+                    click: () => {
+                        shell.openPath(store.path);
+                    },
+                },
             ],
         },
         {
@@ -199,7 +214,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                 // DEBUG settings
                 {
                     label: 'Debug Menu',
-                    enabled: isDev,
+                    visible: isDev,
                     submenu: [
                         {
                             label: 'Malform Youtube Authentication',
@@ -312,17 +327,19 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                     },
                 },
                 {
-                    label:
-                        (store.get('windowSettings') as { alwaysOnTop: boolean })?.alwaysOnTop ?? false
-                            ? '✔ Force Window On Top'
-                            : 'Force Window On Top',
-                    click: (_, focusedWindow) => {
-                        if (focusedWindow) {
-                            const alwaysOnTop = !focusedWindow.isAlwaysOnTop();
-                            focusedWindow.setAlwaysOnTop(alwaysOnTop);
-                            store.set('windowSettings', { alwaysOnTop });
-                            const menu = Menu.buildFromTemplate(createMenuTemplate());
-                            Menu.setApplicationMenu(menu);
+                    id: 'force-window-on-top',
+                    label: 'Force Window On Top',
+                    type: 'checkbox',
+                    checked: BrowserWindow.getFocusedWindow()?.isAlwaysOnTop() ?? false,
+                    click: (item, focusedWindow) => {
+                        if (!focusedWindow) return;
+                        const alwaysOnTop = !focusedWindow.isAlwaysOnTop();
+                        focusedWindow.setAlwaysOnTop(alwaysOnTop);
+                        item.checked = focusedWindow.isAlwaysOnTop();
+                        const settingsKey = focusedWindow === win ? 'windowSettings'
+                            : focusedWindow === wheelWindow ? 'wheelWindowSettings' : undefined;
+                        if (settingsKey) {
+                            store.set(settingsKey, { ...(store.get(settingsKey) as Electron.BrowserWindowConstructorOptions | undefined), alwaysOnTop: item.checked });
                         }
                     },
                 },
@@ -338,6 +355,7 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                 // custom dev tool window open devtools.html
                 {
                     label: 'Open Dev Tools Window',
+                    visible: isDev,
                     click: async () => {
                         // add url bar to the devtools window
                         const devToolWindow = new BrowserWindow({
@@ -361,19 +379,6 @@ function createMenuTemplate(): Electron.MenuItemConstructorOptions[] {
                         }
                     },
                 },
-                {
-                    label: 'Open Log File',
-                    click: () => {
-                        const logPath = app.getPath('logs');
-                        shell.openPath(path.join(logPath, 'main.log'));
-                    },
-                },
-                {
-                    label: 'Open Config File',
-                    click: () => {
-                        shell.openPath(store.path);
-                    },
-                },
             ],
         },
     ];
@@ -384,6 +389,11 @@ export function createMenu() {
     const menu = Menu.buildFromTemplate(createMenuTemplate());
     Menu.setApplicationMenu(menu);
 }
+app.on('browser-window-focus', (_, window) => {
+    const item = Menu.getApplicationMenu()?.getMenuItemById('force-window-on-top');
+    if (item) item.checked = window.isAlwaysOnTop();
+});
+
 function electronConstants() {
     throw new Error('Function not implemented.');
 }

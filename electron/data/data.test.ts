@@ -106,6 +106,29 @@ describe('data tests', () => {
         expect(store.get(StoreKeys.data)).toEqual([{ ...viewer, enabled: true }]);
     });
 
+    it('records and removes the confirmed winner in one update', () => {
+        const viewer = buildEntry();
+        store.set(StoreKeys.data, [viewer]);
+        const winner = recordWinner('123', true);
+
+        expect(store.get(StoreKeys.data)).toEqual([]);
+        expect(store.get(StoreKeys.winners)).toEqual([winner]);
+        expect(recordWinner('123', true)).toBeUndefined();
+    });
+
+    it('clears all winner history without changing queued names', () => {
+        const manager = new DataManager();
+        const viewer = buildEntry();
+        store.set(StoreKeys.data, [viewer]);
+        recordWinner('123');
+        recordWinner('123');
+
+        manager.removeAllWinners();
+
+        expect(store.get(StoreKeys.winners)).toEqual([]);
+        expect(store.get(StoreKeys.data)).toEqual([viewer]);
+    });
+
     it('restores a legacy winner using an existing matching queue entry', () => {
         const manager = new DataManager();
         const viewer = buildEntry({ weight: 4, enabled: false });

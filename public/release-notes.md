@@ -4,9 +4,13 @@
 
 - Added a Winners list next to the Wheel Queue. Both lists use the same sorting and name filter.
   - Winner history stays available after you remove a name from the wheel or restart the app.
-  - Move names to Winners, send them back to the queue, or remove individual winner cards.
-- Winners are announced in Twitch or YouTube chat when the wheel picks them. Keep spinning without waiting for a reply!
+  - Move names to Winners, send them back to the queue, or remove winner cards individually or all at once.
+- Click Winner on the wheel to save the result and announce it in Twitch or YouTube chat. Click Cancel to keep the name in the queue.
 - Fixed an issue where some winners with unknown last-seen activity were missed.
+- Closing the dashboard now closes the other app windows.
+- Moved Open Config File and Open Log File to the Help menu. Open Log File now opens the current session's log.
+- Fixed Force Window On Top to show the focused window's setting and remember it separately for the dashboard and wheel.
+- Debug Menu and Open Dev Tools Window are only shown when running in development mode.
 
 ___________________________________________________________________________________________
 ___________________________________________________________________________________________

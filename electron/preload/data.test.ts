@@ -26,7 +26,10 @@ describe('Wheel winner dialog', () => {
             id: 'wheel-generated-id', text: name, service,
             ...(service === Service.Discord ? { channelId: 'winner-1', timestamp: Date.now(), mobile } : {}),
         };
+        const closeButton = { textContent: 'Close', querySelector: jest.fn(), addEventListener: jest.fn() };
+        const removeButton = { textContent: 'Remove', querySelector: jest.fn(), addEventListener: jest.fn() };
         const dialog = {
+            querySelectorAll: () => [closeButton, removeButton],
             querySelector: (selector: string) => selector === '.text-h6' ? messageBox : { textContent: name },
             addEventListener: jest.fn(),
         };
@@ -47,13 +50,21 @@ describe('Wheel winner dialog', () => {
             }) },
         });
         const { ipcRenderer: renderer } = require('electron') as typeof import('electron');
-        jest.mocked(renderer.invoke).mockResolvedValue(undefined);
+        jest.mocked(renderer.invoke).mockResolvedValue(true);
         require('./data');
         const init = jest.mocked(renderer.on).mock.calls.find((call: any) => call[0] === 'initListeners')![1] as any;
         await init({}, undefined);
         onSpin();
         onSpin();
         jest.advanceTimersByTime(1100);
+        expect(closeButton.textContent).toBe('Cancel');
+        expect(removeButton.textContent).toBe('Winner');
+        expect(renderer.invoke).not.toHaveBeenCalledWith('recordWinner', expectedId);
+        if (service === Service.Discord) {
+            expect(renderer.invoke).not.toHaveBeenCalledWith('discord_winner', winner);
+        }
+        removeButton.addEventListener.mock.calls[0][1]();
+        await Promise.resolve();
         expect(jest.mocked(renderer.invoke).mock.calls.filter(([channel]) => channel === 'recordWinner'))
             .toEqual([['recordWinner', expectedId]]);
         if (service === Service.Discord) {
